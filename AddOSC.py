@@ -38,7 +38,7 @@
 bl_info = {
     "name": "AddOSC",
     "author": "JPfeP",
-    "version": (0, 6),
+    "version": (0, 7),
     "blender": (2, 6, 6),
     "location": "",
     "description": "Realtime control of Blender using OSC protocol",
@@ -66,7 +66,7 @@ from pythonosc import dispatcher
 from pythonosc import osc_server
 import threading
 import socketserver
-
+from bpy.app.handlers import persistent
 
 #Quelques variables globales
 thread_run= 0
@@ -81,6 +81,43 @@ def mycallback(arg1,arg2):
         exec(strtoexec)
     except:
         print ("Improper message received")
+        
+#This is for saving/restoring settings in the blendfile        
+def upd_settings_sub(n):
+    text_settings = None
+    for text in bpy.data.texts:
+        if text.name == '.addosc_settings':
+            text_settings = text
+    if text_settings == None:
+        bpy.ops.text.new()
+        text_settings = bpy.data.texts[-1]
+        text_settings.name = '.addosc_settings'   
+        text_settings.write("\n\n\n\n")
+    if n==0:
+        text_settings.lines[0].body = str(int(bpy.context.window_manager.monitor))
+    elif n==1:
+        text_settings.lines[1].body = str(bpy.context.window_manager.port_in)
+    elif n==2:
+        text_settings.lines[2].body = str(bpy.context.window_manager.port_out)
+    elif n==3:
+        text_settings.lines[3].body = str(bpy.context.window_manager.osc_rate)
+    elif n==4:
+        text_settings.lines[4].body = bpy.context.window_manager.udp_addr
+
+def upd_setting_0():
+    upd_settings_sub(0)
+    
+def upd_setting_1():
+    upd_settings_sub(1)
+        
+def upd_setting_2():
+    upd_settings_sub(2)
+    
+def upd_setting_3():
+    upd_settings_sub(3)           
+
+def upd_setting_4():
+    upd_settings_sub(4)   
 
 class OSC_Readind_Sending(bpy.types.Operator):
     bl_idname = "addosc.modal_timer_operator"
@@ -89,12 +126,28 @@ class OSC_Readind_Sending(bpy.types.Operator):
     _timer = None 
     client = "" #for the sending socket
     
-    bpy.types.Scene.udp_addr = bpy.props.StringProperty(default="127.0.0.1")
-    bpy.types.Scene.port_in = bpy.props.IntProperty(default=9001, min=0)
-    bpy.types.Scene.port_out = bpy.props.IntProperty(default=9002, min=0)
-    bpy.types.Scene.osc_rate = bpy.props.IntProperty(default=100 ,description="refresh rate (ms)", min=0)
-    bpy.types.Scene.status = bpy.props.StringProperty(default="Stopped")
-    bpy.types.WindowManager.monitor = bpy.props.BoolProperty(description="Display the current value of your keys")
+    def upd_trick_monitor(self,context):
+        upd_setting_0()
+    
+    def upd_trick_portin(self,context):
+        upd_setting_1()
+    
+    def upd_trick_portout(self,context):
+        upd_setting_2()
+           
+    def upd_trick_rate(self,context):
+        upd_setting_3()
+               
+    def upd_trick_udp_addr(self,context):
+        upd_setting_4()
+        
+    
+    bpy.types.WindowManager.udp_addr = bpy.props.StringProperty(default="127.0.0.1", update=upd_trick_udp_addr)
+    bpy.types.WindowManager.port_in = bpy.props.IntProperty(default=9001, min=0, update=upd_trick_portin)
+    bpy.types.WindowManager.port_out = bpy.props.IntProperty(default=9002, min=0, update=upd_trick_portout)
+    bpy.types.WindowManager.osc_rate = bpy.props.IntProperty(default=10 ,description="refresh rate (ms)", min=0, update=upd_trick_rate)
+    bpy.types.WindowManager.status = bpy.props.StringProperty(default="Stopped")
+    bpy.types.WindowManager.monitor = bpy.props.BoolProperty(description="Display the current value of your keys", update=upd_trick_monitor)
     
     def modal(self, context, event):
         global thread_run 
@@ -110,7 +163,7 @@ class OSC_Readind_Sending(bpy.types.Operator):
             for item in bpy.context.scene.OSC_keys:
                 prop = str(eval("bpy.data."+item.name))
                 if prop != item.value:
-                    msg = osc_message_builder.OscMessageBuilder(address=item.address+"/"+str(item.ID))
+                    msg = osc_message_builder.OscMessageBuilder(address=item.address)
                     msg.add_arg(eval("bpy.data." + item.name))
                     msg = msg.build()
                     self.client.send(msg)
@@ -122,20 +175,20 @@ class OSC_Readind_Sending(bpy.types.Operator):
         #Setting up the dispatcher for receiving
         self.dispatcher = dispatcher.Dispatcher()
         self.dispatcher.set_default_handler(mycallback)
-        bcs = bpy.context.scene
-        self.server = osc_server.ThreadingOSCUDPServer((bcs.udp_addr, bcs.port_in), self.dispatcher)
+        bcw = bpy.context.window_manager
+        self.server = osc_server.ThreadingOSCUDPServer((bcw.udp_addr, bcw.port_in), self.dispatcher)
         self.server_thread = threading.Thread(target=self.server.serve_forever)
         self.server_thread.start()
         
         #And for sending
-        self.client = udp_client.UDPClient(bcs.udp_addr, bcs.port_out) 
+        self.client = udp_client.UDPClient(bcw.udp_addr, bcw.port_out) 
         
         
         #Warn if no keys ?
  
         #inititate the modal timer thread
         context.window_manager.modal_handler_add(self)
-        self._timer = context.window_manager.event_timer_add(bcs.osc_rate/1000, context.window)
+        self._timer = context.window_manager.event_timer_add(bcw.osc_rate/1000, context.window)
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
@@ -151,23 +204,25 @@ class OSC_UI_Panel(bpy.types.Panel):
  
     def draw(self, context):
         layout = self.layout
-        layout.prop(bpy.context.scene, 'udp_addr', text="Input address")
-        layout.prop(bpy.context.scene, 'port_in', text="Input port")
-        layout.prop(bpy.context.scene, 'port_out', text="Outport port")
-        layout.prop(bpy.context.scene, 'osc_rate', text="Update rate(ms)")    
-        layout.prop(bpy.context.scene, 'status', text="Running Status")
+        col = layout.column(align=True)
+        col.label(text="MIDI Settings:")
+        layout.prop(bpy.context.window_manager, 'udp_addr', text="Input address")
+        layout.prop(bpy.context.window_manager, 'port_in', text="Input port")
+        layout.prop(bpy.context.window_manager, 'port_out', text="Outport port")
+        layout.prop(bpy.context.window_manager, 'osc_rate', text="Update rate(ms)")    
+        layout.prop(bpy.context.window_manager, 'status', text="Running Status")
         layout.prop(bpy.context.window_manager, 'monitor')
-        layout.operator("addosc.startudp", text='Start')
-        layout.operator("addosc.stopudp", text='Stop')
+        row = col.row(align=True)
+        row.operator("addosc.startudp", text='Start')
+        row.operator("addosc.stopudp", text='Stop')
         layout.separator()
-        layout.prop(bpy.context.scene, 'defaultaddr', text="Default Out Address") 
+        layout.prop(bpy.context.window_manager, 'defaultaddr', text="Default Out Address") 
         layout.operator("addosc.importks", text='Import Keying Set')
         for item in bpy.context.scene.OSC_keys:
             row = layout.row()
             box = row.box()
             box.prop(item, 'name')
             box.prop(item, 'address')
-            box.prop(item, 'ID')
             box.prop(item, 'osc_type')
             if bpy.context.window_manager.monitor == True:
                 box.prop(item, 'value')
@@ -179,7 +234,7 @@ class MY_OT_StartUDP(bpy.types.Operator):
     def execute(self, context):
         global RATE
         global thread_run
-        RATE = bpy.data.scenes[0].osc_rate
+        RATE = bpy.context.window_manager.osc_rate
         if thread_run == 0 :
             try:
                 bpy.ops.addosc.modal_timer_operator()
@@ -188,7 +243,7 @@ class MY_OT_StartUDP(bpy.types.Operator):
                 return{'FINISHED'} 
             thread_run = 1	  
             self.report({'INFO'}, "Connecting...")
-            bpy.context.scene.status = "Started"
+            bpy.context.window_manager.status = "Started"
             
         else:
             self.report({'INFO'}, "Already connected !")	  
@@ -203,7 +258,7 @@ class MY_OT_StopUDP(bpy.types.Operator):
         global thread_run
         thread_run = 0
         self.report({'INFO'}, "Disconnected !")
-        bpy.context.scene.status = "Stopped"
+        bpy.context.window_manager.status = "Stopped"
         return{'FINISHED'}
 
           
@@ -214,14 +269,13 @@ class MY_OT_ImportKS(bpy.types.Operator):
     class SceneSettingItem(bpy.types.PropertyGroup):
         name = bpy.props.StringProperty(name="Key", default="Unknown")
         address = bpy.props.StringProperty(name="OSC address", default="Unknown")
-        ID = bpy.props.IntProperty(name="ID", default=0, min=0)
         osc_type = bpy.props.StringProperty(name="Type", default="Unknown")
         value = bpy.props.StringProperty(name="Value", default="Unknown")
     bpy.utils.register_class(SceneSettingItem)    
                      
     bpy.types.Scene.OSC_keys = bpy.props.CollectionProperty(type=SceneSettingItem)
     
-    bpy.types.Scene.defaultaddr = bpy.props.StringProperty(default="/blender")
+    bpy.types.WindowManager.defaultaddr = bpy.props.StringProperty(default="/blender")
 
     def execute(self, context):
         ks = bpy.context.scene.keying_sets.active
@@ -282,9 +336,8 @@ class MY_OT_ImportKS(bpy.types.Operator):
                         my_item = bpy.context.scene.OSC_keys.add()
                         my_item.name = i
                         tvar2 = ""
-                        my_item.ID = id_n
+                        my_item.address = bpy.context.window_manager.defaultaddr + "/" + str(id_n)
                         id_n += 1
-                        my_item.address = bpy.context.scene.defaultaddr 
                         my_item.osc_type = repr(type(eval("bpy.data."+i)))[8:-2]
                         print("Imported keys:\n"+i)
                 else:
@@ -295,9 +348,36 @@ class MY_OT_ImportKS(bpy.types.Operator):
         
         return{'FINISHED'}        
 
+#Restore saved settings
+@persistent
+def addosc_handler(scene):
+    for text in bpy.data.texts:
+        if text.name == '.addosc_settings':
+            try:
+                bpy.context.window_manager.monitor = int(text.lines[0].body)
+            except:
+                pass
+            try:
+                bpy.context.window_manager.port_in  = int(text.lines[1].body)
+            except:
+                print("AddOSC Error: Invalid address")
+            try:
+                bpy.context.window_manager.port_out = int(text.lines[2].body)
+            except:
+                error_device = True
+                print("AddOSC Error: Invalid address")
+            try:
+                bpy.context.window_manager.osc_rate = int(text.lines[3].body) 
+            except:
+                bpy.context.window_manager.osc_rate = 10
+            try:
+                bpy.context.window_manager.udp_addr = text.lines[4].body 
+            except:
+                pass
 
 def register():
     bpy.utils.register_module(__name__)
+    bpy.app.handlers.load_post.append(addosc_handler)
         
 def unregister():
     bpy.utils.unregister_module(__name__)
