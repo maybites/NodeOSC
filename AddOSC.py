@@ -30,12 +30,12 @@
 bl_info = {
     "name": "AddOSC",
     "author": "JPfeP",
-    "version": (0, 8),
+    "version": (0, 9),
     "blender": (2, 6, 6),
     "location": "",
     "description": "Realtime control of Blender using OSC protocol",
     "warning": "beta quality",
-    "wiki_url": "http://www.jpfep.net/en-us/pages/addosc/",
+    "wiki_url": "http://www.jpfep.net/pages/addosc/",
     "tracker_url": "",
     "category": "System"}
 
@@ -63,20 +63,17 @@ from bpy.app.handlers import persistent
 
 
 def OSC_callback(arg1,arg2):
-    atoms = arg1.split("/")
-    id = int(atoms[-1:][0])
-    route = "/"+atoms[-2:-1][0]
-    bcs = bpy.context.scene
-    strtoexec = "bpy.data." + bcs.OSC_keys[id].name + "=" + str(arg2)
-    if route == bcs.addosc_defaultaddr:
-        try:
-            exec(strtoexec)
-        except:
+    for item in bpy.context.scene.OSC_keys:
+        if item.address == arg1:
+            strtoexec = "bpy.data." + item.name + "=" + str(arg2)
+            try:
+                exec(strtoexec)
+            except:
+                if bpy.context.window_manager.addosc_monitor == True: 
+                    print ("Improper message received: "+arg1+" , content: "+str(arg2))
+        else:
             if bpy.context.window_manager.addosc_monitor == True: 
-                print ("Improper message received: "+arg1+" , content: "+str(arg2))
-    else:
-        if bpy.context.window_manager.addosc_monitor == True: 
-            print("Rejected OSC message, route: "+arg1+" , content: "+str(arg2))
+                print("Rejected OSC message, route: "+arg1+" , content: "+str(arg2))
 
 #For saving/restoring settings in the blendfile        
 def upd_settings_sub(n):
