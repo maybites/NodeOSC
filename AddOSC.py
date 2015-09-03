@@ -63,17 +63,18 @@ from bpy.app.handlers import persistent
 
 
 def OSC_callback(arg1,arg2):
+    fail = True
     for item in bpy.context.scene.OSC_keys:
         if item.address == arg1:
             strtoexec = "bpy.data." + item.name + "=" + str(arg2)
             try:
                 exec(strtoexec)
+                fail = False
             except:
                 if bpy.context.window_manager.addosc_monitor == True: 
                     print ("Improper message received: "+arg1+" , content: "+str(arg2))
-        else:
-            if bpy.context.window_manager.addosc_monitor == True: 
-                print("Rejected OSC message, route: "+arg1+" , content: "+str(arg2))
+    if bpy.context.window_manager.addosc_monitor == True and fail == True: 
+        print("Rejected OSC message, route: "+arg1+" , content: "+str(arg2))
 
 #For saving/restoring settings in the blendfile        
 def upd_settings_sub(n):
