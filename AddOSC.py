@@ -30,7 +30,7 @@
 bl_info = {
     "name": "AddOSC",
     "author": "JPfeP",
-    "version": (0, 9),
+    "version": (0, 10),
     "blender": (2, 6, 6),
     "location": "",
     "description": "Realtime control of Blender using OSC protocol",
@@ -152,8 +152,8 @@ class OSC_Readind_Sending(bpy.types.Operator):
     def upd_trick_addosc_autorun(self,context):
         upd_setting_6()        
     
-    bpy.types.WindowManager.addosc_udp_in  = bpy.props.StringProperty(default="127.0.0.1", update=upd_trick_addosc_udp_in)
-    bpy.types.WindowManager.addosc_udp_out = bpy.props.StringProperty(default="127.0.0.1", update=upd_trick_addosc_udp_out)
+    bpy.types.WindowManager.addosc_udp_in  = bpy.props.StringProperty(default="127.0.0.1", update=upd_trick_addosc_udp_in, description='The IP of the interface on your receiving Blender machine to listen on, set to 0.0.0.0 for all of them')
+    bpy.types.WindowManager.addosc_udp_out = bpy.props.StringProperty(default="127.0.0.1", update=upd_trick_addosc_udp_out, description='The IP of the destination machine to send messages to')
     bpy.types.WindowManager.addosc_port_in = bpy.props.IntProperty(default=9001, min=0, update=upd_trick_portin)
     bpy.types.WindowManager.addosc_port_out = bpy.props.IntProperty(default=9002, min=0, update=upd_trick_portout)
     bpy.types.WindowManager.addosc_rate = bpy.props.IntProperty(default=10 ,description="refresh rate (ms)", min=1, update=upd_trick_rate)
@@ -220,8 +220,8 @@ class OSC_UI_Panel(bpy.types.Panel):
         row.operator("addosc.startudp", text='Start', icon='PLAY')
         row.operator("addosc.stopudp", text='Stop', icon='PAUSE')
         layout.prop(bpy.context.window_manager, 'status', text="Running Status")
-        layout.prop(bpy.context.window_manager, 'addosc_udp_in', text="Input address")
-        layout.prop(bpy.context.window_manager, 'addosc_udp_out', text="Output address")
+        layout.prop(bpy.context.window_manager, 'addosc_udp_in', text="Listen on ")
+        layout.prop(bpy.context.window_manager, 'addosc_udp_out', text="Destination address")
         col2 = layout.column(align=True)
         row2 = col2.row(align=True)
         row2.prop(bpy.context.window_manager, 'addosc_port_in', text="Input port")
