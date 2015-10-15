@@ -21,27 +21,35 @@
 
 #TODO:
 
+
+# disclaimer
+# finir de verifier que toutes les types de props marchent bien
+# verifier le soucis avec le autorun qui marche pas sur un nouveau projet (pareil que addmidi?)
+ 
 # attacher le timer à la context window ou pas ?
-# implémenter la conversion pour les autres types que Vector,Euler,Quaternion ? (actuellement le bloc qui separe les x y z est "commented out")
+# pbm not set to None du modal timer quand changement de blend file
 # intercepter les erreurs quand les adress OSC sont vides ?
-# parfois, pbm avec les adresses reseaux "already in use" 
-# try -> type(key).__name__
+
+# LATER:
+# Bool are not part of OSC 1.0 (only later as extension)
+# Deal with tupple (x,y,z) or (r,g,b) usr "type(key).__name__" for Vector, Euler, etc... 
+# See if list properties are a pbm
+
 
 bl_info = {
     "name": "AddOSC",
     "author": "JPfeP",
-    "version": (0, 10),
+    "version": (0, 11),
     "blender": (2, 6, 6),
     "location": "",
     "description": "Realtime control of Blender using OSC protocol",
-    "warning": "beta quality",
+    "warning": "Please read the disclaimer about network security on my site.",
     "wiki_url": "http://www.jpfep.net/pages/addosc/",
     "tracker_url": "",
     "category": "System"}
 
 import bpy
 import sys
-#from sys import exit
 from select import select
 from bpy.utils import register_module, unregister_module
 import socket
@@ -61,20 +69,50 @@ import socketserver
 from bpy.app.handlers import persistent
 
 
+_report= ["",""] #This for reporting OS network errors 
 
-def OSC_callback(arg1,arg2):
-    fail = True
+
+def OSC_callback(*args):
+    fail = True   
+    bpy.context.window_manager.addosc_lastaddr = args[0]
+    content=""
+    for i in args[1:]:
+        content += str(i)+" "
+    bpy.context.window_manager.addosc_lastpayload = content
+    
     for item in bpy.context.scene.OSC_keys:
-        if item.address == arg1:
-            strtoexec = "bpy.data." + item.name + "=" + str(arg2)
-            try:
-                exec(strtoexec)
-                fail = False
-            except:
-                if bpy.context.window_manager.addosc_monitor == True: 
-                    print ("Improper message received: "+arg1+" , content: "+str(arg2))
+        ob = eval(item.data_path)
+        
+        if item.address == args[0]:
+            #For ID custom properties (with brackets)
+            if item.id[0:2] == '["' and item.id[-2:] == '"]':
+                try:
+                    ob[item.id] = args[1]
+                    fail = False
+            
+                except:
+                    if bpy.context.window_manager.addosc_monitor == True: 
+                        print ("Improper message received: "+args[1]+" , content: "+content)
+                        
+            #For normal properties
+            elif item.id[-1] == ']':
+                d_p = item.id[:-3]
+                idx = int(item.id[-2])
+                try:
+                    getattr(ob,d_p)[idx] = args[1]
+                    fail = False
+                except:
+                    pass
+            else:
+                try:
+                    setattr(ob,item.id,args[1])
+                    fail = False
+                except:
+                    pass
+                
+                            
     if bpy.context.window_manager.addosc_monitor == True and fail == True: 
-        print("Rejected OSC message, route: "+arg1+" , content: "+str(arg2))
+        print("Rejected OSC message, route: "+args[0]+" , content: "+content)
 
 #For saving/restoring settings in the blendfile        
 def upd_settings_sub(n):
@@ -124,7 +162,7 @@ def upd_setting_6():
     upd_settings_sub(6)
     
 
-class OSC_Readind_Sending(bpy.types.Operator):
+class OSC_Reading_Sending(bpy.types.Operator):
     bl_idname = "addosc.modal_timer_operator"
     bl_label = "OSCMainThread"
     
@@ -152,14 +190,19 @@ class OSC_Readind_Sending(bpy.types.Operator):
     def upd_trick_addosc_autorun(self,context):
         upd_setting_6()        
     
-    bpy.types.WindowManager.addosc_udp_in  = bpy.props.StringProperty(default="127.0.0.1", update=upd_trick_addosc_udp_in, description='The IP of the interface on your receiving Blender machine to listen on, set to 0.0.0.0 for all of them')
+    bpy.types.WindowManager.addosc_udp_in  = bpy.props.StringProperty(default="127.0.0.1", update=upd_trick_addosc_udp_in, description='The IP of the interface of your Blender machine to listen on, set to 0.0.0.0 for all of them (read the disclaimer)')
     bpy.types.WindowManager.addosc_udp_out = bpy.props.StringProperty(default="127.0.0.1", update=upd_trick_addosc_udp_out, description='The IP of the destination machine to send messages to')
-    bpy.types.WindowManager.addosc_port_in = bpy.props.IntProperty(default=9001, min=0, update=upd_trick_portin)
-    bpy.types.WindowManager.addosc_port_out = bpy.props.IntProperty(default=9002, min=0, update=upd_trick_portout)
-    bpy.types.WindowManager.addosc_rate = bpy.props.IntProperty(default=10 ,description="refresh rate (ms)", min=1, update=upd_trick_rate)
-    bpy.types.WindowManager.status = bpy.props.StringProperty(default="Stopped")
-    bpy.types.WindowManager.addosc_monitor = bpy.props.BoolProperty(description="Display the current value of your keys", update=upd_trick_addosc_monitor)
-    bpy.types.WindowManager.addosc_autorun = bpy.props.BoolProperty(description="Start the OSC engine after blendfile loading", update=upd_trick_addosc_autorun)
+    bpy.types.WindowManager.addosc_port_in = bpy.props.IntProperty(default=9001, min=0, max=65535, update=upd_trick_portin, description='The input network port (0-65535)')
+    bpy.types.WindowManager.addosc_port_out = bpy.props.IntProperty(default=9002, min=0, max= 65535, update=upd_trick_portout, description='The output network port (0-65535)')
+    bpy.types.WindowManager.addosc_rate = bpy.props.IntProperty(default=10 ,description="The refresh rate of the engine (millisecond)", min=1, update=upd_trick_rate)
+    bpy.types.WindowManager.status = bpy.props.StringProperty(default="Stopped", description='Show if the engine is running or not')
+    bpy.types.WindowManager.addosc_monitor = bpy.props.BoolProperty(description="Display the current value of your keys, the last message received and some infos in console", update=upd_trick_addosc_monitor)
+    bpy.types.WindowManager.addosc_autorun = bpy.props.BoolProperty(description="Start the OSC engine automatically after loading a project", update=upd_trick_addosc_autorun)
+    bpy.types.WindowManager.addosc_lastaddr = bpy.props.StringProperty(description="Display the last OSC address received")
+    bpy.types.WindowManager.addosc_lastpayload = bpy.props.StringProperty(description="Display the last OSC message content")
+    
+    #modes_enum = [('Replace','Replace','Replace'),('Update','Update','Update')]
+    #bpy.types.WindowManager.addosc_mode = bpy.props.EnumProperty(name = "import mode", items = modes_enum)
     
     def modal(self, context, event):
         if context.window_manager.status == "Stopped" :
@@ -170,34 +213,52 @@ class OSC_Readind_Sending(bpy.types.Operator):
 
             #Sending
             for item in bpy.context.scene.OSC_keys:
-                prop = str(eval("bpy.data."+item.name))
-                if prop != item.value:
+                if item.id[0:2] == '["' and item.id[-2:] == '"]':
+                    prop = eval(item.data_path+item.id)
+                else:
+                    prop = eval(item.data_path+'.'+item.id)
+                
+                if str(prop) != item.value:
                     msg = osc_message_builder.OscMessageBuilder(address=item.address)
-                    msg.add_arg(eval("bpy.data." + item.name))
+                    msg.add_arg(prop)
                     msg = msg.build()
                     self.client.send(msg)
-                    item.value = prop    
+                    item.value = str(prop)    
    
         return {'PASS_THROUGH'}      
       
     def execute(self, context):
-        #Setting up the dispatcher for receiving
-        self.dispatcher = dispatcher.Dispatcher()
-        self.dispatcher.set_default_handler(OSC_callback)
+        global _report 
         bcw = bpy.context.window_manager
-        self.server = osc_server.ThreadingOSCUDPServer((bcw.addosc_udp_in, bcw.addosc_port_in), self.dispatcher)
-        self.server_thread = threading.Thread(target=self.server.serve_forever)
-        self.server_thread.start()
         
-        #And for sending
-        self.client = udp_client.UDPClient(bcw.addosc_udp_out, bcw.addosc_port_out)         
-        
-        #Warn if no keys ?
- 
+        #For sending
+        try:
+            self.client = udp_client.UDPClient(bcw.addosc_udp_out, bcw.addosc_port_out)
+            msg = osc_message_builder.OscMessageBuilder(address="/blender")
+            msg.add_arg("Hello from Blender, simple test.")
+            msg = msg.build()
+            self.client.send(msg)
+        except OSError as err: 
+            _report[1] = err
+            return {'CANCELLED'}    
+    
+        #Setting up the dispatcher for receiving
+        try:
+            self.dispatcher = dispatcher.Dispatcher()
+            self.dispatcher.set_default_handler(OSC_callback)
+            self.server = osc_server.ThreadingOSCUDPServer((bcw.addosc_udp_in, bcw.addosc_port_in), self.dispatcher)
+            self.server_thread = threading.Thread(target=self.server.serve_forever)
+            self.server_thread.start()
+        except OSError as err:
+            _report[0] = err
+            return {'CANCELLED'}
+
+          
         #inititate the modal timer thread
         context.window_manager.modal_handler_add(self)
         self._timer = context.window_manager.event_timer_add(bcw.addosc_rate/1000, context.window)
         context.window_manager.status = "Running"
+        
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
@@ -206,8 +267,9 @@ class OSC_Readind_Sending(bpy.types.Operator):
         context.window_manager.status = "Stopped"
         return {'CANCELLED'}
 
+
 class OSC_UI_Panel(bpy.types.Panel):
-    bl_label = "OSC Link"
+    bl_label = "AddOSC Settings"
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
     bl_category = "AddOSC"
@@ -228,37 +290,63 @@ class OSC_UI_Panel(bpy.types.Panel):
         row2.prop(bpy.context.window_manager, 'addosc_port_out', text="Outport port")
         layout.prop(bpy.context.window_manager, 'addosc_rate', text="Update rate(ms)")    
         layout.prop(bpy.context.window_manager, 'addosc_autorun', text="Start at Launch")
-        layout.prop(bpy.context.window_manager, 'addosc_monitor', text="Monitoring")
+
+class OSC_UI_Panel2(bpy.types.Panel):
+    bl_label = "AddOSC Operations"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "TOOLS"
+    bl_category = "AddOSC"
+        
+    def draw(self, context):    
+        layout = self.layout
+        row = layout.row(align=False)
+        row.prop(bpy.context.scene, 'addosc_defaultaddr', text="Default Address")
+        row.prop(bpy.context.window_manager, 'addosc_monitor', text="Monitoring")
+       
+        if context.window_manager.addosc_monitor == True:
+            box = layout.box()
+            row5 = box.column(align=True)
+            row5.prop(bpy.context.window_manager, 'addosc_lastaddr', text="Last OSC address")
+            row5.prop(bpy.context.window_manager, 'addosc_lastpayload', text="Last OSC message")   
+                
         layout.separator()
-        layout.prop(bpy.context.scene, 'addosc_defaultaddr', text="Default Address") 
         layout.operator("addosc.importks", text='Import Keying Set')
+        
         layout.separator()
         layout.label(text="Imported Keys:")
         for item in bpy.context.scene.OSC_keys:
-            row = layout.row()
-            box = row.box()
-            box.prop(item, 'name')
-            col3 = box.column(align=True)
-            row3 = col3.row(align=True)
-            row3.prop(item, 'address')
-            row3.label(text="type: "+item.osc_type)
+            box3 = layout.box()
+            split = box3.split()
+            col = split.column()
+            col.prop(item,'data_path')
+            col.prop(item, 'address')
+            col2 = split.column()
+            row4 = col2.row(align=True)
+            row4.prop(item,'id')
+            row4.label(text="("+item.osc_type+")")            
+            col2.operator("addosc.pick", text='Pick').propy = item.address
             if bpy.context.window_manager.addosc_monitor == True:
-                box.prop(item, 'value')
-            
+                col.prop(item, 'value')
+        
+  
 class StartUDP(bpy.types.Operator):
     bl_idname = "addosc.startudp"
     bl_label = "Start UDP Connection"
+    bl_description ="Start the OSC engine"
  
     def execute(self, context):
+        global _report
+        if context.window_manager.addosc_port_in == context.window_manager.addosc_port_out:
+            self.report({'INFO'}, "Ports must be different.")
+            return{'FINISHED'} 
         if bpy.context.window_manager.status != "Running" :
-            try:
-                bpy.ops.addosc.modal_timer_operator()
-            except:
-                self.report({'INFO'}, "Error !")
-                return{'FINISHED'} 
-            self.report({'INFO'}, "Connecting...")
-            bpy.context.window_manager.status = "Running"
-            
+            bpy.ops.addosc.modal_timer_operator()
+            if _report[0] != '':
+                self.report({'INFO'}, "Input error: {0}".format(_report[0]))
+                _report[0] = ''
+            elif _report[1] != '':
+                self.report({'INFO'}, "Output error: {0}".format(_report[1]))
+                _report[1] = ''                
         else:
             self.report({'INFO'}, "Already connected !")	  
         return{'FINISHED'}
@@ -267,40 +355,78 @@ class StartUDP(bpy.types.Operator):
 class StopUDP(bpy.types.Operator):
     bl_idname = "addosc.stopudp"
     bl_label = "Stop UDP Connection"
+    bl_description ="Stop the OSC engine"
  
     def execute(self, context):
         self.report({'INFO'}, "Disconnected !")
         bpy.context.window_manager.status = "Stopped"
         return{'FINISHED'}
 
+'''
+class Test(bpy.types.Operator):
+    bl_idname = "addosc.test"
+    bl_label = "Stop UDP Connection"
+ 
+    def execute(self, context):
+         
+        return{'FINISHED'}
+'''
+    
+
+class PickOSCaddress(bpy.types.Operator):
+    bl_idname = "addosc.pick"
+    bl_label = "Pick the last event OSC address"
+    bl_options = {'UNDO'}
+    bl_description ="Pick the address of the last OSC message received"
+   
+    propy = bpy.props.StringProperty()  
+ 
+    def execute(self, context):
+        last_event = bpy.context.window_manager.addosc_lastaddr
+        if len(last_event) > 1 and last_event[0] == "/": 
+            for item in bpy.context.scene.OSC_keys:
+                if item.address == self.propy :
+                    item.address = last_event
+        return{'FINISHED'}
+
+
           
 class AddOSC_ImportKS(bpy.types.Operator):
     bl_idname = "addosc.importks"  
     bl_label = "Import a Keying Set"
+    bl_options = {'UNDO'}
+    bl_description ="Import the keys of the active Keying Set"
     
+    def verifdefaddr(self,context):
+        if context.scene.addosc_defaultaddr[0] != "/":
+            context.scene.addosc_defaultaddr = "/"+context.scene.addosc_defaultaddr
+        
     class SceneSettingItem(bpy.types.PropertyGroup):
-        name = bpy.props.StringProperty(name="Key", default="Unknown")
-        address = bpy.props.StringProperty(name="Address", default="Unknown")
+        #key_path = bpy.props.StringProperty(name="Key", default="Unknown")
+        address = bpy.props.StringProperty(name="Address", default="")
+        data_path = bpy.props.StringProperty(name="Data path", default="")
+        id = bpy.props.StringProperty(name="ID", default="")
         osc_type = bpy.props.StringProperty(name="Type", default="Unknown")
         value = bpy.props.StringProperty(name="Value", default="Unknown")
     bpy.utils.register_class(SceneSettingItem)    
-                     
+                        
     bpy.types.Scene.OSC_keys = bpy.props.CollectionProperty(type=SceneSettingItem)
+    bpy.types.Scene.OSC_keys_tmp = bpy.props.CollectionProperty(type=SceneSettingItem)
     
-    bpy.types.Scene.addosc_defaultaddr = bpy.props.StringProperty(default="/blender")
+    bpy.types.Scene.addosc_defaultaddr = bpy.props.StringProperty(default="/blender", description='Form new addresses based on this keyword',update=verifdefaddr)
 
     def execute(self, context):
         ks = bpy.context.scene.keying_sets.active
-        my_item = bpy.context.scene.OSC_keys.clear()
-        tvar2 = ""
-        id_n = 0
+        t_arr = [] #temporary array for data_path,id
+        id_n = -1
+        
         if str(ks) != "None":
             for items in ks.paths:               
                 if str(items.id) != "None":     #workaround to avoid bad ID Block (Nodes)
 
-                    #This is for customs properties that have brackets
+                    #This is for ID properties that have brackets
                     if items.data_path[0:2] == '["' and items.data_path[-2:] == '"]':
-                        tvar = repr(items.id)[9:] + items.data_path                         
+                        tvar = repr(items.id)[9:] + items.data_path
                     else:
                         tvar = repr(items.id)[9:] + "." + items.data_path            
 
@@ -338,23 +464,59 @@ class AddOSC_ImportKS(bpy.types.Operator):
                                 j = items.array_index
                                 k = j+1
                             for i in range(j,k):
-                                tvar2 += tvar + "[" + str(i) + "]"+"\n"                                 
+                                t_arr.append([items.data_path + "[" + str(i) + "]",items.id])
                         except:
-                            tvar2 = tvar+"\n"
+                            t_arr.append([items.data_path,items.id])
                     else:
-                        tvar2 = tvar+"\n"
+                        t_dp.append([items.data_path,items.id])
+                    
+                    
                   
-                    for i in tvar2.split("\n")[:-1]:
-                        my_item = bpy.context.scene.OSC_keys.add()
-                        my_item.name = i
-                        tvar2 = ""
-                        my_item.address = bpy.context.scene.addosc_defaultaddr + "/" + str(id_n)
-                        id_n += 1
-                        my_item.osc_type = repr(type(eval("bpy.data."+i)))[8:-2]
-                        #print("Imported keys:\n"+i)
                 else:
                     self.report({'INFO'}, "Missing ID block !")
-                                                         
+                
+                
+            #what is the highest ID number ?
+            for item in bpy.context.scene.OSC_keys:
+                split = item.address.split('/')
+                try:
+                    if split[1] == bpy.context.scene.addosc_defaultaddr[1:]:
+                        if int(split[-1]) > id_n:
+                            id_n = int(split[-1])
+                except:
+                    pass
+                
+
+            #Transfer of tvar2 into the OSC_keys_tmp property
+            bpy.context.scene.OSC_keys_tmp.clear()            
+            for i,j in t_arr:
+                my_item = bpy.context.scene.OSC_keys_tmp.add()
+                my_item.id = i
+                my_item.data_path = repr(j)
+                if i[0:2] == '["' and i[-2:] == '"]':
+                    t_eval = my_item.data_path + my_item.id
+                else:
+                    t_eval = my_item.data_path + "." + my_item.id   
+                my_item.osc_type = repr(type(eval(t_eval)))[8:-2]
+    
+            #Copy addresses from OSC_keys if there are some
+            for item_tmp in bpy.context.scene.OSC_keys_tmp:
+                for item in bpy.context.scene.OSC_keys:
+                    if item_tmp.id == item.id and item_tmp.data_path == item.data_path:
+                        item_tmp.address = item.address
+                if item_tmp.address == "":
+                    id_n += 1
+                    item_tmp.address = bpy.context.scene.addosc_defaultaddr + "/" + str(id_n)
+                                          
+            #Simple copy OSC_keys_tmp toward OSC_keys
+            item = bpy.context.scene.OSC_keys.clear()            
+            for tmp_item in bpy.context.scene.OSC_keys_tmp:
+                item = bpy.context.scene.OSC_keys.add()
+                item.id = tmp_item.id
+                item.data_path = tmp_item.data_path
+                item.address = tmp_item.address
+                item.osc_type = tmp_item.osc_type
+                                                     
         else:
             self.report({'INFO'}, "None found !")	  
         
