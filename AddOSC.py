@@ -19,18 +19,10 @@
 #
 # ***** END GPL LICENCE BLOCK *****
 
-#TODO:
-
-
-# disclaimer
-# finir de verifier que toutes les types de props marchent bien
-# verifier le soucis avec le autorun qui marche pas sur un nouveau projet (pareil que addmidi?)
- 
-# attacher le timer à la context window ou pas ?
-# pbm not set to None du modal timer quand changement de blend file
-# intercepter les erreurs quand les adress OSC sont vides ?
-
-# LATER:
+# TODO:
+#
+# attach the timer to the context window or not ?
+# pbm not set to None du modal timer when opening a new blend file
 # Bool are not part of OSC 1.0 (only later as extension)
 # Deal with tupple (x,y,z) or (r,g,b) usr "type(key).__name__" for Vector, Euler, etc... 
 # See if list properties are a pbm
@@ -39,7 +31,7 @@
 bl_info = {
     "name": "AddOSC",
     "author": "JPfeP",
-    "version": (0, 11),
+    "version": (0, 12),
     "blender": (2, 6, 6),
     "location": "",
     "description": "Realtime control of Blender using OSC protocol",
@@ -87,12 +79,12 @@ def OSC_callback(*args):
             #For ID custom properties (with brackets)
             if item.id[0:2] == '["' and item.id[-2:] == '"]':
                 try:
-                    ob[item.id] = args[1]
+                    ob[item.id[2:-2]] = args[1]
                     fail = False
             
                 except:
                     if bpy.context.window_manager.addosc_monitor == True: 
-                        print ("Improper message received: "+args[1]+" , content: "+content)
+                        print ("Improper content received: "+content+"for OSC route: "+args[0]+" and key: "+item.id)
                         
             #For normal properties
             elif item.id[-1] == ']':
@@ -102,13 +94,15 @@ def OSC_callback(*args):
                     getattr(ob,d_p)[idx] = args[1]
                     fail = False
                 except:
-                    pass
+                    if bpy.context.window_manager.addosc_monitor == True: 
+                        print ("Improper content received: "+content+"for OSC route: "+args[0]+" and key: "+item.id) 
             else:
                 try:
                     setattr(ob,item.id,args[1])
                     fail = False
                 except:
-                    pass
+                    if bpy.context.window_manager.addosc_monitor == True: 
+                        print ("Improper content received: "+content+"for OSC route: "+args[0]+" and key: "+item.id)
                 
                             
     if bpy.context.window_manager.addosc_monitor == True and fail == True: 
@@ -190,7 +184,7 @@ class OSC_Reading_Sending(bpy.types.Operator):
     def upd_trick_addosc_autorun(self,context):
         upd_setting_6()        
     
-    bpy.types.WindowManager.addosc_udp_in  = bpy.props.StringProperty(default="127.0.0.1", update=upd_trick_addosc_udp_in, description='The IP of the interface of your Blender machine to listen on, set to 0.0.0.0 for all of them (read the disclaimer)')
+    bpy.types.WindowManager.addosc_udp_in  = bpy.props.StringProperty(default="127.0.0.1", update=upd_trick_addosc_udp_in, description='The IP of the interface of your Blender machine to listen on, set to 0.0.0.0 for all of them')
     bpy.types.WindowManager.addosc_udp_out = bpy.props.StringProperty(default="127.0.0.1", update=upd_trick_addosc_udp_out, description='The IP of the destination machine to send messages to')
     bpy.types.WindowManager.addosc_port_in = bpy.props.IntProperty(default=9001, min=0, max=65535, update=upd_trick_portin, description='The input network port (0-65535)')
     bpy.types.WindowManager.addosc_port_out = bpy.props.IntProperty(default=9002, min=0, max= 65535, update=upd_trick_portout, description='The output network port (0-65535)')
@@ -324,7 +318,7 @@ class OSC_UI_Panel2(bpy.types.Panel):
             row4 = col2.row(align=True)
             row4.prop(item,'id')
             row4.label(text="("+item.osc_type+")")            
-            col2.operator("addosc.pick", text='Pick').propy = item.address
+            col2.operator("addosc.pick", text='Pick').i_addr = item.address
             if bpy.context.window_manager.addosc_monitor == True:
                 col.prop(item, 'value')
         
@@ -379,13 +373,13 @@ class PickOSCaddress(bpy.types.Operator):
     bl_options = {'UNDO'}
     bl_description ="Pick the address of the last OSC message received"
    
-    propy = bpy.props.StringProperty()  
+    i_addr = bpy.props.StringProperty()  
  
     def execute(self, context):
         last_event = bpy.context.window_manager.addosc_lastaddr
         if len(last_event) > 1 and last_event[0] == "/": 
             for item in bpy.context.scene.OSC_keys:
-                if item.address == self.propy :
+                if item.address == self.i_addr :
                     item.address = last_event
         return{'FINISHED'}
 
@@ -468,7 +462,7 @@ class AddOSC_ImportKS(bpy.types.Operator):
                         except:
                             t_arr.append([items.data_path,items.id])
                     else:
-                        t_dp.append([items.data_path,items.id])
+                        t_arr.append([items.data_path,items.id])
                     
                     
                   
@@ -534,24 +528,19 @@ def addosc_handler(scene):
             try:
                 bpy.context.window_manager.addosc_port_in  = int(text.lines[1].body)
             except:
-                print("AddOSC Error: Invalid port")
-                #error_device = True
+                pass
             try:
                 bpy.context.window_manager.addosc_port_out = int(text.lines[2].body)
             except:
-                print("AddOSC Error: Invalid port")
+                pass
             try:
                 bpy.context.window_manager.addosc_rate = int(text.lines[3].body) 
             except:
                 bpy.context.window_manager.addosc_rate = 10
-            try:
+            if text.lines[4].body != '':
                 bpy.context.window_manager.addosc_udp_in = text.lines[4].body 
-            except:
-                print("AddOSC Error: Invalid IP")
-            try:
+            if text.lines[5].body != '':
                 bpy.context.window_manager.addosc_udp_out = text.lines[5].body 
-            except:
-                print("AddOSC Error: Invalid IP")
             try:
                 bpy.context.window_manager.addosc_autorun = int(text.lines[6].body) 
             except:
