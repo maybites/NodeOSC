@@ -132,8 +132,10 @@ def BGE_OSC_callback(*args):
                     obj[prop]=args[1]    
     else:
         # for the script mode
-        bge.logic.osc_in[args[0]]=args[1:]
-
+        try:
+            bge.logic.osc_in[args[0]]=args[1:]
+        except:
+            pass
 # The server for receiving OSC messages 
 class Main:   
     def __init__(self):
