@@ -25,14 +25,13 @@
 # pbm not set to None du modal timer when opening a new blend file
 # Bool are not part of OSC 1.0 (only later as extension)
 # Deal with tupple (x,y,z) or (r,g,b) usr "type(key).__name__" for Vector, Euler, etc... 
-# See if list properties are a pbm
-# Monitoring in console keep saying rejected message despite none 
+# Monitoring in console report error "Improper..." due to Monitoring refresh hack overhead 
 
 
 bl_info = {
     "name": "AddOSC",
     "author": "JPfeP",
-    "version": (0, 15),
+    "version": (0, 16),
     "blender": (2, 6, 6),
     "location": "",
     "description": "Realtime control of Blender using OSC protocol",
@@ -71,8 +70,6 @@ from bpy.app.handlers import persistent
 _report= ["",""] #This for reporting OS network errors 
 
 
- 
-
 def OSC_callback(*args):
     fail = True   
     bpy.context.window_manager.addosc_lastaddr = args[0]
@@ -94,7 +91,7 @@ def OSC_callback(*args):
                     fail = False
             
                 except:
-                    if bpy.context.window_manager.addosc_monitor == True: 
+                    if bpy.context.window_manager.addosc_monitor == True:
                         print ("Improper content received: "+content+"for OSC route: "+args[0]+" and key: "+item.id)
                         
             #For normal properties
@@ -116,42 +113,8 @@ def OSC_callback(*args):
                 except:
                     if bpy.context.window_manager.addosc_monitor == True: 
                         print ("Improper content received: "+content+"for OSC route: "+args[0]+" and key: "+item.id)
-    
-    # lor list properties
-    '''
-    for item in bpy.context.scene.OSC_multi:
-        ob = eval(item.data_path)
-        
-        if item.address == args[0]:
-            #For ID custom properties (with brackets)
-            if item.id[0:2] == '["' and item.id[-2:] == '"]':
-                try:
-                    ob[item.id[2:-2]] = args[1:]
-                    fail = False
-            
-                except:
-                    if bpy.context.window_manager.addosc_monitor == True: 
-                        print ("Improper content received: "+content+"for OSC route: "+args[0]+" and key: "+item.id)
+                 
                         
-            #For normal properties
-            elif item.id[-1] == ']':
-                d_p = item.id[:-3]
-                idx = int(item.id[-2])
-                try:
-                    getattr(ob,d_p)[idx] = args[1]
-                    fail = False
-                except:
-                    if bpy.context.window_manager.addosc_monitor == True: 
-                        print ("Improper content received: "+content+"for OSC route: "+args[0]+" and key: "+item.id) 
-            else:
-                try:
-                    setattr(ob,item.id,args[1])
-                    fail = False
-                except:
-                    if bpy.context.window_manager.addosc_monitor == True: 
-                        print ("Improper content received: "+content+"for OSC route: "+args[0]+" and key: "+item.id)
-                
-    '''                        
     if bpy.context.window_manager.addosc_monitor == True and fail == True: 
         print("Rejected OSC message, route: "+args[0]+" , content: "+content)
 
@@ -202,13 +165,14 @@ def upd_setting_5():
 def upd_setting_6():
     upd_settings_sub(6)
     
-
+    
 class OSC_Reading_Sending(bpy.types.Operator):
     bl_idname = "addosc.modal_timer_operator"
     bl_label = "OSCMainThread"
     
     _timer = None 
     client = "" #for the sending socket
+    count = 0
     
     def upd_trick_addosc_monitor(self,context):
         upd_setting_0()
@@ -246,10 +210,23 @@ class OSC_Reading_Sending(bpy.types.Operator):
     #bpy.types.WindowManager.addosc_mode = bpy.props.EnumProperty(name = "import mode", items = modes_enum)
     
     def modal(self, context, event):
+         
         if context.window_manager.status == "Stopped" :
             return self.cancel(context)	  
        
         if event.type == 'TIMER':
+            #hack to refresh the GUI
+            bcw = bpy.context.window_manager
+            self.count = self.count + bcw.addosc_rate
+            if self.count >= 500:
+                self.count = 0
+                if bpy.context.window_manager.addosc_monitor == True:
+                    for window in bpy.context.window_manager.windows:
+                        screen = window.screen
+                        for area in screen.areas:
+                            if area.type == 'VIEW_3D':
+                                area.tag_redraw()
+            
             #Reception is no more done in the timer modal operator, see the handler 
 
             #Sending
@@ -259,12 +236,14 @@ class OSC_Reading_Sending(bpy.types.Operator):
                 else:
                     prop = eval(item.data_path+'.'+item.id)
                 
-                if str(prop) != item.value and item.idx == 0:
-                    msg = osc_message_builder.OscMessageBuilder(address=item.address)
-                    msg.add_arg(prop)
-                    msg = msg.build()
-                    self.client.send(msg)
-                    item.value = str(prop)    
+                if str(prop) != item.value: 
+                    item.value = str(prop)
+                    
+                    if item.idx == 0:
+                        msg = osc_message_builder.OscMessageBuilder(address=item.address)
+                        msg.add_arg(prop)
+                        msg = msg.build()
+                        self.client.send(msg)
    
         return {'PASS_THROUGH'}      
       
@@ -338,7 +317,7 @@ class OSC_UI_Panel2(bpy.types.Panel):
     bl_region_type = "TOOLS"
     bl_category = "AddOSC"
         
-    def draw(self, context):    
+    def draw(self, context):
         layout = self.layout
         row = layout.row(align=False)
         row.prop(bpy.context.scene, 'addosc_defaultaddr', text="Default Address")
@@ -363,12 +342,16 @@ class OSC_UI_Panel2(bpy.types.Panel):
             col.prop(item, 'address')
             col2 = split.column()
             row4 = col2.row(align=True)
-            row4.prop(item,'id',text='Prop')
+            row4.prop(item,'id',text='')
             row4.label(text="("+item.osc_type+")")            
-            col2.operator("addosc.pick", text='Pick').i_addr = item.address
+
+            row5 = col2.row(align=True)
+            row5.operator("addosc.pick", text='Pick').i_addr = item.address
+            row5.prop(item, 'idx', text='Index')
+            
             if bpy.context.window_manager.addosc_monitor == True:
                 col.prop(item, 'value')
-                col2.prop(item, 'idx', text='Index')
+                
       
             
 class StartUDP(bpy.types.Operator):
@@ -405,38 +388,6 @@ class StopUDP(bpy.types.Operator):
         return{'FINISHED'}
 
 
-class Multi_add(bpy.types.Operator):
-    bl_idname = "addosc.multi_add"
-    bl_label = "Add a list OSC item"
-    
-    class SceneMultiItem(bpy.types.PropertyGroup):
-        #key_path = bpy.props.StringProperty(name="Key", default="Unknown")
-        address = bpy.props.StringProperty(name="Address", default="")
-        data_path = bpy.props.StringProperty(name="Data path", default="")
-        id = bpy.props.StringProperty(name="ID", default="")
-        osc_type = bpy.props.StringProperty(name="Type", default="Unknown")
-        value = bpy.props.StringProperty(name="Value", default="Unknown")
-    bpy.utils.register_class(SceneMultiItem)  
-    
-    bpy.types.Scene.OSC_multi = bpy.props.CollectionProperty(type=SceneMultiItem)
- 
-    def execute(self, context):
-        item = bpy.context.scene.OSC_multi.add()
-        
-        return{'FINISHED'}
-    
-
-class Multi_remove(bpy.types.Operator):
-    bl_idname = "addosc.multi_remove"
-    bl_label = "Remove a list OSC item"
-    
-    i_rank = bpy.props.IntProperty()  
-    
-    def execute(self, context):
-        bpy.context.scene.OSC_multi.remove(self.i_rank)
-        return{'FINISHED'}
-    
-
 class PickOSCaddress(bpy.types.Operator):
     bl_idname = "addosc.pick"
     bl_label = "Pick the last event OSC address"
@@ -453,21 +404,6 @@ class PickOSCaddress(bpy.types.Operator):
                     item.address = last_event
         return{'FINISHED'}
     
-class PickOSCaddressmulti(bpy.types.Operator):
-    bl_idname = "addosc.pick_multi"
-    bl_label = "Pick the last event OSC address"
-    bl_options = {'UNDO'}
-    bl_description ="Pick the address of the last OSC message received"
-   
-    i_addr = bpy.props.StringProperty()  
- 
-    def execute(self, context):
-        last_event = bpy.context.window_manager.addosc_lastaddr
-        if len(last_event) > 1 and last_event[0] == "/": 
-            for item in bpy.context.scene.OSC_multi:
-                if item.address == self.i_addr :
-                    item.address = last_event
-        return{'FINISHED'}    
 
 def parse_ks(item):
     dp = item.data_path
@@ -492,6 +428,7 @@ def parse_ks(item):
         prop = full_p.split('.')[-1]
     
     return full_p, path, prop
+    
     
 class AddOSC_ImportKS(bpy.types.Operator):
     bl_idname = "addosc.importks"  
@@ -527,20 +464,8 @@ class AddOSC_ImportKS(bpy.types.Operator):
             for items in ks.paths:               
                 if str(items.id) != "None":     #workaround to avoid bad ID Block (Nodes)
                     
-                    #test
-                    #print(parse_ks(items))
                     tvar_ev,path,prop = parse_ks(items)
-                    #This is for ID properties that have brackets
-                    '''
-                    if items.data_path[0:2] == '["' and items.data_path[-2:] == '"]':
-                        tvar = repr(items.id)[9:] + items.data_path
-                    else:
-                        tvar = repr(items.id)[9:] + "." + items.data_path            
-                    
-                    #ready to be used:
-                    tvar_ev = "bpy.data." + tvar
-                    '''
-                    
+               
                     
                     '''
                     tvar = repr(items.id)[9:] + "." + items.data_path
