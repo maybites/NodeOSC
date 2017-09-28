@@ -31,7 +31,7 @@
 bl_info = {
     "name": "AddOSC",
     "author": "JPfeP",
-    "version": (0, 16),
+    "version": (0, 17),
     "blender": (2, 6, 6),
     "location": "",
     "description": "Realtime control of Blender using OSC protocol",
@@ -42,6 +42,7 @@ bl_info = {
 
 import bpy
 import sys
+import json
 from select import select
 from bpy.utils import register_module, unregister_module
 import socket
@@ -164,8 +165,70 @@ def upd_setting_5():
     
 def upd_setting_6():
     upd_settings_sub(6)
+
+def osc_export_config(scene):
+    config_table = {};
+    for osc_item in scene.OSC_keys:
+        config_table[osc_item.address] = {
+            "data_path" : osc_item.data_path,
+            "id" : osc_item.id,
+            "osc_type" : osc_item.osc_type
+        };
     
-    
+    return json.dumps(config_table);
+
+class OSC_Export(bpy.types.Operator):
+    """Export the current OSC configuration to a file in JSON format"""
+    bl_idname = "addosc.export"
+    bl_label = "Export Config"
+
+    filepath = bpy.props.StringProperty(subtype="FILE_PATH")
+
+    @classmethod
+    def poll(cls, context):
+        return context.object is not None
+
+    def execute(self, context):
+        file = open(self.filepath, 'w')
+        file.write(osc_export_config(context.scene))
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+def osc_import_config(scene, config_file):
+    config_table = json.load(config_file);
+    for address, values in config_table.items():
+        print(address)
+        print(values)
+        item = scene.OSC_keys.add()
+        item.address = address;
+        item.data_path = values["data_path"];
+        item.id = values["id"];
+        item.osc_type = values["osc_type"];
+
+class OSC_Import(bpy.types.Operator):
+    """Import OSC configuration from a file in JSON format"""
+    bl_idname = "addosc.import"
+    bl_label = "Import Config"
+
+    filepath = bpy.props.StringProperty(subtype="FILE_PATH")
+
+    @classmethod
+    def poll(cls, context):
+        return context.object is not None
+
+    def execute(self, context):
+        context.scene.OSC_keys.clear() 
+        config_file = open(self.filepath, 'r')
+        osc_import_config(context.scene, config_file)
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
 class OSC_Reading_Sending(bpy.types.Operator):
     bl_idname = "addosc.modal_timer_operator"
     bl_label = "OSCMainThread"
@@ -331,6 +394,9 @@ class OSC_UI_Panel2(bpy.types.Panel):
                 
         layout.separator()
         layout.operator("addosc.importks", text='Import Keying Set')
+        row = layout.row(align=True)
+        row.operator("addosc.export", text='Export OSC Config')
+        row.operator("addosc.import", text='Import OSC Config')
         
         layout.separator()
         layout.label(text="Imported Keys:")
@@ -608,6 +674,3 @@ def unregister():
  
 if __name__ == "__main__": 
     register()
- 
- 
-
