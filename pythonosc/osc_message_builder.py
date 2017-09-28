@@ -1,11 +1,5 @@
 """Build OSC messages for client applications."""
 
-try:
-    import builtins
-except ImportError:
-    # for python 2.x
-    import __builtin__ as builtins
-
 from pythonosc import osc_message
 from pythonosc.parsing import osc_types
 
@@ -21,11 +15,12 @@ class OscMessageBuilder(object):
   ARG_TYPE_INT = "i"
   ARG_TYPE_STRING = "s"
   ARG_TYPE_BLOB = "b"
+  ARG_TYPE_RGBA = "r"
   ARG_TYPE_TRUE = "T"
   ARG_TYPE_FALSE = "F"
 
   _SUPPORTED_ARG_TYPES = (
-      ARG_TYPE_FLOAT, ARG_TYPE_INT, ARG_TYPE_BLOB, ARG_TYPE_STRING, ARG_TYPE_TRUE, ARG_TYPE_FALSE)
+      ARG_TYPE_FLOAT, ARG_TYPE_INT, ARG_TYPE_BLOB, ARG_TYPE_STRING, ARG_TYPE_RGBA, ARG_TYPE_TRUE, ARG_TYPE_FALSE)
 
   def __init__(self, address=None):
     """Initialize a new builder for a message.
@@ -65,19 +60,20 @@ class OscMessageBuilder(object):
       raise ValueError(
           'arg_type must be one of {}'.format(self._SUPPORTED_ARG_TYPES))
     if not arg_type:
-      builtin_type = type(arg_value)
-      if builtin_type == builtins.str:
+      if isinstance(arg_value, str):
         arg_type = self.ARG_TYPE_STRING
-      elif builtin_type == builtins.bytes:
+      elif isinstance(arg_value, bytes):
         arg_type = self.ARG_TYPE_BLOB
-      elif builtin_type == builtins.int:
+      elif isinstance(arg_value, int):
         arg_type = self.ARG_TYPE_INT
-      elif builtin_type == builtins.float:
+      elif isinstance(arg_value, float):
         arg_type = self.ARG_TYPE_FLOAT
-      elif builtin_type == builtins.bool and arg_value:
+      elif arg_value == True:
         arg_type = self.ARG_TYPE_TRUE
-      elif builtin_type == builtins.bool and not arg_value:
+      elif arg_value == False:
         arg_type = self.ARG_TYPE_FALSE
+      else:
+        raise ValueError('Infered arg_value type is not supported')
     self._args.append((arg_type, arg_value))
 
   def build(self):
@@ -97,6 +93,7 @@ class OscMessageBuilder(object):
       # Write the address.
       dgram += osc_types.write_string(self._address)
       if not self._args:
+        dgram += osc_types.write_string(',')
         return osc_message.OscMessage(dgram)
 
       # Write the parameters.
@@ -111,6 +108,8 @@ class OscMessageBuilder(object):
           dgram += osc_types.write_float(value)
         elif arg_type == self.ARG_TYPE_BLOB:
           dgram += osc_types.write_blob(value)
+        elif arg_type == self.ARG_TYPE_RGBA:
+          dgram += osc_types.write_rgba(value)
         elif arg_type == self.ARG_TYPE_TRUE or arg_type == self.ARG_TYPE_FALSE:
           continue
         else:

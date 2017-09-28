@@ -226,10 +226,8 @@ def get_date(dgram, start_index):
     raise ParseError('Datagram is too short')
   num_secs, start_index = get_int(dgram, start_index)
   fraction, start_index = get_int(dgram, start_index)
-  # Get a decimal representation from those two values.
-  dec = decimal.Decimal(str(num_secs) + '.' + str(fraction))
-  # And convert it to float simply.
-  system_time = float(dec)
+  # Sum seconds and fraction of second:
+  system_time = num_secs + (fraction / ntp.FRACTIONAL_CONVERSION)
   return ntp.ntp_to_system_time(system_time), start_index
 
 
@@ -241,3 +239,39 @@ def write_date(system_time):
     return ntp.system_time_to_ntp(system_time)
   except ntp.NtpError as ntpe:
     raise BuildError(ntpe)
+
+
+def write_rgba(val):
+  """Returns the datagram for the given rgba32 parameter value
+
+  Raises:
+    - BuildError if the int could not be converted.
+  """
+  try:
+    return struct.pack('>I', val)
+  except struct.error as e:
+    raise BuildError('Wrong argument value passed: {}'.format(e))
+
+
+def get_rgba(dgram, start_index):
+  """Get an rgba32 integer from the datagram.
+
+  Args:
+    dgram: A datagram packet.
+    start_index: An index where the integer starts in the datagram.
+
+  Returns:
+    A tuple containing the integer and the new end index.
+
+  Raises:
+    ParseError if the datagram could not be parsed.
+  """
+  try:
+    if len(dgram[start_index:]) < _INT_DGRAM_LEN:
+      raise ParseError('Datagram is too short')
+    return (
+        struct.unpack('>I',
+                      dgram[start_index:start_index + _INT_DGRAM_LEN])[0],
+        start_index + _INT_DGRAM_LEN)
+  except (struct.error, TypeError) as e:
+    raise ParseError('Could not parse datagram %s' % e)

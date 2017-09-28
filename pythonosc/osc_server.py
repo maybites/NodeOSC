@@ -31,7 +31,7 @@ loop.run_forever()
 """
 
 import asyncio
-import calendar
+import os
 import socketserver
 import time
 
@@ -59,7 +59,7 @@ def _call_handlers_for_packet(data, dispatcher):
   try:
     packet = osc_packet.OscPacket(data)
     for timed_msg in packet.messages:
-      now = calendar.timegm(time.gmtime())
+      now = time.time()
       handlers = dispatcher.handlers_for_address(
           timed_msg.message.address)
       if not handlers:
@@ -134,13 +134,14 @@ class ThreadingOSCUDPServer(socketserver.ThreadingMixIn, OSCUDPServer):
   """
 
 
-class ForkingOSCUDPServer(socketserver.ForkingMixIn, OSCUDPServer):
-  """Forking version of the OSC UDP server.
+if hasattr(os, "fork"):
+  class ForkingOSCUDPServer(socketserver.ForkingMixIn, OSCUDPServer):
+    """Forking version of the OSC UDP server.
 
-  Each message will be handled in its own new process.
-  Use this when heavyweight operations are done by each message handlers
-  and forking a whole new process for each of them is worth it.
-  """
+    Each message will be handled in its own new process.
+    Use this when heavyweight operations are done by each message handlers
+    and forking a whole new process for each of them is worth it.
+    """
 
 
 class AsyncIOOSCUDPServer():
