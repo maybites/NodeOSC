@@ -33,7 +33,7 @@
 bl_info = {
     "name": "AddOSC",
     "author": "JPfeP",
-    "version": (0, 18),
+    "version": (0, 19),
     "blender": (2, 6, 6),
     "location": "",
     "description": "Realtime control of Blender using OSC protocol",
@@ -49,6 +49,7 @@ from select import select
 from bpy.utils import register_module, unregister_module
 import socket
 import errno
+import mathutils
 from math import radians
 from bpy.props import *
 
@@ -301,8 +302,8 @@ class OSC_Reading_Sending(bpy.types.Operator):
                 else:
                     prop = eval(item.data_path+'.'+item.id)
                 
-                if type(prop) == Vector:
-                    prop = list(Vector);
+                if isinstance(prop, mathutils.Vector):
+                    prop = list(prop);
                 
                 if str(prop) != item.value: 
                     item.value = str(prop)
@@ -454,7 +455,6 @@ class StopUDP(bpy.types.Operator):
     bl_description ="Stop the OSC engine"
  
     def execute(self, context):
-        self.server.shutdown()
         self.report({'INFO'}, "Disconnected !")
         bpy.context.window_manager.status = "Stopped"
         return{'FINISHED'}
@@ -482,9 +482,9 @@ def parse_ks(item):
     ID = repr(item.id)
     
     #custom prop:
-    if dp[0] == '[' and dp[-1] == ']':
+    if dp[-1] == ']':
         #it's a simple datapath like ['plop']
-        if  :
+        if dp[0] == '[' :
             full_p = ID + dp
             path = ID 
             prop = dp
