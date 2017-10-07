@@ -77,9 +77,8 @@ _report= ["",""] #This for reporting OS network errors
 def OSC_callback(*args):
     fail = True   
     bpy.context.window_manager.addosc_lastaddr = args[0]
-    content=""
-    for i in args[1:]:
-        content += str(i)+" "
+    #content = str(args[1:])
+    content = str(args);
     bpy.context.window_manager.addosc_lastpayload = content
     
     # for simple properties
@@ -112,8 +111,12 @@ def OSC_callback(*args):
             #without index in brackets
             else:
                 try:
-                    setattr(ob,item.id,args[idx])
-                    fail = False
+                    if isinstance(getattr(ob, item.id), mathutils.Vector):
+                        getattr(ob, item.id)[:] = args[1:];
+                    else:
+                        setattr(ob,item.id,args[idx])
+
+                    fail = False  
                 except:
                     if bpy.context.window_manager.addosc_monitor == True: 
                         print ("Improper content received: "+content+"for OSC route: "+args[0]+" and key: "+item.id)
