@@ -2,6 +2,8 @@
 #
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
+#    Copyright (C) 2017  AG6GR <https://github.com/AG6GR/>
+#    
 #    Copyright (C) 2015  JPfeP <http://www.jpfep.net/>
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -31,7 +33,7 @@
 bl_info = {
     "name": "AddOSC",
     "author": "JPfeP",
-    "version": (0, 17),
+    "version": (0, 18),
     "blender": (2, 6, 6),
     "location": "",
     "description": "Realtime control of Blender using OSC protocol",
@@ -299,6 +301,9 @@ class OSC_Reading_Sending(bpy.types.Operator):
                 else:
                     prop = eval(item.data_path+'.'+item.id)
                 
+                if type(prop) == Vector:
+                    prop = list(Vector);
+                
                 if str(prop) != item.value: 
                     item.value = str(prop)
                     
@@ -449,6 +454,7 @@ class StopUDP(bpy.types.Operator):
     bl_description ="Stop the OSC engine"
  
     def execute(self, context):
+        self.server.shutdown()
         self.report({'INFO'}, "Disconnected !")
         bpy.context.window_manager.status = "Stopped"
         return{'FINISHED'}
@@ -476,9 +482,9 @@ def parse_ks(item):
     ID = repr(item.id)
     
     #custom prop:
-    if dp[-1] == ']':
+    if dp[0] == '[' and dp[-1] == ']':
         #it's a simple datapath like ['plop']
-        if dp[0] == '[' :
+        if  :
             full_p = ID + dp
             path = ID 
             prop = dp
@@ -531,30 +537,8 @@ class AddOSC_ImportKS(bpy.types.Operator):
                 if str(items.id) != "None":     #workaround to avoid bad ID Block (Nodes)
                     
                     tvar_ev,path,prop = parse_ks(items)
-               
-                    
-                    '''
-                    tvar = repr(items.id)[9:] + "." + items.data_path
-                    tvar_ev = "bpy.data." + tvar
-                    
-                    if str(eval(tvar_ev)).find("Vector") != -1 or str(eval(tvar_ev)).find("Euler")  != -1 :  #Pour traiter le cas des Vectors
-                        tvar2 += tvar+".x "
-                        tvar2 += tvar+".y "
-                        tvar2 += tvar+".z "
-                    elif str(eval(tvar_ev)).find("Quaternion") != -1 :
-                        tvar2 += tvar+".w "
-                        tvar2 += tvar+".x "
-                        tvar2 += tvar+".y "
-                        tvar2 += tvar+".z "   
-                    elif str(eval(tvar_ev)).find("Color") != -1 :    
-                        tvar2 += tvar+".r "
-                        tvar2 += tvar+".g "
-                        tvar2 += tvar+".b "
-                    else:
-                        tvar2 = tvar
-                    '''
-                    
-                    #Let's break tupple properties into several ones
+
+                    #Let's break tuple properties into several ones
                     if repr(type(eval(tvar_ev)))!="<class 'str'>":
                         
                         try:
@@ -575,7 +559,7 @@ class AddOSC_ImportKS(bpy.types.Operator):
                     
                   
                 else:
-                    self.report({'INFO'}, "Missing ID block !")
+                    self.report({'ERROR'}, "Missing ID block !")
                 
                 
             #what is the highest ID number ?
