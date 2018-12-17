@@ -4,21 +4,6 @@
       "id":"location[0]",
       "osc_type":"float"
    },
-   "/blender/rotation/angle_1":{
-      "data_path":"bpy.data.objects['Cube']",
-      "id":"rotation_euler[0]",
-      "osc_type":"float"
-   },
-   "/blender/rotation/angle_2":{
-      "data_path":"bpy.data.objects['Cube']",
-      "id":"rotation_euler[1]",
-      "osc_type":"float"
-   },
-   "/blender/rotation/angle_3":{
-      "data_path":"bpy.data.objects['Cube']",
-      "id":"rotation_euler[2]",
-      "osc_type":"float"
-   },
    "/blender/y":{
       "data_path":"bpy.data.objects['Cube']",
       "id":"location[1]",
@@ -29,7 +14,7 @@
       "id":"location[2]",
       "osc_type":"float"
    },
-   "/blender/location":{  
+   "/blender/location":{
       "data_path":"bpy.data.objects['Cube']",
       "id":"location",
       "osc_type":"[f, f, f]"

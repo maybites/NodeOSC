@@ -80,8 +80,10 @@ def OSC_callback(*args):
     bpy.context.window_manager.addosc_lastaddr = args[0]
     #content = str(args[1:])
     content = str(args);
+    #print(args)
     bpy.context.window_manager.addosc_lastpayload = content
 
+    #print ("content received: "+content+"for OSC route: "+args[0])
     # for simple properties
     for item in bpy.context.scene.OSC_keys:
         ob = eval(item.data_path)
@@ -113,6 +115,8 @@ def OSC_callback(*args):
             else:
                 try:
                     if isinstance(getattr(ob, item.id), mathutils.Vector):
+                        getattr(ob, item.id)[:] = args[1:];
+                    if isinstance(getattr(ob, item.id), mathutils.Quaternion):
                         getattr(ob, item.id)[:] = args[1:];
                     else:
                         setattr(ob,item.id,args[idx])
@@ -302,6 +306,7 @@ class OSC_Reading_Sending(bpy.types.Operator):
 
             #Sending
             for item in bpy.context.scene.OSC_keys:
+                #print( "sending  :{}".format(item) )
                 if item.id[0:2] == '["' and item.id[-2:] == '"]':
                     prop = eval(item.data_path+item.id)
                 else:
@@ -310,11 +315,15 @@ class OSC_Reading_Sending(bpy.types.Operator):
                 if isinstance(prop, mathutils.Vector):
                     prop = list(prop);
 
+                if isinstance(prop, mathutils.Quaternion):
+                    prop = list(prop);
+
                 if str(prop) != item.value:
                     item.value = str(prop)
 
                     if item.idx == 0:
                         msg = osc_message_builder.OscMessageBuilder(address=item.address)
+                        #print( "sending prop :{}".format(prop) )
                         msg.add_arg(prop)
                         msg = msg.build()
                         self.client.send(msg)
