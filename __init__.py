@@ -323,8 +323,12 @@ class OSC_Reading_Sending(bpy.types.Operator):
 
                     if item.idx == 0:
                         msg = osc_message_builder.OscMessageBuilder(address=item.address)
-                        #print( "sending prop :{}".format(prop) )
-                        msg.add_arg(prop)
+                        print( "sending prop :{}".format(prop) )
+                        if isinstance(prop, list):
+                            for argum in prop:
+                                msg.add_arg(argum)
+                        else:
+                            msg.add_arg(prop)
                         msg = msg.build()
                         self.client.send(msg)
 
