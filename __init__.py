@@ -81,21 +81,23 @@ _report= ["",""] #This for reporting OS network errors
 
 def OSC_callback(*args):
     fail = True
-    bpy.context.window_manager.addosc_lastaddr = args[0]
-    #content = str(args[1:])
-    content = str(args);
-    #print(args)
-    bpy.context.window_manager.addosc_lastpayload = content
-    #print ("content received: "+content+"for OSC route: "+args[0])
+    if bpy.context.window_manager.addosc_monitor == True:
+        bpy.context.window_manager.addosc_lastaddr = args[0]
+        #content = str(args[1:])
+        content = str(args);
+        #print(args)
+        bpy.context.window_manager.addosc_lastpayload = content
+        #print ("content received: "+content+"for OSC route: "+args[0])
     # for simple properties
     for item in bpy.context.scene.OSC_keys:
-        ob = eval(item.data_path)
-        idx = 1 + item.idx
-        #print ("osc_type received: "+str(item.osc_type))
-        #print ("ob received: "+str(ob))
-        #print ("idx received: " + str(idx))
 
         if item.address == args[0]:
+            ob = eval(item.data_path)
+            idx = 1 + item.idx
+            #print ("osc_type received: "+str(item.osc_type))
+            #print ("ob received: "+str(ob))
+            #print ("idx received: " + str(idx))
+            
             #For ID custom properties (with brackets)
             if item.id[0:2] == '["' and item.id[-2:] == '"]':
                 try:
@@ -377,7 +379,9 @@ class OSC_Reading_Sending(bpy.types.Operator):
         #Setting up the dispatcher for receiving
         try:
             self.dispatcher = dispatcher.Dispatcher()
-            self.dispatcher.set_default_handler(OSC_callback)
+            for item in bpy.context.scene.OSC_keys:
+                self.dispatcher.map(item.address, OSC_callback)
+            # self.dispatcher.set_default_handler(OSC_callback)
             self.server = osc_server.ThreadingOSCUDPServer((bcw.addosc_udp_in, bcw.addosc_port_in), self.dispatcher)
             self.server_thread = threading.Thread(target=self.server.serve_forever)
             self.server_thread.start()
