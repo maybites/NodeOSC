@@ -29,14 +29,14 @@
       "id":"location[2]",
       "osc_type":"float"
    },
-   "/blender/location":{  
+   "/skeleton/Avatar2/bone/1/position":{  
       "data_path":"bpy.data.objects['Cube']",
       "id":"location",
-      "osc_type":"[f, f, f]"
+      "osc_type":"(1, 2, 3)"
    },
-   "/blender/quaternion":{
+   "/skeleton/Avatar2/bone/1/quat":{
       "data_path":"bpy.data.objects['Cube']",
       "id":"rotation_quaternion",
-      "osc_type":"[f, f, f, f]"
+      "osc_type":"(4, 1, 2, 3)"
    }
 }

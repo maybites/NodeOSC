@@ -22,6 +22,6 @@
    "/blender/quaternion":{
       "data_path":"bpy.data.objects['Cube']",
       "id":"rotation_quaternion",
-      "osc_type":"[f, f, f, f]"
+      "osc_type":"[f1, f2, f3, f4]"
    }
 }

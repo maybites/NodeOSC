@@ -53,6 +53,7 @@ import errno
 import mathutils
 from math import radians
 from bpy.props import *
+from ast import literal_eval as make_tuple
 
 import os
 script_file = os.path.realpath(__file__)
@@ -74,6 +75,9 @@ from bpy.app.handlers import persistent
 
 _report= ["",""] #This for reporting OS network errors
 
+#######################################
+#  OSC Receive Method                 #
+#######################################
 
 def OSC_callback(*args):
     fail = True
@@ -82,12 +86,14 @@ def OSC_callback(*args):
     content = str(args);
     #print(args)
     bpy.context.window_manager.addosc_lastpayload = content
-
     #print ("content received: "+content+"for OSC route: "+args[0])
     # for simple properties
     for item in bpy.context.scene.OSC_keys:
         ob = eval(item.data_path)
         idx = 1 + item.idx
+        #print ("osc_type received: "+str(item.osc_type))
+        #print ("ob received: "+str(ob))
+        #print ("idx received: " + str(idx))
 
         if item.address == args[0]:
             #For ID custom properties (with brackets)
@@ -114,10 +120,14 @@ def OSC_callback(*args):
             #without index in brackets
             else:
                 try:
+                    valuelist = list()
+                    myNewTuple = make_tuple(item.osc_type)
+                    for val in myNewTuple:
+                        valuelist.append(args[val])
                     if isinstance(getattr(ob, item.id), mathutils.Vector):
-                        getattr(ob, item.id)[:] = args[1:];
+                        getattr(ob, item.id)[:] = valuelist;
                     if isinstance(getattr(ob, item.id), mathutils.Quaternion):
-                        getattr(ob, item.id)[:] = args[1:];
+                        getattr(ob, item.id)[:] = valuelist;
                     else:
                         setattr(ob,item.id,args[idx])
 
@@ -125,8 +135,7 @@ def OSC_callback(*args):
                 except:
                     if bpy.context.window_manager.addosc_monitor == True:
                         print ("Improper content received: "+content+"for OSC route: "+args[0]+" and key: "+item.id)
-
-
+ 
     if bpy.context.window_manager.addosc_monitor == True and fail == True:
         print("Rejected OSC message, route: "+args[0]+" , content: "+content)
 
@@ -188,6 +197,10 @@ def osc_export_config(scene):
 
     return json.dumps(config_table);
 
+#######################################
+#  Export OSC Settings                #
+#######################################
+
 class OSC_Export(bpy.types.Operator):
     """Export the current OSC configuration to a file in JSON format"""
     bl_idname = "addosc.export"
@@ -219,6 +232,10 @@ def osc_import_config(scene, config_file):
         item.id = values["id"];
         item.osc_type = values["osc_type"];
 
+#######################################
+#  Import OSC Settings                #
+#######################################
+
 class OSC_Import(bpy.types.Operator):
     """Import OSC configuration from a file in JSON format"""
     bl_idname = "addosc.import"
@@ -240,6 +257,9 @@ class OSC_Import(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
+#######################################
+#  Setup OSC                          #
+#######################################
 
 class OSC_Reading_Sending(bpy.types.Operator):
     bl_idname = "addosc.modal_timer_operator"
@@ -284,9 +304,13 @@ class OSC_Reading_Sending(bpy.types.Operator):
     #modes_enum = [('Replace','Replace','Replace'),('Update','Update','Update')]
     #bpy.types.WindowManager.addosc_mode = bpy.props.EnumProperty(name = "import mode", items = modes_enum)
 
+    #######################################
+    #  Sending OSC                        #
+    #######################################
+
     def modal(self, context, event):
 
-        if context.window_manager.status == "Stopped" :
+        if context.window_manager.status == "Stopped":
             return self.cancel(context)
 
         if event.type == 'TIMER':
@@ -301,8 +325,6 @@ class OSC_Reading_Sending(bpy.types.Operator):
                         for area in screen.areas:
                             if area.type == 'VIEW_3D':
                                 area.tag_redraw()
-
-            #Reception is no more done in the timer modal operator, see the handler
 
             #Sending
             for item in bpy.context.scene.OSC_keys:
@@ -323,7 +345,7 @@ class OSC_Reading_Sending(bpy.types.Operator):
 
                     if item.idx == 0:
                         msg = osc_message_builder.OscMessageBuilder(address=item.address)
-                        print( "sending prop :{}".format(prop) )
+                        #print( "sending prop :{}".format(prop) )
                         if isinstance(prop, list):
                             for argum in prop:
                                 msg.add_arg(argum)
@@ -331,8 +353,11 @@ class OSC_Reading_Sending(bpy.types.Operator):
                             msg.add_arg(prop)
                         msg = msg.build()
                         self.client.send(msg)
-
         return {'PASS_THROUGH'}
+
+    #######################################
+    #  Setup OSC Receiver and Sender      #
+    #######################################
 
     def execute(self, context):
         global _report
@@ -374,6 +399,9 @@ class OSC_Reading_Sending(bpy.types.Operator):
         context.window_manager.status = "Stopped"
         return {'CANCELLED'}
 
+#######################################
+#  MAIN GUI PANEL                     #
+#######################################
 
 class OSC_UI_Panel(bpy.types.Panel):
     bl_label = "AddOSC Settings"
@@ -396,6 +424,10 @@ class OSC_UI_Panel(bpy.types.Panel):
         row2.prop(bpy.context.window_manager, 'addosc_port_out', text="Outport port")
         layout.prop(bpy.context.window_manager, 'addosc_rate', text="Update rate(ms)")
         layout.prop(bpy.context.window_manager, 'addosc_autorun', text="Start at Launch")
+
+#######################################
+#  OPERATIONS GUI PANEL               #
+#######################################
 
 class OSC_UI_Panel2(bpy.types.Panel):
     bl_label = "AddOSC Operations"
