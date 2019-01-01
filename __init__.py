@@ -61,6 +61,9 @@ directory = os.path.dirname(script_file)
 if directory not in sys.path:
    sys.path.append(directory)
 
+sys.path.append("pyliblo")
+import liblo
+
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
 from pythonosc import osc_bundle
@@ -79,7 +82,14 @@ _report= ["",""] #This for reporting OS network errors
 #  OSC Receive Method                 #
 #######################################
 
-def OSC_callback(*args):
+def foo_cb(path, args, types):
+    print("foo_cb():")
+    for a, t in zip(args, types):
+        print("received argument %s of type %s" % (a, t))
+ 
+
+
+def OSC_callback(path, args, types):
     fail = True
     if bpy.context.window_manager.addosc_monitor == True:
         bpy.context.window_manager.addosc_lastaddr = args[0]
@@ -91,9 +101,9 @@ def OSC_callback(*args):
     # for simple properties
     for item in bpy.context.scene.OSC_keys:
 
-        if item.address == args[0]:
+        if item.address == path:
             ob = eval(item.data_path)
-            idx = 1 + item.idx
+            idx = item.idx
             #print ("osc_type received: "+str(item.osc_type))
             #print ("ob received: "+str(ob))
             #print ("idx received: " + str(idx))
@@ -125,7 +135,7 @@ def OSC_callback(*args):
                     valuelist = list()
                     myNewTuple = make_tuple(item.osc_type)
                     for val in myNewTuple:
-                        valuelist.append(args[val])
+                        valuelist.append(args[val - 1])
                     if isinstance(getattr(ob, item.id), mathutils.Vector):
                         getattr(ob, item.id)[:] = valuelist;
                     if isinstance(getattr(ob, item.id), mathutils.Quaternion):
@@ -137,10 +147,10 @@ def OSC_callback(*args):
                 except:
                     if bpy.context.window_manager.addosc_monitor == True:
                         print ("Improper content received: "+content+"for OSC route: "+args[0]+" and key: "+item.id)
- 
+
     if bpy.context.window_manager.addosc_monitor == True and fail == True:
         print("Rejected OSC message, route: "+args[0]+" , content: "+content)
-
+    
 #For saving/restoring settings in the blendfile
 def upd_settings_sub(n):
     text_settings = None
@@ -311,10 +321,10 @@ class OSC_Reading_Sending(bpy.types.Operator):
     #######################################
 
     def modal(self, context, event):
-
         if context.window_manager.status == "Stopped":
             return self.cancel(context)
 
+        """
         if event.type == 'TIMER':
             #hack to refresh the GUI
             bcw = bpy.context.window_manager
@@ -356,6 +366,7 @@ class OSC_Reading_Sending(bpy.types.Operator):
                         msg = msg.build()
                         self.client.send(msg)
         return {'PASS_THROUGH'}
+        """
 
     #######################################
     #  Setup OSC Receiver and Sender      #
@@ -366,6 +377,7 @@ class OSC_Reading_Sending(bpy.types.Operator):
         bcw = bpy.context.window_manager
 
         #For sending
+        """
         try:
             self.client = udp_client.UDPClient(bcw.addosc_udp_out, bcw.addosc_port_out)
             msg = osc_message_builder.OscMessageBuilder(address="/blender")
@@ -375,31 +387,39 @@ class OSC_Reading_Sending(bpy.types.Operator):
         except OSError as err:
             _report[1] = err
             return {'CANCELLED'}
+        """
 
         #Setting up the dispatcher for receiving
         try:
-            self.dispatcher = dispatcher.Dispatcher()
+            self.st = liblo.ServerThread(bcw.addosc_port_in)
+            print("Created Server Thread on Port", self.st.port)
             for item in bpy.context.scene.OSC_keys:
-                self.dispatcher.map(item.address, OSC_callback)
-            # self.dispatcher.set_default_handler(OSC_callback)
-            self.server = osc_server.ThreadingOSCUDPServer((bcw.addosc_udp_in, bcw.addosc_port_in), self.dispatcher)
-            self.server_thread = threading.Thread(target=self.server.serve_forever)
-            self.server_thread.start()
+                self.st.add_method(item.address, None, OSC_callback)
+            #self.st.add_method('/skeleton/Avatar2/bone/1/position', None, OSC_callback)
+            print("self.st.start():")
+            self.st.start()
+
+            #self.server = osc_server.ThreadingOSCUDPServer((bcw.addosc_udp_in, bcw.addosc_port_in), self.dispatcher)
+            #self.server_thread = threading.Thread(target=self.server.serve_forever)
+            #self.server_thread.start()
         except OSError as err:
             _report[0] = err
             return {'CANCELLED'}
 
 
         #inititate the modal timer thread
-        context.window_manager.modal_handler_add(self)
-        self._timer = context.window_manager.event_timer_add(bcw.addosc_rate/1000, window = context.window)
+        #context.window_manager.modal_handler_add(self)
+        #self._timer = context.window_manager.event_timer_add(bcw.addosc_rate/1000, window = context.window)
         context.window_manager.status = "Running"
 
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
-        context.window_manager.event_timer_remove(self._timer)
-        self.server.shutdown()
+        #context.window_manager.event_timer_remove(self._timer)
+        print("self.st.free():")
+        self.st.free()
+        self.st.stop()
+        #self.server.shutdown()
         context.window_manager.status = "Stopped"
         return {'CANCELLED'}
 

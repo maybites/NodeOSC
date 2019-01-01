@@ -1,0 +1,26 @@
+.TH send_osc 1
+
+.SH NAME
+send_osc \- Sends a single OSC message
+
+.SH SYNOPSIS
+.B send_osc
+\fIport\fP \fIpath\fP [,\fItypes\fP] [\fIargs\fP...]
+
+.SH DESCRIPTION
+.B send_osc
+sends an OSC message to the specified \fIport\fP (UDP port number, or any
+other address string supported by liblo).
+The message is delivered to \fIpath\fP.
+If the first argument following the path starts with a comma, it's interpreted
+as a type string, specifying the OSC data types to be used for sending the
+message arguments.
+Otherwise, send_osc automatically tries to use appropriate data types.
+Valid integer and float values are sent as such, anything else is sent as a
+string.
+
+.SH AUTHOR
+Dominic Sacre <dominic.sacre@gmx.de>
+
+.SH SEE ALSO
+dump_osc(1)

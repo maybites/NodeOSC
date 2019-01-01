@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: pyliblo
+Version: 0.10.0
+Summary: Python bindings for the liblo OSC library
+Home-page: http://das.nasophon.de/pyliblo/
+Author: Dominic Sacré
+Author-email: dominic.sacre@gmx.de
+License: LGPL
+Description: UNKNOWN
+Platform: UNKNOWN
