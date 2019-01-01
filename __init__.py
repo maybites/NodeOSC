@@ -87,9 +87,56 @@ def foo_cb(path, args, types):
     for a, t in zip(args, types):
         print("received argument %s of type %s" % (a, t))
  
+def OSC_callback_custom(path, args, types, src, data):
+    ob = data[0]
+    idee = data[1]
+    idx = data[2]
+    oscindex = data[3]
+    try:
+        ob[idee] = args[oscindex]
+    except:
+        if bpy.context.window_manager.addosc_monitor == True:
+            print ("Improper content received: "+str(args)+" for OSC route: "+path)
 
+def OSC_callback_property(path, args, types, src, data):
+    ob = data[0]
+    idee = data[1]
+    idx = data[2]
+    oscindex = data[3]
+    try:
+        getattr(ob,idee)[idx] = args[oscindex]
+    except:
+        if bpy.context.window_manager.addosc_monitor == True:
+            print ("Improper content received: "+str(args)+" for OSC route: "+path)
 
-def OSC_callback(path, args, types):
+def OSC_callback_properties(path, args, types, src, data):
+    ob = data[0]
+    idee = data[1]
+    idx = data[2]
+    oscindex = data[3]
+    try:
+        if len(oscindex) == 3:
+            getattr(ob, idee)[:] = args[oscindex[0]], args[oscindex[1]], args[oscindex[2]]
+        if len(oscindex) == 4:
+            getattr(ob, idee)[:] = args[oscindex[0]], args[oscindex[1]], args[oscindex[2]], args[oscindex[3]]
+    except:
+        if bpy.context.window_manager.addosc_monitor == True:
+            print ("Improper properties received: "+str(args)+" for OSC route: "+path)
+
+def OSC_callback_unkown(path, args, types, src, data):
+   if bpy.context.window_manager.addosc_monitor == True:
+        print("received unknown message '%s'" % path)
+        print("from '%s'" % (src.url))
+        for a, t in zip(args, types):
+            print("argument of type '%s': %s" % (t, a))
+
+def OSC_callback(path, args, types, src, data):
+    print("from '%s'" % (src.url))
+    print("received message '%s'" % path)
+    print("user data was '%s'" % str(data))
+    for a, t in zip(args, types):
+        print("argument of type '%s': %s" % (t, a))
+
     fail = True
     if bpy.context.window_manager.addosc_monitor == True:
         bpy.context.window_manager.addosc_lastaddr = args[0]
@@ -133,7 +180,7 @@ def OSC_callback(path, args, types):
             else:
                 try:
                     valuelist = list()
-                    myNewTuple = make_tuple(item.osc_type)
+                    myNewTuple = make_tuple(item.osc_index)
                     for val in myNewTuple:
                         valuelist.append(args[val - 1])
                     if isinstance(getattr(ob, item.id), mathutils.Vector):
@@ -204,7 +251,8 @@ def osc_export_config(scene):
         config_table[osc_item.address] = {
             "data_path" : osc_item.data_path,
             "id" : osc_item.id,
-            "osc_type" : osc_item.osc_type
+            "osc_type" : osc_item.osc_type,
+            "osc_index" : osc_item.osc_index
         };
 
     return json.dumps(config_table);
@@ -243,6 +291,7 @@ def osc_import_config(scene, config_file):
         item.data_path = values["data_path"];
         item.id = values["id"];
         item.osc_type = values["osc_type"];
+        item.osc_index = values["osc_index"];
 
 #######################################
 #  Import OSC Settings                #
@@ -393,8 +442,32 @@ class OSC_Reading_Sending(bpy.types.Operator):
             self.st = liblo.ServerThread(bcw.addosc_port_in)
             print("Created Server Thread on Port", self.st.port)
             for item in bpy.context.scene.OSC_keys:
-                self.st.add_method(item.address, None, OSC_callback)
+
+
+                #For ID custom properties (with brackets)
+                if item.id[0:2] == '["' and item.id[-2:] == '"]':
+                    dataTuple = (eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                    self.st.add_method(item.address, None, OSC_callback_custom, dataTuple)
+                #For normal properties
+                #with index in brackets -: i_num
+                elif item.id[-1] == ']':
+                    d_p = item.id[:-3]
+                    i_num = int(item.id[-2])
+                    dataTuple = (eval(item.data_path), d_p, i_num, make_tuple(item.osc_index))
+                    self.st.add_method(item.address, None, OSC_callback_property, dataTuple)
+                #without index in brackets
+                else:
+                    try:
+                        if isinstance(getattr(eval(item.data_path), item.id), mathutils.Vector):
+                            dataTuple = (eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                            self.st.add_method(item.address, None, OSC_callback_properties, dataTuple)
+                        elif isinstance(getattr(eval(item.data_path), item.id), mathutils.Quaternion):
+                            dataTuple = (eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                            self.st.add_method(item.address, None, OSC_callback_properties, dataTuple)
+                    except:
+                        print ("Improper setup received: object '"+item.data_path+"' with id'"+item.id+"' is no recognized dataformat")
             #self.st.add_method('/skeleton/Avatar2/bone/1/position', None, OSC_callback)
+            #self.st.add_method(None, None, OSC_callback_unkown)
             print("self.st.start():")
             self.st.start()
 
@@ -585,6 +658,7 @@ class AddOSC_ImportKS(bpy.types.Operator):
         data_path: bpy.props.StringProperty(name="Data path", default="")
         id: bpy.props.StringProperty(name="ID", default="")
         osc_type: bpy.props.StringProperty(name="Type", default="Unknown")
+        osc_index: bpy.props.StringProperty(name="Type", default="Unknown")
         value: bpy.props.StringProperty(name="Value", default="Unknown")
         idx: bpy.props.IntProperty(name="Index", min=0, default=0)
     bpy.utils.register_class(SceneSettingItem)

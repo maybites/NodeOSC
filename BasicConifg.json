@@ -2,41 +2,49 @@
    "/blender/x":{
       "data_path":"bpy.data.objects['Cube']",
       "id":"location[0]",
-      "osc_type":"float"
+      "osc_type":"f",
+      "osc_index":"(0)"
    },
    "/blender/rotation/angle_1":{
       "data_path":"bpy.data.objects['Cube']",
       "id":"rotation_euler[0]",
-      "osc_type":"float"
+      "osc_type":"f",
+      "osc_index":"(0)"
    },
    "/blender/rotation/angle_2":{
       "data_path":"bpy.data.objects['Cube']",
       "id":"rotation_euler[1]",
-      "osc_type":"float"
+      "osc_type":"f",
+      "osc_index":"(0)"
    },
    "/blender/rotation/angle_3":{
       "data_path":"bpy.data.objects['Cube']",
       "id":"rotation_euler[2]",
-      "osc_type":"float"
+      "osc_type":"f",
+      "osc_index":"(0)"
    },
    "/blender/y":{
       "data_path":"bpy.data.objects['Cube']",
       "id":"location[1]",
-      "osc_type":"float"
+      "osc_type":"f",
+      "osc_index":"(0)"
    },
    "/blender/z":{
       "data_path":"bpy.data.objects['Cube']",
       "id":"location[2]",
-      "osc_type":"float"
+      "osc_type":"f",
+      "osc_index":"(0)"
    },
    "/skeleton/Avatar2/bone/1/position":{  
       "data_path":"bpy.data.objects['Cube']",
       "id":"location",
-      "osc_type":"(1, 2, 3)"
+      "osc_type":"fff",
+      "osc_index":"(0, 1, 2)"
    },
    "/skeleton/Avatar2/bone/1/quat":{
       "data_path":"bpy.data.objects['Cube']",
       "id":"rotation_quaternion",
-      "osc_type":"(4, 1, 2, 3)"
+      "osc_type":"ffff",
+      "osc_index":"(3, 0, 1, 2)"
    }
 }
