@@ -324,7 +324,6 @@ class OSC_Reading_Sending(bpy.types.Operator):
         if context.window_manager.status == "Stopped":
             return self.cancel(context)
 
-        """
         if event.type == 'TIMER':
             #hack to refresh the GUI
             bcw = bpy.context.window_manager
@@ -337,7 +336,7 @@ class OSC_Reading_Sending(bpy.types.Operator):
                         for area in screen.areas:
                             if area.type == 'VIEW_3D':
                                 area.tag_redraw()
-
+            """
             #Sending
             for item in bpy.context.scene.OSC_keys:
                 #print( "sending  :{}".format(item) )
@@ -365,8 +364,8 @@ class OSC_Reading_Sending(bpy.types.Operator):
                             msg.add_arg(prop)
                         msg = msg.build()
                         self.client.send(msg)
+            """
         return {'PASS_THROUGH'}
-        """
 
     #######################################
     #  Setup OSC Receiver and Sender      #
@@ -408,17 +407,17 @@ class OSC_Reading_Sending(bpy.types.Operator):
 
 
         #inititate the modal timer thread
-        #context.window_manager.modal_handler_add(self)
-        #self._timer = context.window_manager.event_timer_add(bcw.addosc_rate/1000, window = context.window)
+        context.window_manager.modal_handler_add(self)
+        self._timer = context.window_manager.event_timer_add(bcw.addosc_rate/1000, window = context.window)
         context.window_manager.status = "Running"
 
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
-        #context.window_manager.event_timer_remove(self._timer)
+        context.window_manager.event_timer_remove(self._timer)
         print("self.st.free():")
-        self.st.free()
         self.st.stop()
+        self.st.free()
         #self.server.shutdown()
         context.window_manager.status = "Stopped"
         return {'CANCELLED'}
