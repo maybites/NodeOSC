@@ -132,9 +132,12 @@ def OSC_callback_properties(* args):
 
 def OSC_callback_unkown(* args):
    if bpy.context.window_manager.addosc_monitor == True:
-        print("received unknown message:")
-        for a in zip(args):
-            print("  arguments: %s" % (a))
+        bpy.context.window_manager.addosc_lastaddr = args[0]
+        content = str(args[2:]);
+        bpy.context.window_manager.addosc_lastpayload = content
+        #print("received unknown message:")
+        #for a in zip(args):
+        #    print("  arguments: %s" % (a))
     
 #For saving/restoring settings in the blendfile
 def upd_settings_sub(n):
@@ -184,16 +187,16 @@ def upd_setting_6():
     upd_settings_sub(6)
 
 def osc_export_config(scene):
-    config_table = {};
+    config_table = {}
     for osc_item in scene.OSC_keys:
         config_table[osc_item.address] = {
             "data_path" : osc_item.data_path,
             "id" : osc_item.id,
             "osc_type" : osc_item.osc_type,
             "osc_index" : osc_item.osc_index
-        };
+        }
 
-    return json.dumps(config_table);
+    return json.dumps(config_table)
 
 #######################################
 #  Export OSC Settings                #
@@ -220,16 +223,16 @@ class OSC_Export(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
 def osc_import_config(scene, config_file):
-    config_table = json.load(config_file);
+    config_table = json.load(config_file)
     for address, values in config_table.items():
         print(address)
         print(values)
         item = scene.OSC_keys.add()
-        item.address = address;
-        item.data_path = values["data_path"];
-        item.id = values["id"];
-        item.osc_type = values["osc_type"];
-        item.osc_index = values["osc_index"];
+        item.address = address
+        item.data_path = values["data_path"]
+        item.id = values["id"]
+        item.osc_type = values["osc_type"]
+        item.osc_index = values["osc_index"]
 
 #######################################
 #  Import OSC Settings                #
@@ -332,10 +335,10 @@ class OSC_Reading_Sending(bpy.types.Operator):
                     prop = eval(item.data_path+'.'+item.id)
 
                 if isinstance(prop, mathutils.Vector):
-                    prop = list(prop);
+                    prop = list(prop)
 
                 if isinstance(prop, mathutils.Quaternion):
-                    prop = list(prop);
+                    prop = list(prop)
 
                 if str(prop) != item.value:
                     item.value = str(prop)
@@ -344,8 +347,8 @@ class OSC_Reading_Sending(bpy.types.Operator):
                         msg = osc_message_builder.OscMessageBuilder(address=item.address)
                         #print( "sending prop :{}".format(prop) )
                         if isinstance(prop, list):
-                            for argum in prop:
-                                msg.add_arg(argum)
+                            for argmnts in prop:
+                                msg.add_arg(argmnts)
                         else:
                             msg.add_arg(prop)
                         msg = msg.build()
@@ -399,6 +402,7 @@ class OSC_Reading_Sending(bpy.types.Operator):
                     except:
                         print ("Improper setup received: object '"+item.data_path+"' with id'"+item.id+"' is no recognized dataformat")
  
+            self.dispatcher.set_default_handler(OSC_callback_unkown)
  
             print("Create Server Thread on Port", bcw.addosc_port_in)
 
@@ -481,22 +485,23 @@ class OSC_UI_Panel2(bpy.types.Panel):
         layout.label(text="Imported Keys:")
         for item in bpy.context.scene.OSC_keys:
             box3 = layout.box()
-            split = box3.split()
-            col = split.column()
-            col.prop(item,'data_path',text='Path')
-            col.prop(item, 'address')
-            col2 = split.column()
-            row4 = col2.row(align=True)
-            row4.prop(item,'id',text='')
-            row4.label(text="("+item.osc_type+")")
-
-            row5 = col2.row(align=True)
-            row5.operator("addosc.pick", text='Pick').i_addr = item.address
-            row5.prop(item, 'idx', text='Index')
+            #split = box3.split()
+            rowItm1 = box3.row()
+            if bpy.context.window_manager.addosc_monitor == True:
+                rowItm1.operator("addosc.pick", text='', icon='EYEDROPPER').i_addr = item.address
+            rowItm1.prop(item, 'address',text='Osc-addr')
+            rowItm1.prop(item, 'osc_index',text='Osc-argument[index]')
+            rowItm1.label(text="("+item.osc_type+")")
+             
+            rowItm2 = box3.row()
+            rowItm2.prop(item,'data_path',text='Blender-path')
+            rowItm2.prop(item,'id',text='ID')
+            rowItm2.prop(item, 'idx', text='Index')
 
             if bpy.context.window_manager.addosc_monitor == True:
-                col.prop(item, 'value')
-
+                rowItm3 = box3.row()
+                rowItm3.prop(item, 'value',text='current value')
+                 
 
 class StartUDP(bpy.types.Operator):
     bl_idname = "addosc.startudp"
