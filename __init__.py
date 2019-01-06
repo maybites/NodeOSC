@@ -405,7 +405,11 @@ class OSC_Reading_Sending(bpy.types.Operator):
             self.dispatcher.set_default_handler(OSC_callback_unkown)
  
             print("Create Server Thread on Port", bcw.addosc_port_in)
-
+            # creating a blocking UDP Server
+            #   Each message will be handled sequentially on the same thread.
+            #   the alternative: 
+            #       ThreadingOSCUDPServer creates loads of threads 
+            #       that are not cleaned up properly
             self.server = osc_server.BlockingOSCUDPServer((bcw.addosc_udp_in, bcw.addosc_port_in), self.dispatcher)
             self.server_thread = threading.Thread(target=self.server.serve_forever)
             self.server_thread.start()
