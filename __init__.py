@@ -61,9 +61,6 @@ directory = os.path.dirname(script_file)
 if directory not in sys.path:
    sys.path.append(directory)
 
-sys.path.append("pyliblo/osx")
-import liblo
-
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
 from pythonosc import osc_bundle
@@ -82,121 +79,62 @@ _report= ["",""] #This for reporting OS network errors
 #  OSC Receive Method                 #
 #######################################
 
-def foo_cb(path, args, types):
-    print("foo_cb():")
-    for a, t in zip(args, types):
-        print("received argument %s of type %s" % (a, t))
- 
-def OSC_callback_custom(path, args, types, src, data):
-    ob = data[0]
-    idee = data[1]
-    idx = data[2]
-    oscindex = data[3]
+def OSC_callback_custom(* args):
+    # the args structure:
+    #    args[0] = osc address
+    #    args[1] = custom data pakage (tuplet with 4 values)
+    #    args[>1] = osc arguments
+    ob = args[1][0][0]          # blender object name (i.e. bpy.data.objects['Cube'])
+    idee = args[1][0][1]        # blender object ID (i.e. location)
+    idx = args[1][0][2]         # ID-index (not used)
+    oscindex = args[1][0][3]    # osc argument index to use (can be a tuplet)
     try:
-        ob[idee] = args[oscindex]
+        ob[idee] = args[2+oscindex]
     except:
         if bpy.context.window_manager.addosc_monitor == True:
             print ("Improper content received: "+str(args)+" for OSC route: "+path)
 
-def OSC_callback_property(path, args, types, src, data):
-    ob = data[0]
-    idee = data[1]
-    idx = data[2]
-    oscindex = data[3]
+def OSC_callback_property(* args):
+    # this callback function is used to set single position or rotation values
+    # the args structure:
+    #    args[0] = osc address
+    #    args[1] = custom data pakage (tuplet with 4 values)
+    #    args[>1] = osc arguments
+    ob = args[1][0][0]          # blender object name (i.e. bpy.data.objects['Cube'])
+    idee = args[1][0][1]        # blender object ID (i.e. location[0])
+    idx = args[1][0][2]         # ID-index (i.e. 0)
+    oscindex = args[1][0][3]    # osc argument index to use (should not be a tuplet in this case)
     try:
-        getattr(ob,idee)[idx] = args[oscindex]
+        getattr(ob,idee)[idx] = args[2+oscindex]
     except:
         if bpy.context.window_manager.addosc_monitor == True:
             print ("Improper content received: "+str(args)+" for OSC route: "+path)
 
-def OSC_callback_properties(path, args, types, src, data):
-    ob = data[0]
-    idee = data[1]
-    idx = data[2]
-    oscindex = data[3]
+def OSC_callback_properties(* args):
+    # this callback function is used to set position or rotation values (so called 'IDs')
+    #  at the moment only 3d vector and quaternions will be sent to this function
+    # the args structure:
+    #    args[0] = osc address
+    #    args[1] = custom data pakage (tuplet with 4 values)
+    #    args[>1] = osc arguments
+    ob = args[1][0][0]          # blender object name (i.e. bpy.data.objects['Cube'])
+    idee = args[1][0][1]        # blender object ID (i.e. location)
+    idx = args[1][0][2]         # ID-index (not used)
+    oscindex = args[1][0][3]    # osc argument index to use (should be a tuplet, like (1,2,3))
     try:
         if len(oscindex) == 3:
-            getattr(ob, idee)[:] = args[oscindex[0]], args[oscindex[1]], args[oscindex[2]]
+            getattr(ob, idee)[:] = args[2+oscindex[0]], args[2+oscindex[1]], args[2+oscindex[2]]
         if len(oscindex) == 4:
-            getattr(ob, idee)[:] = args[oscindex[0]], args[oscindex[1]], args[oscindex[2]], args[oscindex[3]]
+            getattr(ob, idee)[:] = args[2+oscindex[0]], args[2+oscindex[1]], args[2+oscindex[2]], args[2+oscindex[3]]
     except:
         if bpy.context.window_manager.addosc_monitor == True:
-            print ("Improper properties received: "+str(args)+" for OSC route: "+path)
+            print ("Improper properties received: "+str(args))
 
-def OSC_callback_unkown(path, args, types, src, data):
+def OSC_callback_unkown(* args):
    if bpy.context.window_manager.addosc_monitor == True:
-        print("received unknown message '%s'" % path)
-        print("from '%s'" % (src.url))
-        for a, t in zip(args, types):
-            print("argument of type '%s': %s" % (t, a))
-
-def OSC_callback(path, args, types, src, data):
-    print("from '%s'" % (src.url))
-    print("received message '%s'" % path)
-    print("user data was '%s'" % str(data))
-    for a, t in zip(args, types):
-        print("argument of type '%s': %s" % (t, a))
-
-    fail = True
-    if bpy.context.window_manager.addosc_monitor == True:
-        bpy.context.window_manager.addosc_lastaddr = args[0]
-        #content = str(args[1:])
-        content = str(args);
-        #print(args)
-        bpy.context.window_manager.addosc_lastpayload = content
-        #print ("content received: "+content+"for OSC route: "+args[0])
-    # for simple properties
-    for item in bpy.context.scene.OSC_keys:
-
-        if item.address == path:
-            ob = eval(item.data_path)
-            idx = item.idx
-            #print ("osc_type received: "+str(item.osc_type))
-            #print ("ob received: "+str(ob))
-            #print ("idx received: " + str(idx))
-            
-            #For ID custom properties (with brackets)
-            if item.id[0:2] == '["' and item.id[-2:] == '"]':
-                try:
-                    ob[item.id[2:-2]] = args[idx]
-                    fail = False
-
-                except:
-                    if bpy.context.window_manager.addosc_monitor == True:
-                        print ("Improper content received: "+content+"for OSC route: "+args[0]+" and key: "+item.id)
-
-            #For normal properties
-            #with index in brackets -: i_num
-            elif item.id[-1] == ']':
-                d_p = item.id[:-3]
-                i_num = int(item.id[-2])
-                try:
-                    getattr(ob,d_p)[i_num] = args[idx]
-                    fail = False
-                except:
-                    if bpy.context.window_manager.addosc_monitor == True:
-                        print ("Improper content received: "+content+"for OSC route: "+args[0]+" and key: "+item.id)
-            #without index in brackets
-            else:
-                try:
-                    valuelist = list()
-                    myNewTuple = make_tuple(item.osc_index)
-                    for val in myNewTuple:
-                        valuelist.append(args[val - 1])
-                    if isinstance(getattr(ob, item.id), mathutils.Vector):
-                        getattr(ob, item.id)[:] = valuelist;
-                    if isinstance(getattr(ob, item.id), mathutils.Quaternion):
-                        getattr(ob, item.id)[:] = valuelist;
-                    else:
-                        setattr(ob,item.id,args[idx])
-
-                    fail = False
-                except:
-                    if bpy.context.window_manager.addosc_monitor == True:
-                        print ("Improper content received: "+content+"for OSC route: "+args[0]+" and key: "+item.id)
-
-    if bpy.context.window_manager.addosc_monitor == True and fail == True:
-        print("Rejected OSC message, route: "+args[0]+" , content: "+content)
+        print("received unknown message:")
+        for a in zip(args):
+            print("  arguments: %s" % (a))
     
 #For saving/restoring settings in the blendfile
 def upd_settings_sub(n):
@@ -385,7 +323,6 @@ class OSC_Reading_Sending(bpy.types.Operator):
                         for area in screen.areas:
                             if area.type == 'VIEW_3D':
                                 area.tag_redraw()
-            """
             #Sending
             for item in bpy.context.scene.OSC_keys:
                 #print( "sending  :{}".format(item) )
@@ -413,7 +350,6 @@ class OSC_Reading_Sending(bpy.types.Operator):
                             msg.add_arg(prop)
                         msg = msg.build()
                         self.client.send(msg)
-            """
         return {'PASS_THROUGH'}
 
     #######################################
@@ -425,7 +361,6 @@ class OSC_Reading_Sending(bpy.types.Operator):
         bcw = bpy.context.window_manager
 
         #For sending
-        """
         try:
             self.client = udp_client.UDPClient(bcw.addosc_udp_out, bcw.addosc_port_out)
             msg = osc_message_builder.OscMessageBuilder(address="/blender")
@@ -435,45 +370,41 @@ class OSC_Reading_Sending(bpy.types.Operator):
         except OSError as err:
             _report[1] = err
             return {'CANCELLED'}
-        """
-
+ 
         #Setting up the dispatcher for receiving
         try:
-            self.st = liblo.ServerThread(bcw.addosc_port_in)
-            print("Created Server Thread on Port", self.st.port)
+            self.dispatcher = dispatcher.Dispatcher()            
             for item in bpy.context.scene.OSC_keys:
-
 
                 #For ID custom properties (with brackets)
                 if item.id[0:2] == '["' and item.id[-2:] == '"]':
                     dataTuple = (eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                    self.st.add_method(item.address, None, OSC_callback_custom, dataTuple)
+                    self.dispatcher.map(item.address, OSC_callback_unkown, dataTuple)
                 #For normal properties
                 #with index in brackets -: i_num
                 elif item.id[-1] == ']':
                     d_p = item.id[:-3]
                     i_num = int(item.id[-2])
                     dataTuple = (eval(item.data_path), d_p, i_num, make_tuple(item.osc_index))
-                    self.st.add_method(item.address, None, OSC_callback_property, dataTuple)
+                    self.dispatcher.map(item.address, OSC_callback_unkown, dataTuple)
                 #without index in brackets
                 else:
                     try:
                         if isinstance(getattr(eval(item.data_path), item.id), mathutils.Vector):
                             dataTuple = (eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                            self.st.add_method(item.address, None, OSC_callback_properties, dataTuple)
+                            self.dispatcher.map(item.address, OSC_callback_properties, dataTuple)
                         elif isinstance(getattr(eval(item.data_path), item.id), mathutils.Quaternion):
                             dataTuple = (eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                            self.st.add_method(item.address, None, OSC_callback_properties, dataTuple)
+                            self.dispatcher.map(item.address, OSC_callback_properties, dataTuple)
                     except:
                         print ("Improper setup received: object '"+item.data_path+"' with id'"+item.id+"' is no recognized dataformat")
-            #self.st.add_method('/skeleton/Avatar2/bone/1/position', None, OSC_callback)
-            #self.st.add_method(None, None, OSC_callback_unkown)
-            print("self.st.start():")
-            self.st.start()
+ 
+ 
+            print("Create Server Thread on Port", bcw.addosc_port_in)
 
-            #self.server = osc_server.ThreadingOSCUDPServer((bcw.addosc_udp_in, bcw.addosc_port_in), self.dispatcher)
-            #self.server_thread = threading.Thread(target=self.server.serve_forever)
-            #self.server_thread.start()
+            self.server = osc_server.BlockingOSCUDPServer((bcw.addosc_udp_in, bcw.addosc_port_in), self.dispatcher)
+            self.server_thread = threading.Thread(target=self.server.serve_forever)
+            self.server_thread.start()
         except OSError as err:
             _report[0] = err
             return {'CANCELLED'}
@@ -488,10 +419,8 @@ class OSC_Reading_Sending(bpy.types.Operator):
 
     def cancel(self, context):
         context.window_manager.event_timer_remove(self._timer)
-        print("self.st.free():")
-        self.st.stop()
-        self.st.free()
-        #self.server.shutdown()
+        print("OSC server.shutdown()")
+        self.server.shutdown()
         context.window_manager.status = "Stopped"
         return {'CANCELLED'}
 
