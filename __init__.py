@@ -37,7 +37,7 @@ bl_info = {
     "author": "JPfeP, maybites",
     "version": (0, 19),
     "blender": (2, 80, 0),
-    "location": "",
+    "location": "View3D > Tools > AddOSC",
     "description": "Realtime control of Blender using OSC protocol",
     "warning": "Please read the disclaimer about network security on the download site.",
     "wiki_url": "http://www.jpfep.net/pages/addosc/",
@@ -437,9 +437,11 @@ class OSC_Reading_Sending(bpy.types.Operator):
 #######################################
 
 class OSC_UI_Panel(bpy.types.Panel):
+    bl_category = "AddOSC"
     bl_label = "AddOSC Settings"
     bl_space_type = "VIEW_3D"
-    bl_region_type = "TOOLS"
+    bl_region_type = "UI"
+    bl_context = "objectmode"
 
     def draw(self, context):
         layout = self.layout
@@ -463,9 +465,11 @@ class OSC_UI_Panel(bpy.types.Panel):
 #######################################
 
 class OSC_UI_Panel2(bpy.types.Panel):
+    bl_category = "AddOSC"
     bl_label = "AddOSC Operations"
     bl_space_type = "VIEW_3D"
-    bl_region_type = "TOOLS"
+    bl_region_type = "UI"
+    bl_context = "objectmode"
 
     def draw(self, context):
         layout = self.layout
