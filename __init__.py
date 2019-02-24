@@ -72,6 +72,7 @@ import threading
 import socketserver
 from bpy.app.handlers import persistent
 
+CALLBACK_TYPE = ("unkown", "custom", "property", "properties")
 
 _report= ["",""] #This for reporting OS network errors
 
@@ -79,66 +80,67 @@ _report= ["",""] #This for reporting OS network errors
 #  OSC Receive Method                 #
 #######################################
 
-def OSC_callback_custom(* args):
-    # the args structure:
-    #    args[0] = osc address
-    #    args[1] = custom data pakage (tuplet with 4 values)
-    #    args[>1] = osc arguments
-    ob = args[1][0][0]          # blender object name (i.e. bpy.data.objects['Cube'])
-    idee = args[1][0][1]        # blender object ID (i.e. location)
-    idx = args[1][0][2]         # ID-index (not used)
-    oscindex = args[1][0][3]    # osc argument index to use (can be a tuplet)
-    try:
-        ob[idee] = args[2+oscindex]
-    except:
-        if bpy.context.window_manager.addosc_monitor == True:
-            print ("Improper content received: "+str(args)+" for OSC route: "+path)
-
-def OSC_callback_property(* args):
-    # this callback function is used to set single position or rotation values
-    # the args structure:
-    #    args[0] = osc address
-    #    args[1] = custom data pakage (tuplet with 4 values)
-    #    args[>1] = osc arguments
-    ob = args[1][0][0]          # blender object name (i.e. bpy.data.objects['Cube'])
-    idee = args[1][0][1]        # blender object ID (i.e. location[0])
-    idx = args[1][0][2]         # ID-index (i.e. 0)
-    oscindex = args[1][0][3]    # osc argument index to use (should not be a tuplet in this case)
-    try:
-        getattr(ob,idee)[idx] = args[2+oscindex]
-    except:
-        if bpy.context.window_manager.addosc_monitor == True:
-            print ("Improper content received: "+str(args)+" for OSC route: "+path)
-
-def OSC_callback_properties(* args):
-    # this callback function is used to set position or rotation values (so called 'IDs')
-    #  at the moment only 3d vector and quaternions will be sent to this function
-    # the args structure:
-    #    args[0] = osc address
-    #    args[1] = custom data pakage (tuplet with 4 values)
-    #    args[>1] = osc arguments
-    ob = args[1][0][0]          # blender object name (i.e. bpy.data.objects['Cube'])
-    idee = args[1][0][1]        # blender object ID (i.e. location)
-    idx = args[1][0][2]         # ID-index (not used)
-    oscindex = args[1][0][3]    # osc argument index to use (should be a tuplet, like (1,2,3))
-    try:
-        if len(oscindex) == 3:
-            getattr(ob, idee)[:] = args[2+oscindex[0]], args[2+oscindex[1]], args[2+oscindex[2]]
-        if len(oscindex) == 4:
-            getattr(ob, idee)[:] = args[2+oscindex[0]], args[2+oscindex[1]], args[2+oscindex[2]], args[2+oscindex[3]]
-    except:
-        if bpy.context.window_manager.addosc_monitor == True:
-            print ("Improper properties received: "+str(args))
 
 def OSC_callback_unkown(* args):
-   if bpy.context.window_manager.addosc_monitor == True:
+    if bpy.context.window_manager.addosc_monitor == True:
         bpy.context.window_manager.addosc_lastaddr = args[0]
         content = str(args[2:]);
         bpy.context.window_manager.addosc_lastpayload = content
         #print("received unknown message:")
         #for a in zip(args):
         #    print("  arguments: %s" % (a))
-    
+ 
+def OSC_callback_custom(ob, attribute, idx, oscIndex, args):
+    try:
+        ob[attribute] = args[oscIndex]
+    except:
+        if bpy.context.window_manager.addosc_monitor == True:
+            print ("Improper content received: ")#+str(args)+" for OSC route: "+path)
+
+def OSC_callback_property(ob, attribute, idx, oscIndex, args):
+    # this callback function is used to set single position or rotation values
+    try:
+        getattr(ob,attribute)[idx] = args[oscIndex]
+    except:
+        if bpy.context.window_manager.addosc_monitor == True:
+            print ("Improper content received:")# "+str(args)+" for OSC route: "+path)
+
+def OSC_callback_properties(ob, attribute, idx, oscIndex, args):
+    # this callback function is used to set position or rotation values (so called 'IDs')
+    #  at the moment only 3d vector and quaternions will be sent to this function
+    try:
+        if len(oscIndex) == 3:
+            getattr(ob, attribute)[:] = args[oscIndex[0]], args[oscIndex[1]], args[oscIndex[2]]
+        if len(oscIndex) == 4:
+            getattr(ob, attribute)[:] = args[oscIndex[0]], args[oscIndex[1]], args[oscIndex[2]], args[oscIndex[3]]
+    except:
+        if bpy.context.window_manager.addosc_monitor == True:
+            print ("Improper properties received: ")#+str(args))
+
+def OSC_callback(* args):
+    # the args structure:
+    #    args[0] = osc address
+    #    args[1] = custom data pakage (tuplet with 5 values)
+    #    args[>1] = osc arguments
+    oscAddress = args[0]
+    mytype = args[1][0][0]      # callback type 
+    ob = args[1][0][1]          # blender object name (i.e. bpy.data.objects['Cube'])
+    attribute = args[1][0][2]        # blender object ID (i.e. location)
+    idx = args[1][0][3]         # ID-index (not used)
+    oscIndex = args[1][0][4]    # osc argument index to use (should be a tuplet, like (1,2,3))
+
+    oscArgs = args[2:]
+
+    if mytype == 0:
+        OSC_callback_unkown(args[:])
+    elif mytype == 1:
+        OSC_callback_custom(ob, attribute, idx, oscIndex, oscArgs)
+    elif mytype == 2:
+        OSC_callback_property(ob, attribute, idx, oscIndex, oscArgs)
+    elif mytype == 3:
+        OSC_callback_properties(ob, attribute, idx, oscIndex, oscArgs)
+
+
 #For saving/restoring settings in the blendfile
 def upd_settings_sub(n):
     text_settings = None
@@ -381,24 +383,24 @@ class OSC_Reading_Sending(bpy.types.Operator):
 
                 #For ID custom properties (with brackets)
                 if item.id[0:2] == '["' and item.id[-2:] == '"]':
-                    dataTuple = (eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                    self.dispatcher.map(item.address, OSC_callback_unkown, dataTuple)
+                    dataTuple = (0, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                    self.dispatcher.map(item.address, OSC_callback, dataTuple)
                 #For normal properties
                 #with index in brackets -: i_num
                 elif item.id[-1] == ']':
                     d_p = item.id[:-3]
                     i_num = int(item.id[-2])
-                    dataTuple = (eval(item.data_path), d_p, i_num, make_tuple(item.osc_index))
-                    self.dispatcher.map(item.address, OSC_callback_unkown, dataTuple)
+                    dataTuple = (2, eval(item.data_path), d_p, i_num, make_tuple(item.osc_index))
+                    self.dispatcher.map(item.address, OSC_callback, dataTuple)
                 #without index in brackets
                 else:
                     try:
                         if isinstance(getattr(eval(item.data_path), item.id), mathutils.Vector):
-                            dataTuple = (eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                            self.dispatcher.map(item.address, OSC_callback_properties, dataTuple)
+                            dataTuple = (3, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                            self.dispatcher.map(item.address, OSC_callback, dataTuple)
                         elif isinstance(getattr(eval(item.data_path), item.id), mathutils.Quaternion):
-                            dataTuple = (eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                            self.dispatcher.map(item.address, OSC_callback_properties, dataTuple)
+                            dataTuple = (3, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                            self.dispatcher.map(item.address, OSC_callback, dataTuple)
                     except:
                         print ("Improper setup received: object '"+item.data_path+"' with id'"+item.id+"' is no recognized dataformat")
  
