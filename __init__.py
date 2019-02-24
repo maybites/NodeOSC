@@ -72,13 +72,34 @@ import threading
 import socketserver
 from bpy.app.handlers import persistent
 
-CALLBACK_TYPE = ("unkown", "custom", "property", "properties")
+import queue
 
 _report= ["",""] #This for reporting OS network errors
 
 #######################################
 #  OSC Receive Method                 #
 #######################################
+
+# the OSC-server should not directly modify blender data from its own thread.
+# instead we need a queue to store the callbacks and execute them inside
+# a blender timer thread
+
+# define the queue to store the callbacks
+OSC_callback_queue = queue.Queue()
+
+# define the method the timer thread is calling when it is appropriate
+def execute_queued_OSC_callbacks():
+    # while there are callbacks stored inside the queue
+    while not OSC_callback_queue.empty():
+        items = OSC_callback_queue.get()
+        func = items[0]
+        args = items[1:]
+        # execute them 
+        func(*args)
+    return 0
+
+# register the execute queue method
+bpy.app.timers.register(execute_queued_OSC_callbacks)
 
 
 def OSC_callback_unkown(* args):
@@ -132,14 +153,15 @@ def OSC_callback(* args):
     oscArgs = args[2:]
 
     if mytype == 0:
-        OSC_callback_unkown(args[:])
+        OSC_callback_queue.put((OSC_callback_unkown, args[:]))
+        #OSC_callback_unkown(args[:])
     elif mytype == 1:
-        OSC_callback_custom(ob, attribute, idx, oscIndex, oscArgs)
+        OSC_callback_queue.put((OSC_callback_custom, ob, attribute, idx, oscIndex, oscArgs))
     elif mytype == 2:
-        OSC_callback_property(ob, attribute, idx, oscIndex, oscArgs)
+        OSC_callback_queue.put((OSC_callback_property, ob, attribute, idx, oscIndex, oscArgs))
     elif mytype == 3:
-        OSC_callback_properties(ob, attribute, idx, oscIndex, oscArgs)
-
+        OSC_callback_queue.put((OSC_callback_properties, ob, attribute, idx, oscIndex, oscArgs))
+ 
 
 #For saving/restoring settings in the blendfile
 def upd_settings_sub(n):
