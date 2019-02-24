@@ -98,9 +98,6 @@ def execute_queued_OSC_callbacks():
         func(*args)
     return 0
 
-# register the execute queue method
-bpy.app.timers.register(execute_queued_OSC_callbacks)
-
 
 def OSC_callback_unkown(* args):
     if bpy.context.window_manager.addosc_monitor == True:
@@ -437,6 +434,9 @@ class OSC_Reading_Sending(bpy.types.Operator):
             self.server = osc_server.BlockingOSCUDPServer((bcw.addosc_udp_in, bcw.addosc_port_in), self.dispatcher)
             self.server_thread = threading.Thread(target=self.server.serve_forever)
             self.server_thread.start()
+            # register the execute queue method
+            bpy.app.timers.register(execute_queued_OSC_callbacks)
+
         except OSError as err:
             _report[0] = err
             return {'CANCELLED'}
@@ -454,6 +454,7 @@ class OSC_Reading_Sending(bpy.types.Operator):
         print("OSC server.shutdown()")
         self.server.shutdown()
         context.window_manager.status = "Stopped"
+        bpy.app.timers.unregister(execute_queued_OSC_callbacks)
         return {'CANCELLED'}
 
 #######################################
