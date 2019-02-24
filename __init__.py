@@ -85,80 +85,107 @@ _report= ["",""] #This for reporting OS network errors
 # a blender timer thread
 
 # define the queue to store the callbacks
-OSC_callback_queue = queue.Queue()
+OSC_callback_queue = queue.LifoQueue()
+
+# the repeatfilter, together with lifo (last in - first out) will
+# make sure only the last osc message received on a certain address
+# will be applied. all older messages will be ignored.
+queue_repeat_filter = {}
 
 # define the method the timer thread is calling when it is appropriate
 def execute_queued_OSC_callbacks():
+    queue_repeat_filter.clear()
     # while there are callbacks stored inside the queue
     while not OSC_callback_queue.empty():
         items = OSC_callback_queue.get()
-        func = items[0]
-        args = items[1:]
-        # execute them 
-        func(*args)
+        address = items[1]
+        # if the address has not been here before:
+        if queue_repeat_filter.get(address, False) == False:
+            func = items[0]
+            args = items[1:]
+            # execute them 
+            func(*args)
+        queue_repeat_filter[address] = True
     return 0
 
-
-def OSC_callback_unkown(* args):
+# called by the queue execution thread
+def OSC_callback_unkown(address, args):
     if bpy.context.window_manager.addosc_monitor == True:
-        bpy.context.window_manager.addosc_lastaddr = args[0]
-        content = str(args[2:]);
-        bpy.context.window_manager.addosc_lastpayload = content
-        #print("received unknown message:")
-        #for a in zip(args):
-        #    print("  arguments: %s" % (a))
- 
-def OSC_callback_custom(ob, attribute, idx, oscIndex, args):
+        bpy.context.window_manager.addosc_lastaddr = address
+        bpy.context.window_manager.addosc_lastpayload = str(args)
+
+# called by the queue execution thread
+def OSC_callback_custom(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
-        ob[attribute] = args[oscIndex]
+        obj[attr] = oscArgs[oscIndex]
     except:
         if bpy.context.window_manager.addosc_monitor == True:
-            print ("Improper content received: ")#+str(args)+" for OSC route: "+path)
+            print ("Improper content received: "+ address + " " + str(oscArgs))
 
-def OSC_callback_property(ob, attribute, idx, oscIndex, args):
-    # this callback function is used to set single position or rotation values
+# called by the queue execution thread
+def OSC_callback_property(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
-        getattr(ob,attribute)[idx] = args[oscIndex]
+        getattr(obj,attr)[attrIdx] = oscArgs[oscIndex]
     except:
         if bpy.context.window_manager.addosc_monitor == True:
-            print ("Improper content received:")# "+str(args)+" for OSC route: "+path)
+            print ("Improper property received:: "+address + " " + str(oscArgs))
 
-def OSC_callback_properties(ob, attribute, idx, oscIndex, args):
-    # this callback function is used to set position or rotation values (so called 'IDs')
-    #  at the moment only 3d vector and quaternions will be sent to this function
+# called by the queue execution thread
+def OSC_callback_properties(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
         if len(oscIndex) == 3:
-            getattr(ob, attribute)[:] = args[oscIndex[0]], args[oscIndex[1]], args[oscIndex[2]]
+            getattr(obj, attr)[:] = oscArgs[oscIndex[0]], oscArgs[oscIndex[1]], oscArgs[oscIndex[2]]
         if len(oscIndex) == 4:
-            getattr(ob, attribute)[:] = args[oscIndex[0]], args[oscIndex[1]], args[oscIndex[2]], args[oscIndex[3]]
+            getattr(obj, attr)[:] = oscArgs[oscIndex[0]], oscArgs[oscIndex[1]], oscArgs[oscIndex[2]], oscArgs[oscIndex[3]]
     except:
         if bpy.context.window_manager.addosc_monitor == True:
-            print ("Improper properties received: ")#+str(args))
+            print ("Improper properties received: "+address + " " + str(oscArgs))
 
-def OSC_callback(* args):
+# method called by the pythonosc library in case of an unmapped message
+def OSC_callback_pythonosc_undef(* args):
+    address = args[0]
+    OSC_callback_queue.put((OSC_callback_unkown, address, args[2:]))
+
+# method called by the pythonosc library in case of a mapped message
+def OSC_callback_pythonosc(* args):
     # the args structure:
     #    args[0] = osc address
     #    args[1] = custom data pakage (tuplet with 5 values)
     #    args[>1] = osc arguments
-    oscAddress = args[0]
+    address = args[0]
     mytype = args[1][0][0]      # callback type 
-    ob = args[1][0][1]          # blender object name (i.e. bpy.data.objects['Cube'])
-    attribute = args[1][0][2]        # blender object ID (i.e. location)
-    idx = args[1][0][3]         # ID-index (not used)
+    obj = args[1][0][1]          # blender object name (i.e. bpy.data.objects['Cube'])
+    attr = args[1][0][2]        # blender object ID (i.e. location)
+    attrIdx = args[1][0][3]         # ID-index (not used)
     oscIndex = args[1][0][4]    # osc argument index to use (should be a tuplet, like (1,2,3))
 
     oscArgs = args[2:]
 
-    if mytype == 0:
-        OSC_callback_queue.put((OSC_callback_unkown, args[:]))
-        #OSC_callback_unkown(args[:])
-    elif mytype == 1:
-        OSC_callback_queue.put((OSC_callback_custom, ob, attribute, idx, oscIndex, oscArgs))
+    if mytype == 1:
+        OSC_callback_queue.put((OSC_callback_custom, address, obj, attr, attrIdx, oscArgs, oscIndex))
     elif mytype == 2:
-        OSC_callback_queue.put((OSC_callback_property, ob, attribute, idx, oscIndex, oscArgs))
+        OSC_callback_queue.put((OSC_callback_property, address, obj, attr, attrIdx, oscArgs, oscIndex))
     elif mytype == 3:
-        OSC_callback_queue.put((OSC_callback_properties, ob, attribute, idx, oscIndex, oscArgs))
+        OSC_callback_queue.put((OSC_callback_properties, address, obj, attr, attrIdx, oscArgs, oscIndex))
  
+# method called by the pyliblo library in case of a mapped message
+def OSC_callback_pyliblo(path, args, types, src, data):
+    # the args structure:
+    address = path
+    mytype = data[0]        # callback type 
+    obj = data[1]           # blender object name (i.e. bpy.data.objects['Cube'])
+    attr = data[2]          # blender object ID (i.e. location)
+    attrIdx = data[3]       # ID-index (not used)
+    oscIndex = data[4]      # osc argument index to use (should be a tuplet, like (1,2,3))
+
+    if mytype == 0:
+        OSC_callback_queue.put((OSC_callback_unkown, address, args, data))
+    elif mytype == 1:
+        OSC_callback_queue.put((OSC_callback_custom, address, obj, attr, attrIdx, args, oscIndex))
+    elif mytype == 2:
+        OSC_callback_queue.put((OSC_callback_property, address, obj, attr, attrIdx, args, oscIndex))
+    elif mytype == 3:
+        OSC_callback_queue.put((OSC_callback_properties, address, obj, attr, attrIdx, args, oscIndex))
 
 #For saving/restoring settings in the blendfile
 def upd_settings_sub(n):
@@ -402,28 +429,28 @@ class OSC_Reading_Sending(bpy.types.Operator):
 
                 #For ID custom properties (with brackets)
                 if item.id[0:2] == '["' and item.id[-2:] == '"]':
-                    dataTuple = (0, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                    self.dispatcher.map(item.address, OSC_callback, dataTuple)
+                    dataTuple = (1, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                    self.dispatcher.map(item.address, OSC_callback_pythonosc, dataTuple)
                 #For normal properties
                 #with index in brackets -: i_num
                 elif item.id[-1] == ']':
                     d_p = item.id[:-3]
                     i_num = int(item.id[-2])
                     dataTuple = (2, eval(item.data_path), d_p, i_num, make_tuple(item.osc_index))
-                    self.dispatcher.map(item.address, OSC_callback, dataTuple)
+                    self.dispatcher.map(item.address, OSC_callback_pythonosc, dataTuple)
                 #without index in brackets
                 else:
                     try:
                         if isinstance(getattr(eval(item.data_path), item.id), mathutils.Vector):
                             dataTuple = (3, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                            self.dispatcher.map(item.address, OSC_callback, dataTuple)
+                            self.dispatcher.map(item.address, OSC_callback_pythonosc, dataTuple)
                         elif isinstance(getattr(eval(item.data_path), item.id), mathutils.Quaternion):
                             dataTuple = (3, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                            self.dispatcher.map(item.address, OSC_callback, dataTuple)
+                            self.dispatcher.map(item.address, OSC_callback_pythonosc, dataTuple)
                     except:
                         print ("Improper setup received: object '"+item.data_path+"' with id'"+item.id+"' is no recognized dataformat")
  
-            self.dispatcher.set_default_handler(OSC_callback_unkown)
+            self.dispatcher.set_default_handler(OSC_callback_pythonosc_undef)
  
             print("Create Server Thread on Port", bcw.addosc_port_in)
             # creating a blocking UDP Server
