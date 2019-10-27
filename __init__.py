@@ -547,7 +547,7 @@ class OSC_UI_Panel(bpy.types.Panel):
         row2.prop(bpy.context.window_manager, 'addosc_port_out', text="Outport port")
         layout.prop(bpy.context.window_manager, 'addosc_rate', text="Update rate(ms)")
         layout.prop(bpy.context.window_manager, 'addosc_autorun', text="Start at Launch")
-
+ 
 #######################################
 #  OPERATIONS GUI PANEL               #
 #######################################
@@ -593,9 +593,8 @@ class OSC_UI_Panel2(bpy.types.Panel):
             rowItm2 = box3.row()
             rowItm2.prop(item,'data_path',text='Blender-path')
             rowItm2.prop(item,'id',text='ID')
-            op = rowItm2.operator("addosc.deleteitem", icon='CANCEL')
-            op.index = index
-
+            rowItm2.operator("addosc.deleteitem", icon='CANCEL').index = index
+            
             if bpy.context.window_manager.addosc_monitor == True:
                 rowItm3 = box3.row()
                 rowItm3.prop(item, 'value',text='current value')
