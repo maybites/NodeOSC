@@ -250,6 +250,42 @@ def osc_export_config(scene):
 #  Export OSC Settings                #
 #######################################
 
+class SceneSettingItem(bpy.types.PropertyGroup):
+        #key_path = bpy.props.StringProperty(name="Key", default="Unknown")
+        address: bpy.props.StringProperty(name="Address", default="")
+        data_path: bpy.props.StringProperty(name="Data path", default="")
+        id: bpy.props.StringProperty(name="ID", default="")
+        osc_type: bpy.props.StringProperty(name="Type", default="Unknown")
+        osc_index: bpy.props.StringProperty(name="Type", default="Unknown")
+        value: bpy.props.StringProperty(name="Value", default="Unknown")
+        idx: bpy.props.IntProperty(name="Index", min=0, default=0)
+
+class OSC_ITEM_Delete(bpy.types.Operator):
+    """Delete the  OSC Item """
+    bl_idname = "addosc.deleteitem"
+    bl_label = "Delete"
+
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    index = bpy.props.IntProperty(default=0)
+
+    @classmethod
+    def poll(cls, context):
+        return context.object is not None
+
+    def execute(self, context):
+        #file = open(self.filepath, 'w')
+        #file.write(osc_export_config(context.scene))
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        bpy.context.scene.OSC_keys.remove(self.index)
+
+        #for item in bpy.context.scene.OSC_keys:
+        #    if item.idx == self.index:
+        #        print(bpy.context.scene.OSC_keys.find(item))
+        return {'RUNNING_MODAL'}
+
 class OSC_Export(bpy.types.Operator):
     """Export the current OSC configuration to a file in JSON format"""
     bl_idname = "addosc.export"
@@ -511,7 +547,7 @@ class OSC_UI_Panel(bpy.types.Panel):
         row2.prop(bpy.context.window_manager, 'addosc_port_out', text="Outport port")
         layout.prop(bpy.context.window_manager, 'addosc_rate', text="Update rate(ms)")
         layout.prop(bpy.context.window_manager, 'addosc_autorun', text="Start at Launch")
-
+ 
 #######################################
 #  OPERATIONS GUI PANEL               #
 #######################################
@@ -543,6 +579,7 @@ class OSC_UI_Panel2(bpy.types.Panel):
 
         layout.separator()
         layout.label(text="Imported Keys:")
+        index = 0
         for item in bpy.context.scene.OSC_keys:
             box3 = layout.box()
             #split = box3.split()
@@ -551,16 +588,17 @@ class OSC_UI_Panel2(bpy.types.Panel):
                 rowItm1.operator("addosc.pick", text='', icon='EYEDROPPER').i_addr = item.address
             rowItm1.prop(item, 'address',text='Osc-addr')
             rowItm1.prop(item, 'osc_index',text='Osc-argument[index]')
-            rowItm1.label(text="("+item.osc_type+")")
+            #rowItm1.label(text="("+item.osc_type+")")
              
             rowItm2 = box3.row()
             rowItm2.prop(item,'data_path',text='Blender-path')
             rowItm2.prop(item,'id',text='ID')
-            rowItm2.prop(item, 'idx', text='Index')
-
+            rowItm2.operator("addosc.deleteitem", icon='CANCEL').index = index
+            
             if bpy.context.window_manager.addosc_monitor == True:
                 rowItm3 = box3.row()
                 rowItm3.prop(item, 'value',text='current value')
+            index = index + 1
                  
 
 class StartUDP(bpy.types.Operator):
@@ -646,15 +684,6 @@ class AddOSC_ImportKS(bpy.types.Operator):
         if context.scene.addosc_defaultaddr[0] != "/":
             context.scene.addosc_defaultaddr = "/"+context.scene.addosc_defaultaddr
 
-    class SceneSettingItem(bpy.types.PropertyGroup):
-        #key_path = bpy.props.StringProperty(name="Key", default="Unknown")
-        address: bpy.props.StringProperty(name="Address", default="")
-        data_path: bpy.props.StringProperty(name="Data path", default="")
-        id: bpy.props.StringProperty(name="ID", default="")
-        osc_type: bpy.props.StringProperty(name="Type", default="Unknown")
-        osc_index: bpy.props.StringProperty(name="Type", default="Unknown")
-        value: bpy.props.StringProperty(name="Value", default="Unknown")
-        idx: bpy.props.IntProperty(name="Index", min=0, default=0)
     bpy.utils.register_class(SceneSettingItem)
 
     bpy.types.Scene.OSC_keys = bpy.props.CollectionProperty(type=SceneSettingItem)
@@ -710,9 +739,11 @@ class AddOSC_ImportKS(bpy.types.Operator):
 
             #Transfer of tvar2 into the OSC_keys_tmp property
             bpy.context.scene.OSC_keys_tmp.clear()
+            index = 0
             for i,j in t_arr:
                 my_item = bpy.context.scene.OSC_keys_tmp.add()
                 my_item.id = i
+                my_item.idx = index
                 my_item.data_path = j
                 #for custom prop
                 if i[0:2] == '["' and i[-2:] == '"]':
@@ -722,6 +753,7 @@ class AddOSC_ImportKS(bpy.types.Operator):
                     t_eval = my_item.data_path + "." + my_item.id
 
                 my_item.osc_type = repr(type(eval(t_eval)))[8:-2]
+                index = index + 1
 
             #Copy addresses from OSC_keys if there are some
             for item_tmp in bpy.context.scene.OSC_keys_tmp:
@@ -794,7 +826,8 @@ classes = (
     StartUDP,
     StopUDP,
     PickOSCaddress,
-    AddOSC_ImportKS
+    AddOSC_ImportKS,
+    OSC_ITEM_Delete
 )
 
 def register():
