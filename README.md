@@ -1,9 +1,11 @@
-# AddOSC
-OSC support in the viewport for Blender, see: http://www.jpfep.net/pages/addosc/
+# NodeOSC
+OSC support for nodes.
+
+This OSC implementation is intended to replace the [AddOSC](https://github.com/maybites/blender.AddOSC) plugin.
 
 ## Usage
 
-This fork has some redesign and uses a new Osc config file structure:
+It uses the following config file structure:
 
     {
         "/skeleton/Avatar2/bone/1/position":{  
@@ -40,8 +42,16 @@ to the specified path and ID
 
 This fork is updated to work with blender 2.8
 
-AddOSC relies on the python module python-osc (by Attwad): 
+## Credits
+
+written by maybites (2020)
+partly based on http://www.jpfep.net/pages/addosc/.
+
+NodeOSC relies on the pure python module python-osc (by Attwad):
 https://pypi.python.org/pypi/python-osc/
 https://github.com/attwad/python-osc
 
- 
+and the pyliblo wrapper for [liblo](http://liblo.sourceforge.net/) OSC library:
+http://das.nasophon.de/pyliblo/
+
+the addon contains the compiled pyliblo wrapper for windows and OSX, but not for linux.
