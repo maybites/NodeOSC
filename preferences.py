@@ -29,7 +29,7 @@ class NodeOSCPreferences(AddonPreferences):
         layout.prop(self, "usePyLiblo")
 
 def register():
-    print("was here")
+    print("done that")
     bpy.utils.register_class(NodeOSCEnvVarSettings)
     bpy.utils.register_class(NodeOSCPreferences)
 

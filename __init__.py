@@ -72,120 +72,7 @@ import threading
 import socketserver
 from bpy.app.handlers import persistent
 
-import queue
-
 _report= ["",""] #This for reporting OS network errors
-
-#######################################
-#  OSC Receive Method                 #
-#######################################
-
-# the OSC-server should not directly modify blender data from its own thread.
-# instead we need a queue to store the callbacks and execute them inside
-# a blender timer thread
-
-# define the queue to store the callbacks
-OSC_callback_queue = queue.LifoQueue()
-
-# the repeatfilter, together with lifo (last in - first out) will
-# make sure only the last osc message received on a certain address
-# will be applied. all older messages will be ignored.
-queue_repeat_filter = {}
-
-# define the method the timer thread is calling when it is appropriate
-def execute_queued_OSC_callbacks():
-    queue_repeat_filter.clear()
-    # while there are callbacks stored inside the queue
-    while not OSC_callback_queue.empty():
-        items = OSC_callback_queue.get()
-        address = items[1]
-        # if the address has not been here before:
-        if queue_repeat_filter.get(address, False) == False:
-            func = items[0]
-            args = items[1:]
-            # execute them 
-            func(*args)
-        queue_repeat_filter[address] = True
-    return 0
-
-# called by the queue execution thread
-def OSC_callback_unkown(address, args):
-    if bpy.context.window_manager.nodeosc_monitor == True:
-        bpy.context.window_manager.nodeosc_lastaddr = address
-        bpy.context.window_manager.nodeosc_lastpayload = str(args)
-
-# called by the queue execution thread
-def OSC_callback_custom(address, obj, attr, attrIdx, oscArgs, oscIndex):
-    try:
-        obj[attr] = oscArgs[oscIndex]
-    except:
-        if bpy.context.window_manager.nodeosc_monitor == True:
-            print ("Improper content received: "+ address + " " + str(oscArgs))
-
-# called by the queue execution thread
-def OSC_callback_property(address, obj, attr, attrIdx, oscArgs, oscIndex):
-    try:
-        getattr(obj,attr)[attrIdx] = oscArgs[oscIndex]
-    except:
-        if bpy.context.window_manager.nodeosc_monitor == True:
-            print ("Improper property received:: "+address + " " + str(oscArgs))
-
-# called by the queue execution thread
-def OSC_callback_properties(address, obj, attr, attrIdx, oscArgs, oscIndex):
-    try:
-        if len(oscIndex) == 3:
-            getattr(obj, attr)[:] = oscArgs[oscIndex[0]], oscArgs[oscIndex[1]], oscArgs[oscIndex[2]]
-        if len(oscIndex) == 4:
-            getattr(obj, attr)[:] = oscArgs[oscIndex[0]], oscArgs[oscIndex[1]], oscArgs[oscIndex[2]], oscArgs[oscIndex[3]]
-    except:
-        if bpy.context.window_manager.nodeosc_monitor == True:
-            print ("Improper properties received: "+address + " " + str(oscArgs))
-
-# method called by the pythonosc library in case of an unmapped message
-def OSC_callback_pythonosc_undef(* args):
-    address = args[0]
-    OSC_callback_queue.put((OSC_callback_unkown, address, args[2:]))
-
-# method called by the pythonosc library in case of a mapped message
-def OSC_callback_pythonosc(* args):
-    # the args structure:
-    #    args[0] = osc address
-    #    args[1] = custom data pakage (tuplet with 5 values)
-    #    args[>1] = osc arguments
-    address = args[0]
-    mytype = args[1][0][0]      # callback type 
-    obj = args[1][0][1]          # blender object name (i.e. bpy.data.objects['Cube'])
-    attr = args[1][0][2]        # blender object ID (i.e. location)
-    attrIdx = args[1][0][3]         # ID-index (not used)
-    oscIndex = args[1][0][4]    # osc argument index to use (should be a tuplet, like (1,2,3))
-
-    oscArgs = args[2:]
-
-    if mytype == 1:
-        OSC_callback_queue.put((OSC_callback_custom, address, obj, attr, attrIdx, oscArgs, oscIndex))
-    elif mytype == 2:
-        OSC_callback_queue.put((OSC_callback_property, address, obj, attr, attrIdx, oscArgs, oscIndex))
-    elif mytype == 3:
-        OSC_callback_queue.put((OSC_callback_properties, address, obj, attr, attrIdx, oscArgs, oscIndex))
- 
-# method called by the pyliblo library in case of a mapped message
-def OSC_callback_pyliblo(path, args, types, src, data):
-    # the args structure:
-    address = path
-    mytype = data[0]        # callback type 
-    obj = data[1]           # blender object name (i.e. bpy.data.objects['Cube'])
-    attr = data[2]          # blender object ID (i.e. location)
-    attrIdx = data[3]       # ID-index (not used)
-    oscIndex = data[4]      # osc argument index to use (should be a tuplet, like (1,2,3))
-
-    if mytype == 0:
-        OSC_callback_queue.put((OSC_callback_unkown, address, args, data))
-    elif mytype == 1:
-        OSC_callback_queue.put((OSC_callback_custom, address, obj, attr, attrIdx, args, oscIndex))
-    elif mytype == 2:
-        OSC_callback_queue.put((OSC_callback_property, address, obj, attr, attrIdx, args, oscIndex))
-    elif mytype == 3:
-        OSC_callback_queue.put((OSC_callback_properties, address, obj, attr, attrIdx, args, oscIndex))
 
 #For saving/restoring settings in the blendfile
 def upd_settings_sub(n):
@@ -410,86 +297,6 @@ class OSC_Reading_Sending(bpy.types.Operator):
         context.window_manager.status = "Stopped"
         bpy.app.timers.unregister(execute_queued_OSC_callbacks)
         return {'CANCELLED'}
-
-#######################################
-#  MAIN GUI PANEL                     #
-#######################################
-
-class OSC_PT_Settings(bpy.types.Panel):
-    bl_category = "NodeOSC"
-    bl_label = "NodeOSC Settings"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_context = "objectmode"
-
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column(align=True)
-        col.label(text="OSC Settings:")
-        row = col.row(align=True)
-        row.operator("nodeosc.startudp", text='Start', icon='PLAY')
-        row.operator("nodeosc.stopudp", text='Stop', icon='PAUSE')
-        layout.prop(bpy.context.window_manager, 'status', text="Running Status")
-        layout.prop(bpy.context.window_manager, 'nodeosc_udp_in', text="Listen on ")
-        layout.prop(bpy.context.window_manager, 'nodeosc_udp_out', text="Destination address")
-        col2 = layout.column(align=True)
-        row2 = col2.row(align=True)
-        row2.prop(bpy.context.window_manager, 'nodeosc_port_in', text="Input port")
-        row2.prop(bpy.context.window_manager, 'nodeosc_port_out', text="Outport port")
-        layout.prop(bpy.context.window_manager, 'nodeosc_rate', text="Update rate(ms)")
-        layout.prop(bpy.context.window_manager, 'nodeosc_autorun', text="Start at Launch")
- 
-#######################################
-#  OPERATIONS GUI PANEL               #
-#######################################
-
-class OSC_PT_Operations(bpy.types.Panel):
-    bl_category = "NodeOSC"
-    bl_label = "NodeOSC Operations"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_context = "objectmode"
-
-    def draw(self, context):
-        layout = self.layout
-        row = layout.row(align=False)
-        row.prop(bpy.context.scene, 'nodeosc_defaultaddr', text="Default Address")
-        row.prop(bpy.context.window_manager, 'nodeosc_monitor', text="Monitoring")
-
-        if context.window_manager.nodeosc_monitor == True:
-            box = layout.box()
-            row5 = box.column(align=True)
-            row5.prop(bpy.context.window_manager, 'nodeosc_lastaddr', text="Last OSC address")
-            row5.prop(bpy.context.window_manager, 'nodeosc_lastpayload', text="Last OSC message")
-
-        layout.separator()
-        layout.operator("nodeosc.importks", text='Import Keying Set')
-        row = layout.row(align=True)
-        row.operator("nodeosc.export", text='Export OSC Config')
-        row.operator("nodeosc.import", text='Import OSC Config')
-
-        layout.separator()
-        layout.label(text="Imported Keys:")
-        index = 0
-        for item in bpy.context.scene.OSC_keys:
-            box3 = layout.box()
-            #split = box3.split()
-            rowItm1 = box3.row()
-            if bpy.context.window_manager.nodeosc_monitor == True:
-                rowItm1.operator("nodeosc.pick", text='', icon='EYEDROPPER').i_addr = item.address
-            rowItm1.prop(item, 'address',text='Osc-addr')
-            rowItm1.prop(item, 'osc_index',text='Osc-argument[index]')
-            #rowItm1.label(text="("+item.osc_type+")")
-             
-            rowItm2 = box3.row()
-            rowItm2.prop(item,'data_path',text='Blender-path')
-            rowItm2.prop(item,'id',text='ID')
-            rowItm2.operator("nodeosc.deleteitem", icon='CANCEL').index = index
-            
-            if bpy.context.window_manager.nodeosc_monitor == True:
-                rowItm3 = box3.row()
-                rowItm3.prop(item, 'value',text='current value')
-            index = index + 1
                  
 
 class StartUDP(bpy.types.Operator):
@@ -581,21 +388,22 @@ def nodeosc_handler(scene):
 
 classes = (
     OSC_Reading_Sending,
-    OSC_PT_Settings,
-    OSC_PT_Operations,
     StartUDP,
     StopUDP,
     PickOSCaddress,
 )
 
+from . import preferences
+from . import keys
+from . import panels
+from callbacks import *
 from .AN import auto_load
 auto_load.init()
 
 def register():
-    from . import preferences
     preferences.register()
-    from . import keys
     keys.register()
+    panels.register()
     for cls in classes:
         bpy.utils.register_class(cls)
     bpy.app.handlers.load_post.append(nodeosc_handler)
@@ -605,9 +413,8 @@ def unregister():
     auto_load.unregister()
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
-    from . import keys
+    panels.unregister()
     keys.unregister()
-    from . import preferences
     preferences.unregister()
 
 if __name__ == "__main__":
