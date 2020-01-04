@@ -234,105 +234,6 @@ def upd_setting_5():
 def upd_setting_6():
     upd_settings_sub(6)
 
-def osc_export_config(scene):
-    config_table = {}
-    for osc_item in scene.OSC_keys:
-        config_table[osc_item.address] = {
-            "data_path" : osc_item.data_path,
-            "id" : osc_item.id,
-            "osc_type" : osc_item.osc_type,
-            "osc_index" : osc_item.osc_index
-        }
-
-    return json.dumps(config_table)
-
-#######################################
-#  Export OSC Settings                #
-#######################################
-
-class OSC_OT_ItemDelete(bpy.types.Operator):
-    """Delete the  OSC Item """
-    bl_idname = "nodeosc.deleteitem"
-    bl_label = "Delete"
-
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    index: bpy.props.IntProperty(default=0)
-
-    @classmethod
-    def poll(cls, context):
-        return context.object is not None
-
-    def execute(self, context):
-        #file = open(self.filepath, 'w')
-        #file.write(osc_export_config(context.scene))
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        bpy.context.scene.OSC_keys.remove(self.index)
-
-        #for item in bpy.context.scene.OSC_keys:
-        #    if item.idx == self.index:
-        #        print(bpy.context.scene.OSC_keys.find(item))
-        return {'RUNNING_MODAL'}
-
-class OSC_Export(bpy.types.Operator):
-    """Export the current OSC configuration to a file in JSON format"""
-    bl_idname = "nodeosc.export"
-    bl_label = "Export Config"
-
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    @classmethod
-    def poll(cls, context):
-        return context.object is not None
-
-    def execute(self, context):
-        file = open(self.filepath, 'w')
-        file.write(osc_export_config(context.scene))
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
-
-def osc_import_config(scene, config_file):
-    config_table = json.load(config_file)
-    for address, values in config_table.items():
-        print(address)
-        print(values)
-        item = scene.OSC_keys.add()
-        item.address = address
-        item.data_path = values["data_path"]
-        item.id = values["id"]
-        item.osc_type = values["osc_type"]
-        item.osc_index = values["osc_index"]
-
-#######################################
-#  Import OSC Settings                #
-#######################################
-
-class OSC_Import(bpy.types.Operator):
-    """Import OSC configuration from a file in JSON format"""
-    bl_idname = "nodeosc.import"
-    bl_label = "Import Config"
-
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    @classmethod
-    def poll(cls, context):
-        return context.object is not None
-
-    def execute(self, context):
-        context.scene.OSC_keys.clear()
-        config_file = open(self.filepath, 'r')
-        osc_import_config(context.scene, config_file)
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
-
 #######################################
 #  Setup OSC                          #
 #######################################
@@ -679,15 +580,12 @@ def nodeosc_handler(scene):
 
 
 classes = (
-    OSC_Export,
-    OSC_Import,
     OSC_Reading_Sending,
     OSC_PT_Settings,
     OSC_PT_Operations,
     StartUDP,
     StopUDP,
     PickOSCaddress,
-    OSC_OT_ItemDelete
 )
 
 from .AN import auto_load
