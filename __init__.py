@@ -33,14 +33,14 @@
 
 
 bl_info = {
-    "name": "AddOSC",
-    "author": "JPfeP, maybites",
+    "name": "NodeOSC",
+    "author": "maybites",
     "version": (0, 19),
     "blender": (2, 80, 0),
-    "location": "View3D > Tools > AddOSC",
+    "location": "View3D > Tools > NodeOSC",
     "description": "Realtime control of Blender using OSC protocol",
     "warning": "Please read the disclaimer about network security on the download site.",
-    "wiki_url": "http://www.jpfep.net/pages/addosc/",
+    "wiki_url": "",
     "tracker_url": "",
     "category": "System"}
 
@@ -110,16 +110,16 @@ def execute_queued_OSC_callbacks():
 
 # called by the queue execution thread
 def OSC_callback_unkown(address, args):
-    if bpy.context.window_manager.addosc_monitor == True:
-        bpy.context.window_manager.addosc_lastaddr = address
-        bpy.context.window_manager.addosc_lastpayload = str(args)
+    if bpy.context.window_manager.nodeosc_monitor == True:
+        bpy.context.window_manager.nodeosc_lastaddr = address
+        bpy.context.window_manager.nodeosc_lastpayload = str(args)
 
 # called by the queue execution thread
 def OSC_callback_custom(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
         obj[attr] = oscArgs[oscIndex]
     except:
-        if bpy.context.window_manager.addosc_monitor == True:
+        if bpy.context.window_manager.nodeosc_monitor == True:
             print ("Improper content received: "+ address + " " + str(oscArgs))
 
 # called by the queue execution thread
@@ -127,7 +127,7 @@ def OSC_callback_property(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
         getattr(obj,attr)[attrIdx] = oscArgs[oscIndex]
     except:
-        if bpy.context.window_manager.addosc_monitor == True:
+        if bpy.context.window_manager.nodeosc_monitor == True:
             print ("Improper property received:: "+address + " " + str(oscArgs))
 
 # called by the queue execution thread
@@ -138,7 +138,7 @@ def OSC_callback_properties(address, obj, attr, attrIdx, oscArgs, oscIndex):
         if len(oscIndex) == 4:
             getattr(obj, attr)[:] = oscArgs[oscIndex[0]], oscArgs[oscIndex[1]], oscArgs[oscIndex[2]], oscArgs[oscIndex[3]]
     except:
-        if bpy.context.window_manager.addosc_monitor == True:
+        if bpy.context.window_manager.nodeosc_monitor == True:
             print ("Improper properties received: "+address + " " + str(oscArgs))
 
 # method called by the pythonosc library in case of an unmapped message
@@ -191,27 +191,27 @@ def OSC_callback_pyliblo(path, args, types, src, data):
 def upd_settings_sub(n):
     text_settings = None
     for text in bpy.data.texts:
-        if text.name == '.addosc_settings':
+        if text.name == '.nodeosc_settings':
             text_settings = text
     if text_settings == None:
         bpy.ops.text.new()
         text_settings = bpy.data.texts[-1]
-        text_settings.name = '.addosc_settings'
+        text_settings.name = '.nodeosc_settings'
         text_settings.write("\n\n\n\n\n\n")
     if n==0:
-        text_settings.lines[0].body = str(int(bpy.context.window_manager.addosc_monitor))
+        text_settings.lines[0].body = str(int(bpy.context.window_manager.nodeosc_monitor))
     elif n==1:
-        text_settings.lines[1].body = str(bpy.context.window_manager.addosc_port_in)
+        text_settings.lines[1].body = str(bpy.context.window_manager.nodeosc_port_in)
     elif n==2:
-        text_settings.lines[2].body = str(bpy.context.window_manager.addosc_port_out)
+        text_settings.lines[2].body = str(bpy.context.window_manager.nodeosc_port_out)
     elif n==3:
-        text_settings.lines[3].body = str(bpy.context.window_manager.addosc_rate)
+        text_settings.lines[3].body = str(bpy.context.window_manager.nodeosc_rate)
     elif n==4:
-        text_settings.lines[4].body = bpy.context.window_manager.addosc_udp_in
+        text_settings.lines[4].body = bpy.context.window_manager.nodeosc_udp_in
     elif n==5:
-        text_settings.lines[5].body = bpy.context.window_manager.addosc_udp_out
+        text_settings.lines[5].body = bpy.context.window_manager.nodeosc_udp_out
     elif n==6:
-        text_settings.lines[6].body = str(int(bpy.context.window_manager.addosc_autorun))
+        text_settings.lines[6].body = str(int(bpy.context.window_manager.nodeosc_autorun))
 
 def upd_setting_0():
     upd_settings_sub(0)
@@ -260,14 +260,14 @@ class SceneSettingItem(bpy.types.PropertyGroup):
         value: bpy.props.StringProperty(name="Value", default="Unknown")
         idx: bpy.props.IntProperty(name="Index", min=0, default=0)
 
-class OSC_ITEM_Delete(bpy.types.Operator):
+class OSC_OT_ItemDelete(bpy.types.Operator):
     """Delete the  OSC Item """
-    bl_idname = "addosc.deleteitem"
+    bl_idname = "nodeosc.deleteitem"
     bl_label = "Delete"
 
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
-    index = bpy.props.IntProperty(default=0)
+    index: bpy.props.IntProperty(default=0)
 
     @classmethod
     def poll(cls, context):
@@ -288,7 +288,7 @@ class OSC_ITEM_Delete(bpy.types.Operator):
 
 class OSC_Export(bpy.types.Operator):
     """Export the current OSC configuration to a file in JSON format"""
-    bl_idname = "addosc.export"
+    bl_idname = "nodeosc.export"
     bl_label = "Export Config"
 
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
@@ -324,7 +324,7 @@ def osc_import_config(scene, config_file):
 
 class OSC_Import(bpy.types.Operator):
     """Import OSC configuration from a file in JSON format"""
-    bl_idname = "addosc.import"
+    bl_idname = "nodeosc.import"
     bl_label = "Import Config"
 
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
@@ -348,14 +348,14 @@ class OSC_Import(bpy.types.Operator):
 #######################################
 
 class OSC_Reading_Sending(bpy.types.Operator):
-    bl_idname = "addosc.modal_timer_operator"
+    bl_idname = "nodeosc.modal_timer_operator"
     bl_label = "OSCMainThread"
 
     _timer = None
     client = "" #for the sending socket
     count = 0
 
-    def upd_trick_addosc_monitor(self,context):
+    def upd_trick_nodeosc_monitor(self,context):
         upd_setting_0()
 
     def upd_trick_portin(self,context):
@@ -367,28 +367,28 @@ class OSC_Reading_Sending(bpy.types.Operator):
     def upd_trick_rate(self,context):
         upd_setting_3()
 
-    def upd_trick_addosc_udp_in(self,context):
+    def upd_trick_nodeosc_udp_in(self,context):
         upd_setting_4()
 
-    def upd_trick_addosc_udp_out(self,context):
+    def upd_trick_nodeosc_udp_out(self,context):
         upd_setting_5()
 
-    def upd_trick_addosc_autorun(self,context):
+    def upd_trick_nodeosc_autorun(self,context):
         upd_setting_6()
 
-    bpy.types.WindowManager.addosc_udp_in  = bpy.props.StringProperty(default="127.0.0.1", update=upd_trick_addosc_udp_in, description='The IP of the interface of your Blender machine to listen on, set to 0.0.0.0 for all of them')
-    bpy.types.WindowManager.addosc_udp_out = bpy.props.StringProperty(default="127.0.0.1", update=upd_trick_addosc_udp_out, description='The IP of the destination machine to send messages to')
-    bpy.types.WindowManager.addosc_port_in = bpy.props.IntProperty(default=9001, min=0, max=65535, update=upd_trick_portin, description='The input network port (0-65535)')
-    bpy.types.WindowManager.addosc_port_out = bpy.props.IntProperty(default=9002, min=0, max= 65535, update=upd_trick_portout, description='The output network port (0-65535)')
-    bpy.types.WindowManager.addosc_rate = bpy.props.IntProperty(default=10 ,description="The refresh rate of the engine (millisecond)", min=1, update=upd_trick_rate)
+    bpy.types.WindowManager.nodeosc_udp_in  = bpy.props.StringProperty(default="127.0.0.1", update=upd_trick_nodeosc_udp_in, description='The IP of the interface of your Blender machine to listen on, set to 0.0.0.0 for all of them')
+    bpy.types.WindowManager.nodeosc_udp_out = bpy.props.StringProperty(default="127.0.0.1", update=upd_trick_nodeosc_udp_out, description='The IP of the destination machine to send messages to')
+    bpy.types.WindowManager.nodeosc_port_in = bpy.props.IntProperty(default=9001, min=0, max=65535, update=upd_trick_portin, description='The input network port (0-65535)')
+    bpy.types.WindowManager.nodeosc_port_out = bpy.props.IntProperty(default=9002, min=0, max= 65535, update=upd_trick_portout, description='The output network port (0-65535)')
+    bpy.types.WindowManager.nodeosc_rate = bpy.props.IntProperty(default=10 ,description="The refresh rate of the engine (millisecond)", min=1, update=upd_trick_rate)
     bpy.types.WindowManager.status = bpy.props.StringProperty(default="Stopped", description='Show if the engine is running or not')
-    bpy.types.WindowManager.addosc_monitor = bpy.props.BoolProperty(description="Display the current value of your keys, the last message received and some infos in console", update=upd_trick_addosc_monitor)
-    bpy.types.WindowManager.addosc_autorun = bpy.props.BoolProperty(description="Start the OSC engine automatically after loading a project", update=upd_trick_addosc_autorun)
-    bpy.types.WindowManager.addosc_lastaddr = bpy.props.StringProperty(description="Display the last OSC address received")
-    bpy.types.WindowManager.addosc_lastpayload = bpy.props.StringProperty(description="Display the last OSC message content")
+    bpy.types.WindowManager.nodeosc_monitor = bpy.props.BoolProperty(description="Display the current value of your keys, the last message received and some infos in console", update=upd_trick_nodeosc_monitor)
+    bpy.types.WindowManager.nodeosc_autorun = bpy.props.BoolProperty(description="Start the OSC engine automatically after loading a project", update=upd_trick_nodeosc_autorun)
+    bpy.types.WindowManager.nodeosc_lastaddr = bpy.props.StringProperty(description="Display the last OSC address received")
+    bpy.types.WindowManager.nodeosc_lastpayload = bpy.props.StringProperty(description="Display the last OSC message content")
 
     #modes_enum = [('Replace','Replace','Replace'),('Update','Update','Update')]
-    #bpy.types.WindowManager.addosc_mode = bpy.props.EnumProperty(name = "import mode", items = modes_enum)
+    #bpy.types.WindowManager.nodeosc_mode = bpy.props.EnumProperty(name = "import mode", items = modes_enum)
 
     #######################################
     #  Sending OSC                        #
@@ -401,10 +401,10 @@ class OSC_Reading_Sending(bpy.types.Operator):
         if event.type == 'TIMER':
             #hack to refresh the GUI
             bcw = bpy.context.window_manager
-            self.count = self.count + bcw.addosc_rate
+            self.count = self.count + bcw.nodeosc_rate
             if self.count >= 500:
                 self.count = 0
-                if bpy.context.window_manager.addosc_monitor == True:
+                if bpy.context.window_manager.nodeosc_monitor == True:
                     for window in bpy.context.window_manager.windows:
                         screen = window.screen
                         for area in screen.areas:
@@ -449,7 +449,7 @@ class OSC_Reading_Sending(bpy.types.Operator):
 
         #For sending
         try:
-            self.client = udp_client.UDPClient(bcw.addosc_udp_out, bcw.addosc_port_out)
+            self.client = udp_client.UDPClient(bcw.nodeosc_udp_out, bcw.nodeosc_port_out)
             msg = osc_message_builder.OscMessageBuilder(address="/blender")
             msg.add_arg("Hello from Blender, simple test.")
             msg = msg.build()
@@ -488,13 +488,13 @@ class OSC_Reading_Sending(bpy.types.Operator):
  
             self.dispatcher.set_default_handler(OSC_callback_pythonosc_undef)
  
-            print("Create Server Thread on Port", bcw.addosc_port_in)
+            print("Create Server Thread on Port", bcw.nodeosc_port_in)
             # creating a blocking UDP Server
             #   Each message will be handled sequentially on the same thread.
             #   the alternative: 
             #       ThreadingOSCUDPServer creates loads of threads 
             #       that are not cleaned up properly
-            self.server = osc_server.BlockingOSCUDPServer((bcw.addosc_udp_in, bcw.addosc_port_in), self.dispatcher)
+            self.server = osc_server.BlockingOSCUDPServer((bcw.nodeosc_udp_in, bcw.nodeosc_port_in), self.dispatcher)
             self.server_thread = threading.Thread(target=self.server.serve_forever)
             self.server_thread.start()
             # register the execute queue method
@@ -507,7 +507,7 @@ class OSC_Reading_Sending(bpy.types.Operator):
 
         #inititate the modal timer thread
         context.window_manager.modal_handler_add(self)
-        self._timer = context.window_manager.event_timer_add(bcw.addosc_rate/1000, window = context.window)
+        self._timer = context.window_manager.event_timer_add(bcw.nodeosc_rate/1000, window = context.window)
         context.window_manager.status = "Running"
 
         return {'RUNNING_MODAL'}
@@ -524,9 +524,9 @@ class OSC_Reading_Sending(bpy.types.Operator):
 #  MAIN GUI PANEL                     #
 #######################################
 
-class OSC_UI_Panel(bpy.types.Panel):
-    bl_category = "AddOSC"
-    bl_label = "AddOSC Settings"
+class OSC_PT_Settings(bpy.types.Panel):
+    bl_category = "NodeOSC"
+    bl_label = "NodeOSC Settings"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_context = "objectmode"
@@ -536,25 +536,25 @@ class OSC_UI_Panel(bpy.types.Panel):
         col = layout.column(align=True)
         col.label(text="OSC Settings:")
         row = col.row(align=True)
-        row.operator("addosc.startudp", text='Start', icon='PLAY')
-        row.operator("addosc.stopudp", text='Stop', icon='PAUSE')
+        row.operator("nodeosc.startudp", text='Start', icon='PLAY')
+        row.operator("nodeosc.stopudp", text='Stop', icon='PAUSE')
         layout.prop(bpy.context.window_manager, 'status', text="Running Status")
-        layout.prop(bpy.context.window_manager, 'addosc_udp_in', text="Listen on ")
-        layout.prop(bpy.context.window_manager, 'addosc_udp_out', text="Destination address")
+        layout.prop(bpy.context.window_manager, 'nodeosc_udp_in', text="Listen on ")
+        layout.prop(bpy.context.window_manager, 'nodeosc_udp_out', text="Destination address")
         col2 = layout.column(align=True)
         row2 = col2.row(align=True)
-        row2.prop(bpy.context.window_manager, 'addosc_port_in', text="Input port")
-        row2.prop(bpy.context.window_manager, 'addosc_port_out', text="Outport port")
-        layout.prop(bpy.context.window_manager, 'addosc_rate', text="Update rate(ms)")
-        layout.prop(bpy.context.window_manager, 'addosc_autorun', text="Start at Launch")
+        row2.prop(bpy.context.window_manager, 'nodeosc_port_in', text="Input port")
+        row2.prop(bpy.context.window_manager, 'nodeosc_port_out', text="Outport port")
+        layout.prop(bpy.context.window_manager, 'nodeosc_rate', text="Update rate(ms)")
+        layout.prop(bpy.context.window_manager, 'nodeosc_autorun', text="Start at Launch")
  
 #######################################
 #  OPERATIONS GUI PANEL               #
 #######################################
 
-class OSC_UI_Panel2(bpy.types.Panel):
-    bl_category = "AddOSC"
-    bl_label = "AddOSC Operations"
+class OSC_PT_Operations(bpy.types.Panel):
+    bl_category = "NodeOSC"
+    bl_label = "NodeOSC Operations"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_context = "objectmode"
@@ -562,20 +562,20 @@ class OSC_UI_Panel2(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         row = layout.row(align=False)
-        row.prop(bpy.context.scene, 'addosc_defaultaddr', text="Default Address")
-        row.prop(bpy.context.window_manager, 'addosc_monitor', text="Monitoring")
+        row.prop(bpy.context.scene, 'nodeosc_defaultaddr', text="Default Address")
+        row.prop(bpy.context.window_manager, 'nodeosc_monitor', text="Monitoring")
 
-        if context.window_manager.addosc_monitor == True:
+        if context.window_manager.nodeosc_monitor == True:
             box = layout.box()
             row5 = box.column(align=True)
-            row5.prop(bpy.context.window_manager, 'addosc_lastaddr', text="Last OSC address")
-            row5.prop(bpy.context.window_manager, 'addosc_lastpayload', text="Last OSC message")
+            row5.prop(bpy.context.window_manager, 'nodeosc_lastaddr', text="Last OSC address")
+            row5.prop(bpy.context.window_manager, 'nodeosc_lastpayload', text="Last OSC message")
 
         layout.separator()
-        layout.operator("addosc.importks", text='Import Keying Set')
+        layout.operator("nodeosc.importks", text='Import Keying Set')
         row = layout.row(align=True)
-        row.operator("addosc.export", text='Export OSC Config')
-        row.operator("addosc.import", text='Import OSC Config')
+        row.operator("nodeosc.export", text='Export OSC Config')
+        row.operator("nodeosc.import", text='Import OSC Config')
 
         layout.separator()
         layout.label(text="Imported Keys:")
@@ -584,8 +584,8 @@ class OSC_UI_Panel2(bpy.types.Panel):
             box3 = layout.box()
             #split = box3.split()
             rowItm1 = box3.row()
-            if bpy.context.window_manager.addosc_monitor == True:
-                rowItm1.operator("addosc.pick", text='', icon='EYEDROPPER').i_addr = item.address
+            if bpy.context.window_manager.nodeosc_monitor == True:
+                rowItm1.operator("nodeosc.pick", text='', icon='EYEDROPPER').i_addr = item.address
             rowItm1.prop(item, 'address',text='Osc-addr')
             rowItm1.prop(item, 'osc_index',text='Osc-argument[index]')
             #rowItm1.label(text="("+item.osc_type+")")
@@ -593,26 +593,26 @@ class OSC_UI_Panel2(bpy.types.Panel):
             rowItm2 = box3.row()
             rowItm2.prop(item,'data_path',text='Blender-path')
             rowItm2.prop(item,'id',text='ID')
-            rowItm2.operator("addosc.deleteitem", icon='CANCEL').index = index
+            rowItm2.operator("nodeosc.deleteitem", icon='CANCEL').index = index
             
-            if bpy.context.window_manager.addosc_monitor == True:
+            if bpy.context.window_manager.nodeosc_monitor == True:
                 rowItm3 = box3.row()
                 rowItm3.prop(item, 'value',text='current value')
             index = index + 1
                  
 
 class StartUDP(bpy.types.Operator):
-    bl_idname = "addosc.startudp"
+    bl_idname = "nodeosc.startudp"
     bl_label = "Start UDP Connection"
     bl_description ="Start the OSC engine"
 
     def execute(self, context):
         global _report
-        if context.window_manager.addosc_port_in == context.window_manager.addosc_port_out:
+        if context.window_manager.nodeosc_port_in == context.window_manager.nodeosc_port_out:
             self.report({'INFO'}, "Ports must be different.")
             return{'FINISHED'}
         if bpy.context.window_manager.status != "Running" :
-            bpy.ops.addosc.modal_timer_operator()
+            bpy.ops.nodeosc.modal_timer_operator()
             if _report[0] != '':
                 self.report({'INFO'}, "Input error: {0}".format(_report[0]))
                 _report[0] = ''
@@ -624,7 +624,7 @@ class StartUDP(bpy.types.Operator):
         return{'FINISHED'}
 
 class StopUDP(bpy.types.Operator):
-    bl_idname = "addosc.stopudp"
+    bl_idname = "nodeosc.stopudp"
     bl_label = "Stop UDP Connection"
     bl_description ="Stop the OSC engine"
 
@@ -634,7 +634,7 @@ class StopUDP(bpy.types.Operator):
         return{'FINISHED'}
 
 class PickOSCaddress(bpy.types.Operator):
-    bl_idname = "addosc.pick"
+    bl_idname = "nodeosc.pick"
     bl_label = "Pick the last event OSC address"
     bl_options = {'UNDO'}
     bl_description ="Pick the address of the last OSC message received"
@@ -642,7 +642,7 @@ class PickOSCaddress(bpy.types.Operator):
     i_addr: bpy.props.StringProperty()
 
     def execute(self, context):
-        last_event = bpy.context.window_manager.addosc_lastaddr
+        last_event = bpy.context.window_manager.nodeosc_lastaddr
         if len(last_event) > 1 and last_event[0] == "/":
             for item in bpy.context.scene.OSC_keys:
                 if item.address == self.i_addr :
@@ -674,22 +674,22 @@ def parse_ks(item):
 
     return full_p, path, prop
 
-class AddOSC_ImportKS(bpy.types.Operator):
-    bl_idname = "addosc.importks"
+class NodeOSC_ImportKS(bpy.types.Operator):
+    bl_idname = "nodeosc.importks"
     bl_label = "Import a Keying Set"
     bl_options = {'UNDO'}
     bl_description ="Import the keys of the active Keying Set"
 
     def verifdefaddr(self,context):
-        if context.scene.addosc_defaultaddr[0] != "/":
-            context.scene.addosc_defaultaddr = "/"+context.scene.addosc_defaultaddr
+        if context.scene.nodeosc_defaultaddr[0] != "/":
+            context.scene.nodeosc_defaultaddr = "/"+context.scene.nodeosc_defaultaddr
 
     bpy.utils.register_class(SceneSettingItem)
 
     bpy.types.Scene.OSC_keys = bpy.props.CollectionProperty(type=SceneSettingItem)
     bpy.types.Scene.OSC_keys_tmp = bpy.props.CollectionProperty(type=SceneSettingItem)
 
-    bpy.types.Scene.addosc_defaultaddr = bpy.props.StringProperty(default="/blender", description='Form new addresses based on this keyword',update=verifdefaddr)
+    bpy.types.Scene.nodeosc_defaultaddr = bpy.props.StringProperty(default="/blender", description='Form new addresses based on this keyword',update=verifdefaddr)
 
     def execute(self, context):
         ks = bpy.context.scene.keying_sets.active
@@ -730,7 +730,7 @@ class AddOSC_ImportKS(bpy.types.Operator):
             for item in bpy.context.scene.OSC_keys:
                 split = item.address.split('/')
                 try:
-                    if split[1] == bpy.context.scene.addosc_defaultaddr[1:]:
+                    if split[1] == bpy.context.scene.nodeosc_defaultaddr[1:]:
                         if int(split[-1]) > id_n:
                             id_n = int(split[-1])
                 except:
@@ -763,7 +763,7 @@ class AddOSC_ImportKS(bpy.types.Operator):
                         item_tmp.idx = item.idx
                 if item_tmp.address == "":
                     id_n += 1
-                    item_tmp.address = bpy.context.scene.addosc_defaultaddr + "/" + str(id_n)
+                    item_tmp.address = bpy.context.scene.nodeosc_defaultaddr + "/" + str(id_n)
 
             #Simple copy OSC_keys_tmp toward OSC_keys
             item = bpy.context.scene.OSC_keys.clear()
@@ -782,61 +782,66 @@ class AddOSC_ImportKS(bpy.types.Operator):
 
 #Restore saved settings
 @persistent
-def addosc_handler(scene):
+def nodeosc_handler(scene):
     for text in bpy.data.texts:
-        if text.name == '.addosc_settings':
+        if text.name == '.nodeosc_settings':
             try:
-                bpy.context.window_manager.addosc_monitor = int(text.lines[0].body)
+                bpy.context.window_manager.nodeosc_monitor = int(text.lines[0].body)
             except:
                 pass
             try:
-                bpy.context.window_manager.addosc_port_in  = int(text.lines[1].body)
+                bpy.context.window_manager.nodeosc_port_in  = int(text.lines[1].body)
             except:
                 pass
             try:
-                bpy.context.window_manager.addosc_port_out = int(text.lines[2].body)
+                bpy.context.window_manager.nodeosc_port_out = int(text.lines[2].body)
             except:
                 pass
             try:
-                bpy.context.window_manager.addosc_rate = int(text.lines[3].body)
+                bpy.context.window_manager.nodeosc_rate = int(text.lines[3].body)
             except:
-                bpy.context.window_manager.addosc_rate = 10
+                bpy.context.window_manager.nodeosc_rate = 10
             if text.lines[4].body != '':
-                bpy.context.window_manager.addosc_udp_in = text.lines[4].body
+                bpy.context.window_manager.nodeosc_udp_in = text.lines[4].body
             if text.lines[5].body != '':
-                bpy.context.window_manager.addosc_udp_out = text.lines[5].body
+                bpy.context.window_manager.nodeosc_udp_out = text.lines[5].body
             try:
-                bpy.context.window_manager.addosc_autorun = int(text.lines[6].body)
+                bpy.context.window_manager.nodeosc_autorun = int(text.lines[6].body)
             except:
                 pass
 
             #if error_device == True:
-            #    bpy.context.window_manager.addosc_autorun = False
+            #    bpy.context.window_manager.nodeosc_autorun = False
 
-            if bpy.context.window_manager.addosc_autorun == True:
-                bpy.ops.addosc.startudp()
+            if bpy.context.window_manager.nodeosc_autorun == True:
+                bpy.ops.nodeosc.startudp()
 
 
 classes = (
     OSC_Export,
     OSC_Import,
     OSC_Reading_Sending,
-    OSC_UI_Panel,
-    OSC_UI_Panel2,
+    OSC_PT_Settings,
+    OSC_PT_Operations,
     StartUDP,
     StopUDP,
     PickOSCaddress,
-    AddOSC_ImportKS,
-    OSC_ITEM_Delete
+    NodeOSC_ImportKS,
+    OSC_OT_ItemDelete
 )
+
+from .AN import auto_load
+auto_load.init()
 
 def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
-    bpy.app.handlers.load_post.append(addosc_handler)
+    bpy.app.handlers.load_post.append(nodeosc_handler)
+    auto_load.register()
 
 def unregister():
+    auto_load.unregister()
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)

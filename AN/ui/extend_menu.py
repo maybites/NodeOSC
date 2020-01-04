@@ -13,7 +13,6 @@ def drawMenu(self, context):
 
     layout = self.layout
     layout.operator_context = "INVOKE_DEFAULT"
-
     layout.separator()
     layout.menu("AN_MT_OSC_menu", text = "OSC", icon = "LINENUMBERS_ON")
  

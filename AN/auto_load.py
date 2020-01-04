@@ -19,7 +19,6 @@ ordered_classes = None
 def init():
     global modules
     global ordered_classes
-
     print(Path(__file__).parent.parent)
     modules = get_all_submodules(Path(__file__).parent.parent, Path(__file__).parent)
     ordered_classes = get_ordered_classes_to_register(modules)
