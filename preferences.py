@@ -5,12 +5,12 @@ from bpy.props import StringProperty, IntProperty, BoolProperty
 
 class NodeOSCEnvVarSettings(bpy.types.PropertyGroup):
         #key_path = bpy.props.StringProperty(name="Key", default="Unknown")
-        address: bpy.props.StringProperty(name="Address", default="")
-        data_path: bpy.props.StringProperty(name="Data path", default="")
-        id: bpy.props.StringProperty(name="ID", default="")
+        address: bpy.props.StringProperty(name="address", default="")
+        data_path: bpy.props.StringProperty(name="data path", default="")
+        id: bpy.props.StringProperty(name="id", default="")
         osc_type: bpy.props.StringProperty(name="Type", default="Unknown")
-        osc_index: bpy.props.StringProperty(name="Type", default="Unknown")
-        value: bpy.props.StringProperty(name="Value", default="Unknown")
+        osc_index: bpy.props.StringProperty(name="argument indices", default="Unknown")
+        value: bpy.props.StringProperty(name="value", default="Unknown")
         idx: bpy.props.IntProperty(name="Index", min=0, default=0)
 
 class NodeOSCPreferences(AddonPreferences):

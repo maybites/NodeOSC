@@ -6,7 +6,7 @@ import bpy
 
 class OSC_PT_Settings(bpy.types.Panel):
     bl_category = "NodeOSC"
-    bl_label = "NodeOSC Settings"
+    bl_label = "NodeOSC Server"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_context = "objectmode"
@@ -34,7 +34,7 @@ class OSC_PT_Settings(bpy.types.Panel):
 
 class OSC_PT_Operations(bpy.types.Panel):
     bl_category = "NodeOSC"
-    bl_label = "NodeOSC Operations"
+    bl_label = "Custom RX"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_context = "objectmode"
@@ -52,33 +52,40 @@ class OSC_PT_Operations(bpy.types.Panel):
             row5.prop(bpy.context.window_manager, 'nodeosc_lastpayload', text="Last OSC message")
 
         layout.separator()
+        layout.label(text="Message handlers:")
+        index = 0
+        for item in bpy.context.scene.OSC_keys:
+            box3 = layout.box()
+            split = box3.split()
+            colItm1 = split.column()
+            if bpy.context.window_manager.nodeosc_monitor == True:
+                colItm1.operator("nodeosc.pick", text='', icon='EYEDROPPER').i_addr = item.address
+            colItm1.prop(item, 'osc_address',text='address')
+            colItm1.prop(item, 'osc_index',text='argument[index]')
+            #rowItm1.label(text="("+item.osc_type+")")
+             
+            colItm2 = split.column()
+            colItm2.prop(item,'data_path',text='path')
+            colItm2.prop(item,'id',text='id')
+            
+            if bpy.context.window_manager.nodeosc_monitor == True:
+                rowItm3 = box3.row()
+                rowItm3.prop(item, 'value',text='current value')
+            
+            rowItm4 = box3.row()
+            rowItm4.operator("nodeosc.deleteitem", icon='CANCEL').index = index
+            
+            index = index + 1
+        
+        layout.operator("nodeosc.createitem", text='Create new message handle')
+
+
+        layout.separator()
         layout.operator("nodeosc.importks", text='Import Keying Set')
         row = layout.row(align=True)
         row.operator("nodeosc.export", text='Export OSC Config')
         row.operator("nodeosc.import", text='Import OSC Config')
 
-        layout.separator()
-        layout.label(text="Imported Keys:")
-        index = 0
-        for item in bpy.context.scene.OSC_keys:
-            box3 = layout.box()
-            #split = box3.split()
-            rowItm1 = box3.row()
-            if bpy.context.window_manager.nodeosc_monitor == True:
-                rowItm1.operator("nodeosc.pick", text='', icon='EYEDROPPER').i_addr = item.address
-            rowItm1.prop(item, 'address',text='Osc-addr')
-            rowItm1.prop(item, 'osc_index',text='Osc-argument[index]')
-            #rowItm1.label(text="("+item.osc_type+")")
-             
-            rowItm2 = box3.row()
-            rowItm2.prop(item,'data_path',text='Blender-path')
-            rowItm2.prop(item,'id',text='ID')
-            rowItm2.operator("nodeosc.deleteitem", icon='CANCEL').index = index
-            
-            if bpy.context.window_manager.nodeosc_monitor == True:
-                rowItm3 = box3.row()
-                rowItm3.prop(item, 'value',text='current value')
-            index = index + 1
 
 panel_classes = (
     OSC_PT_Settings,

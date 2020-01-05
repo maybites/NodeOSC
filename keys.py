@@ -1,20 +1,104 @@
 import bpy
+import json
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty, IntProperty, BoolProperty
 
+def osc_export_config(scene):
+    config_table = {}
+    for osc_item in scene.OSC_keys:
+        config_table[osc_item.osc_address] = {
+            "data_path" : osc_item.data_path,
+            "id" : osc_item.id,
+            "osc_type" : osc_item.osc_type,
+            "osc_index" : osc_item.osc_index
+        }
+
+    return json.dumps(config_table)
+
+def osc_import_config(scene, config_file):
+    config_table = json.load(config_file)
+    for address, values in config_table.items():
+        print(address)
+        print(values)
+        item = scene.OSC_keys.add()
+        item.osc_address = address
+        item.data_path = values["data_path"]
+        item.id = values["id"]
+        item.osc_type = values["osc_type"]
+        item.osc_index = values["osc_index"]
+
+def parse_ks(item):
+    dp = item.data_path
+    ID = repr(item.id)
+
+    #custom prop:
+    if dp[-1] == ']':
+        #it's a simple datapath like ['plop']
+        if dp[0] == '[' :
+            full_p = ID + dp
+            path = ID
+            prop = dp
+        #it's a composed datapath like foo.bones["bar"]['plop']
+        else:
+            full_p = ID + '.' + dp
+            path = str(full_p.split('][')[0]) + ']'
+            prop = '[' + str(full_p.split('][')[1])
+    #normal prop:
+    else:
+        full_p = ID + '.' + dp
+        path = '.'.join(full_p.split('.')[:-1])
+        prop = full_p.split('.')[-1]
+
+    return full_p, path, prop
+
 class NodeOSCMsgValues(bpy.types.PropertyGroup):
         #key_path = bpy.props.StringProperty(name="Key", default="Unknown")
-        address: bpy.props.StringProperty(name="Address", default="")
-        data_path: bpy.props.StringProperty(name="Data path", default="")
-        id: bpy.props.StringProperty(name="ID", default="")
+        osc_address: bpy.props.StringProperty(name="address", default="")
+        data_path: bpy.props.StringProperty(name="data path", default="")
+        id: bpy.props.StringProperty(name="id", default="")
         osc_type: bpy.props.StringProperty(name="Type", default="Unknown")
-        osc_index: bpy.props.StringProperty(name="Type", default="Unknown")
-        value: bpy.props.StringProperty(name="Value", default="Unknown")
+        osc_index: bpy.props.StringProperty(name="argument indices", default="Unknown")
+        value: bpy.props.StringProperty(name="value", default="Unknown")
         idx: bpy.props.IntProperty(name="Index", min=0, default=0)
 
+#######################################
+#  Create OSC Settings                #
+#######################################
+
+class OSC_OT_ItemCreate(bpy.types.Operator):
+    """Create the  OSC Item """
+    bl_idname = "nodeosc.createitem"
+    bl_label = "Create"
+
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    index: bpy.props.IntProperty(default=0)
+
+    @classmethod
+    def poll(cls, context):
+        return context.object is not None
+
+    def execute(self, context):
+        #file = open(self.filepath, 'w')
+        #file.write(osc_export_config(context.scene))
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        new_item = bpy.context.scene.OSC_keys.add()
+        new_item.id = "location"
+        new_item.data_path = "bpy.data.objects['Cube']"
+        new_item.osc_address = "/example/address"
+        new_item.osc_index = "(0)"
+
+        #bpy.context.scene.OSC_keys.remove(self.index)
+
+        #for item in bpy.context.scene.OSC_keys:
+        #    if item.idx == self.index:
+        #        print(bpy.context.scene.OSC_keys.find(item))
+        return {'RUNNING_MODAL'}
 
 #######################################
-#  Export OSC Settings                #
+#  Delete OSC Settings                #
 #######################################
 
 class OSC_OT_ItemDelete(bpy.types.Operator):
@@ -42,6 +126,10 @@ class OSC_OT_ItemDelete(bpy.types.Operator):
         #    if item.idx == self.index:
         #        print(bpy.context.scene.OSC_keys.find(item))
         return {'RUNNING_MODAL'}
+
+#######################################
+#  Export OSC Settings                #
+#######################################
 
 class OSC_Export(bpy.types.Operator):
     """Export the current OSC configuration to a file in JSON format"""
@@ -169,7 +257,7 @@ class NodeOSC_ImportKS(Operator):
             for item_tmp in bpy.context.scene.OSC_keys_tmp:
                 for item in bpy.context.scene.OSC_keys:
                     if item_tmp.id == item.id and item_tmp.data_path == item.data_path:
-                        item_tmp.address = item.address
+                        item_tmp.osc_address = item.osc_address
                         item_tmp.idx = item.idx
                 if item_tmp.address == "":
                     id_n += 1
@@ -181,7 +269,7 @@ class NodeOSC_ImportKS(Operator):
                 item = bpy.context.scene.OSC_keys.add()
                 item.id = tmp_item.id
                 item.data_path = tmp_item.data_path
-                item.address = tmp_item.address
+                item.osc_address = tmp_item.osc_address
                 item.osc_type = tmp_item.osc_type
                 item.idx = tmp_item.idx
 
@@ -190,60 +278,13 @@ class NodeOSC_ImportKS(Operator):
 
         return{'FINISHED'}
 
-def osc_export_config(scene):
-    config_table = {}
-    for osc_item in scene.OSC_keys:
-        config_table[osc_item.address] = {
-            "data_path" : osc_item.data_path,
-            "id" : osc_item.id,
-            "osc_type" : osc_item.osc_type,
-            "osc_index" : osc_item.osc_index
-        }
-
-    return json.dumps(config_table)
-
-def osc_import_config(scene, config_file):
-    config_table = json.load(config_file)
-    for address, values in config_table.items():
-        print(address)
-        print(values)
-        item = scene.OSC_keys.add()
-        item.address = address
-        item.data_path = values["data_path"]
-        item.id = values["id"]
-        item.osc_type = values["osc_type"]
-        item.osc_index = values["osc_index"]
-
-def parse_ks(item):
-    dp = item.data_path
-    ID = repr(item.id)
-
-    #custom prop:
-    if dp[-1] == ']':
-        #it's a simple datapath like ['plop']
-        if dp[0] == '[' :
-            full_p = ID + dp
-            path = ID
-            prop = dp
-        #it's a composed datapath like foo.bones["bar"]['plop']
-        else:
-            full_p = ID + '.' + dp
-            path = str(full_p.split('][')[0]) + ']'
-            prop = '[' + str(full_p.split('][')[1])
-    #normal prop:
-    else:
-        full_p = ID + '.' + dp
-        path = '.'.join(full_p.split('.')[:-1])
-        prop = full_p.split('.')[-1]
-
-    return full_p, path, prop
-
 key_classes = (
     NodeOSCMsgValues,
     OSC_Export,
     OSC_Import,
     NodeOSC_ImportKS,
     OSC_OT_ItemDelete,
+    OSC_OT_ItemCreate,
 )
 
 def register():

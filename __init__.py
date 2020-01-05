@@ -46,7 +46,6 @@ bl_info = {
 
 import bpy
 import sys
-import json
 from select import select
 import socket
 import errno
@@ -206,7 +205,7 @@ class OSC_Reading_Sending(bpy.types.Operator):
                     item.value = str(prop)
 
                     if item.idx == 0:
-                        msg = osc_message_builder.OscMessageBuilder(address=item.address)
+                        msg = osc_message_builder.OscMessageBuilder(address=item.osc_address)
                         #print( "sending prop :{}".format(prop) )
                         if isinstance(prop, list):
                             for argmnts in prop:
@@ -244,23 +243,23 @@ class OSC_Reading_Sending(bpy.types.Operator):
                 #For ID custom properties (with brackets)
                 if item.id[0:2] == '["' and item.id[-2:] == '"]':
                     dataTuple = (1, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                    self.dispatcher.map(item.address, OSC_callback_pythonosc, dataTuple)
+                    self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
                 #For normal properties
                 #with index in brackets -: i_num
                 elif item.id[-1] == ']':
                     d_p = item.id[:-3]
                     i_num = int(item.id[-2])
                     dataTuple = (2, eval(item.data_path), d_p, i_num, make_tuple(item.osc_index))
-                    self.dispatcher.map(item.address, OSC_callback_pythonosc, dataTuple)
+                    self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
                 #without index in brackets
                 else:
                     try:
                         if isinstance(getattr(eval(item.data_path), item.id), mathutils.Vector):
                             dataTuple = (3, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                            self.dispatcher.map(item.address, OSC_callback_pythonosc, dataTuple)
+                            self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
                         elif isinstance(getattr(eval(item.data_path), item.id), mathutils.Quaternion):
                             dataTuple = (3, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                            self.dispatcher.map(item.address, OSC_callback_pythonosc, dataTuple)
+                            self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
                     except:
                         print ("Improper setup received: object '"+item.data_path+"' with id'"+item.id+"' is no recognized dataformat")
  
@@ -343,8 +342,8 @@ class PickOSCaddress(bpy.types.Operator):
         last_event = bpy.context.window_manager.nodeosc_lastaddr
         if len(last_event) > 1 and last_event[0] == "/":
             for item in bpy.context.scene.OSC_keys:
-                if item.address == self.i_addr :
-                    item.address = last_event
+                if item.osc_address == self.i_addr :
+                    item.osc_address = last_event
         return{'FINISHED'}
 
 
@@ -395,10 +394,11 @@ classes = (
 
 from . import preferences
 from . import keys
-from . import panels
-from callbacks import *
 from .AN import auto_load
 auto_load.init()
+
+from callbacks import *
+from . import panels
 
 def register():
     preferences.register()
