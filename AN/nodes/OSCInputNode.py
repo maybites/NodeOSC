@@ -17,13 +17,36 @@ class OSCInputNode(bpy.types.Node, AnimationNode):
     dataDirection: EnumProperty(name = "Data Direction", default = "IMPORT",
         items = dataDirectionItems, update = AnimationNode.refresh)
 
+    osc_address: StringProperty(name = "osc.address", default = "",
+        update = AnimationNode.refresh)
+
+    oscHandlerID = -1
+    oscHandler = None
+
     def create(self):
+        if self.oscHandlerID == -1:
+            bpy.context.scene.OSC_nodes.clear()
+            self.oscHandlerID = len(bpy.context.scene.OSC_nodes)
+            print("created node: ", self.oscHandlerID)
+            self.oscHandler = bpy.context.scene.OSC_nodes.add()
+            self.oscHandler.data_path = 'bpy.data.node_groups[' + self.nodeTree.name + '].nodes[' + self.name +']'
+            #self.oscHandler.data_path = self.getValue.__module__
+            #self.oscHandler.data_path = self.identifier
+            self.oscHandler.osc_address = self.osc_address
+            self.oscHandler.osc_index = "(0)"
+            self.oscHandler.id = "value"
+        
         if self.dataDirection == "EXPORT":
             self.newInput("Generic", "Value", "value")
         if self.dataDirection == "IMPORT":
             self.newOutput("Generic", "Value", "value")
 
+    def delete(self):
+        bpy.context.scene.OSC_nodes.remove(self.oscHandlerID)
+        print("removed node:", self.oscHandlerID)
+
     def draw(self, layout):
+        layout.prop(self, "osc_address", text = "")
         layout.prop(self, "dataDirection", text = "")
 
     def getExecutionCode(self, required):

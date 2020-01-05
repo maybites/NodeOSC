@@ -66,7 +66,7 @@ class NodeOSCMsgValues(bpy.types.PropertyGroup):
 #######################################
 
 class OSC_OT_ItemCreate(bpy.types.Operator):
-    """Create the  OSC Item """
+    """Create new message handler"""
     bl_idname = "nodeosc.createitem"
     bl_label = "Create"
 
@@ -292,12 +292,14 @@ def register():
         bpy.utils.register_class(cls)
     bpy.types.Scene.OSC_keys = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
     bpy.types.Scene.OSC_keys_tmp = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
+    bpy.types.Scene.OSC_nodes = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
 
 
 def unregister():
     for cls in reversed(key_classes):
         bpy.utils.unregister_class(cls)
     del bpy.types.Scene.OSC_keys
+    del bpy.types.Scene.OSC_nodes
     del bpy.types.Scene.OSC_keys_tmp
 
 

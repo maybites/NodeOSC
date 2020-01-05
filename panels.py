@@ -29,7 +29,7 @@ class OSC_PT_Settings(bpy.types.Panel):
         layout.prop(bpy.context.window_manager, 'nodeosc_autorun', text="Start at Launch")
  
 #######################################
-#  OPERATIONS GUI PANEL               #
+#  CUSTOM RX PANEL                    #
 #######################################
 
 class OSC_PT_Operations(bpy.types.Panel):
@@ -41,17 +41,6 @@ class OSC_PT_Operations(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        row = layout.row(align=False)
-        row.prop(bpy.context.scene, 'nodeosc_defaultaddr', text="Default Address")
-        row.prop(bpy.context.window_manager, 'nodeosc_monitor', text="Monitoring")
-
-        if context.window_manager.nodeosc_monitor == True:
-            box = layout.box()
-            row5 = box.column(align=True)
-            row5.prop(bpy.context.window_manager, 'nodeosc_lastaddr', text="Last OSC address")
-            row5.prop(bpy.context.window_manager, 'nodeosc_lastpayload', text="Last OSC message")
-
-        layout.separator()
         layout.label(text="Message handlers:")
         index = 0
         for item in bpy.context.scene.OSC_keys:
@@ -59,7 +48,7 @@ class OSC_PT_Operations(bpy.types.Panel):
             split = box3.split()
             colItm1 = split.column()
             if bpy.context.window_manager.nodeosc_monitor == True:
-                colItm1.operator("nodeosc.pick", text='', icon='EYEDROPPER').i_addr = item.address
+                colItm1.operator("nodeosc.pick", text='', icon='EYEDROPPER').i_addr = item.osc_address
             colItm1.prop(item, 'osc_address',text='address')
             colItm1.prop(item, 'osc_index',text='argument[index]')
             #rowItm1.label(text="("+item.osc_type+")")
@@ -77,8 +66,19 @@ class OSC_PT_Operations(bpy.types.Panel):
             
             index = index + 1
         
-        layout.operator("nodeosc.createitem", text='Create new message handle')
+        layout.operator("nodeosc.createitem", icon='PRESET_NEW', text='Create new message handler')
 
+        layout.separator()
+
+        row = layout.row(align=False)
+        row.prop(bpy.context.scene, 'nodeosc_defaultaddr', text="Default Address")
+        row.prop(bpy.context.window_manager, 'nodeosc_monitor', text="Monitoring")
+
+        if context.window_manager.nodeosc_monitor == True:
+            box = layout.box()
+            row5 = box.column(align=True)
+            row5.prop(bpy.context.window_manager, 'nodeosc_lastaddr', text="Last OSC address")
+            row5.prop(bpy.context.window_manager, 'nodeosc_lastpayload', text="Last OSC message")
 
         layout.separator()
         layout.operator("nodeosc.importks", text='Import Keying Set')
@@ -86,9 +86,45 @@ class OSC_PT_Operations(bpy.types.Panel):
         row.operator("nodeosc.export", text='Export OSC Config')
         row.operator("nodeosc.import", text='Import OSC Config')
 
+#######################################
+#  NODES RX PANEL                    #
+#######################################
+
+class OSC_PT_Nodes(bpy.types.Panel):
+    bl_category = "NodeOSC"
+    bl_label = "Node RX"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_context = "objectmode"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Node message handlers:")
+        index = 0
+        for item in bpy.context.scene.OSC_nodes:
+            box3 = layout.box()
+            split = box3.split()
+            colItm1 = split.column()
+            if bpy.context.window_manager.nodeosc_monitor == True:
+                colItm1.operator("nodeosc.pick", text='', icon='EYEDROPPER').i_addr = item.osc_address
+            colItm1.prop(item, 'osc_address',text='address')
+            colItm1.prop(item, 'osc_index',text='argument[index]')
+            #rowItm1.label(text="("+item.osc_type+")")
+             
+            colItm2 = split.column()
+            colItm2.prop(item,'data_path',text='path')
+            colItm2.prop(item,'id',text='id')
+            
+            if bpy.context.window_manager.nodeosc_monitor == True:
+                rowItm3 = box3.row()
+                rowItm3.prop(item, 'value',text='current value')
+                        
+            index = index + 1
+
 
 panel_classes = (
     OSC_PT_Settings,
+    OSC_PT_Nodes,
     OSC_PT_Operations,
 )
 

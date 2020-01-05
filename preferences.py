@@ -5,7 +5,7 @@ from bpy.props import StringProperty, IntProperty, BoolProperty
 
 class NodeOSCEnvVarSettings(bpy.types.PropertyGroup):
         #key_path = bpy.props.StringProperty(name="Key", default="Unknown")
-        address: bpy.props.StringProperty(name="address", default="")
+        osc_address: bpy.props.StringProperty(name="address", default="")
         data_path: bpy.props.StringProperty(name="data path", default="")
         id: bpy.props.StringProperty(name="id", default="")
         osc_type: bpy.props.StringProperty(name="Type", default="Unknown")
