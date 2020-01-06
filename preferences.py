@@ -1,4 +1,3 @@
-
 import bpy
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty, IntProperty, BoolProperty
@@ -31,12 +30,11 @@ class NodeOSCPreferences(AddonPreferences):
         layout.prop(self, "usePyLiblo")
 
 def register():
-    print("done that")
     bpy.utils.register_class(NodeOSCEnvVarSettings)
     bpy.utils.register_class(NodeOSCPreferences)
-    bpy.types.Scene.NodeOSC_envVars = bpy.props.PointerProperty(type=NodeOSCEnvVarSettings)
+    bpy.types.Scene.nodeosc_envars = bpy.props.PointerProperty(type=NodeOSCEnvVarSettings)
 
 def unregister():
-    del bpy.types.Scene.NodeOSC_envVars
+    del bpy.types.Scene.nodeosc_envars
     bpy.utils.unregister_class(NodeOSCPreferences)
     bpy.utils.unregister_class(NodeOSCEnvVarSettings)
