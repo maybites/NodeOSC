@@ -35,7 +35,7 @@ _report= ["",""] #This for reporting OS network errors
 class StartUDP(bpy.types.Operator):
     bl_idname = "nodeosc.startudp"
     bl_label = "Start UDP Connection"
-    bl_description ="Start the OSC engine"
+    bl_description ="Start/Stop the OSC engine"
 
     def execute(self, context):
         global _report
@@ -56,17 +56,8 @@ class StartUDP(bpy.types.Operator):
                 self.report({'INFO'}, "Output error: {0}".format(_report[1]))
                 _report[1] = ''
         else:
-            self.report({'INFO'}, "Already connected !")
-        return{'FINISHED'}
-
-class StopUDP(bpy.types.Operator):
-    bl_idname = "nodeosc.stopudp"
-    bl_label = "Stop UDP Connection"
-    bl_description ="Stop the OSC engine"
-
-    def execute(self, context):
-        self.report({'INFO'}, "Disconnected !")
-        bpy.context.scene.nodeosc_envars.status = "Stopped"
+            self.report({'INFO'}, "Disconnected !")
+            bpy.context.scene.nodeosc_envars.status = "Stopped"
         return{'FINISHED'}
 
 class PickOSCaddress(bpy.types.Operator):
@@ -106,7 +97,7 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
 
     def modal(self, context, event):
         envars = bpy.context.scene.nodeosc_envars
-        if bpy.context.scene.nodeosc_envars.status == "Stopped":
+        if envars.status == "Stopped":
             return self.cancel(context)
 
         if event.type == 'TIMER':
@@ -383,7 +374,6 @@ panel_classes = (
     OSC_OT_PythonOSCServer,
     OSC_OT_PyLibloServer,
     StartUDP,
-    StopUDP,
     PickOSCaddress,
 )
 
