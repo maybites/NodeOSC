@@ -271,12 +271,14 @@ class NodeOSC_ImportKS(Operator):
                 item.data_path = tmp_item.data_path
                 item.osc_address = tmp_item.osc_address
                 item.osc_type = tmp_item.osc_type
+                item.osc_index = tmp_item.osc_index
                 item.idx = tmp_item.idx
 
         else:
             self.report({'INFO'}, "None found !")
 
         return{'FINISHED'}
+  
 
 key_classes = (
     NodeOSCMsgValues,
@@ -293,13 +295,15 @@ def register():
     bpy.types.Scene.OSC_keys = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
     bpy.types.Scene.OSC_keys_tmp = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
     bpy.types.Scene.OSC_nodes = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
+    bpy.types.Scene.OSC_handles = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
 
 
 def unregister():
-    for cls in reversed(key_classes):
-        bpy.utils.unregister_class(cls)
+    del bpy.types.Scene.OSC_handles
     del bpy.types.Scene.OSC_keys
     del bpy.types.Scene.OSC_nodes
     del bpy.types.Scene.OSC_keys_tmp
+    for cls in reversed(key_classes):
+        bpy.utils.unregister_class(cls)
 
 

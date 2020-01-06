@@ -20,6 +20,9 @@ class OSCInputNode(bpy.types.Node, AnimationNode):
     osc_address: StringProperty(name = "osc.address", default = "",
         update = AnimationNode.refresh)
 
+    osc_index: StringProperty(name = "osc.index", default = "",
+        update = AnimationNode.refresh)
+
     oscHandlerID = -1
     oscHandler = None
 
@@ -29,11 +32,11 @@ class OSCInputNode(bpy.types.Node, AnimationNode):
             self.oscHandlerID = len(bpy.context.scene.OSC_nodes)
             print("created node: ", self.oscHandlerID)
             self.oscHandler = bpy.context.scene.OSC_nodes.add()
-            self.oscHandler.data_path = 'bpy.data.node_groups[' + self.nodeTree.name + '].nodes[' + self.name +']'
+            self.oscHandler.data_path = 'bpy.data.node_groups[\'' + self.nodeTree.name + '\'].nodes[\'' + self.name +'\']'
             #self.oscHandler.data_path = self.getValue.__module__
             #self.oscHandler.data_path = self.identifier
             self.oscHandler.osc_address = self.osc_address
-            self.oscHandler.osc_index = "(0)"
+            self.oscHandler.osc_index = self.osc_index
             self.oscHandler.id = "value"
         
         if self.dataDirection == "EXPORT":
@@ -47,6 +50,7 @@ class OSCInputNode(bpy.types.Node, AnimationNode):
 
     def draw(self, layout):
         layout.prop(self, "osc_address", text = "")
+        layout.prop(self, "osc_index", text = "")
         layout.prop(self, "dataDirection", text = "")
 
     def getExecutionCode(self, required):

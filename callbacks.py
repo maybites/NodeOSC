@@ -37,7 +37,7 @@ def execute_queued_OSC_callbacks():
 def OSC_callback_unkown(address, args):
     if bpy.context.scene.nodeosc_envars.nodeosc_monitor == True:
         bpy.context.scene.nodeosc_envars.nodeosc_lastaddr = address
-        bbpy.context.scene.nodeosc_envars.nodeosc_lastpayload = str(args)
+        bpy.context.scene.nodeosc_envars.nodeosc_lastpayload = str(args)
 
 # called by the queue execution thread
 def OSC_callback_custom(address, obj, attr, attrIdx, oscArgs, oscIndex):
@@ -63,7 +63,7 @@ def OSC_callback_properties(address, obj, attr, attrIdx, oscArgs, oscIndex):
         if len(oscIndex) == 4:
             getattr(obj, attr)[:] = oscArgs[oscIndex[0]], oscArgs[oscIndex[1]], oscArgs[oscIndex[2]], oscArgs[oscIndex[3]]
     except:
-        if bpy.context.window_manager.nodeosc_monitor == True:
+        if bpy.context.scene.nodeosc_envars.nodeosc_monitor == True:
             print ("Improper properties received: "+address + " " + str(oscArgs))
 
 # method called by the pythonosc library in case of an unmapped message
