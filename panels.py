@@ -18,15 +18,15 @@ class OSC_PT_Settings(bpy.types.Panel):
         row = col.row(align=True)
         row.operator("nodeosc.startudp", text='Start', icon='PLAY')
         row.operator("nodeosc.stopudp", text='Stop', icon='PAUSE')
-        layout.prop(bpy.context.window_manager, 'status', text="Running Status")
-        layout.prop(bpy.context.window_manager, 'nodeosc_udp_in', text="Listen on ")
-        layout.prop(bpy.context.window_manager, 'nodeosc_udp_out', text="Destination address")
+        layout.prop(bpy.context.scene.NodeOSC_envVars, 'status', text="Running Status")
+        layout.prop(bpy.context.scene.NodeOSC_envVars, 'nodeosc_udp_in', text="Listen on ")
+        layout.prop(bpy.context.scene.NodeOSC_envVars, 'nodeosc_udp_out', text="Destination address")
         col2 = layout.column(align=True)
         row2 = col2.row(align=True)
-        row2.prop(bpy.context.window_manager, 'nodeosc_port_in', text="Input port")
-        row2.prop(bpy.context.window_manager, 'nodeosc_port_out', text="Outport port")
-        layout.prop(bpy.context.window_manager, 'nodeosc_rate', text="Update rate(ms)")
-        layout.prop(bpy.context.window_manager, 'nodeosc_autorun', text="Start at Launch")
+        row2.prop(bpy.context.scene.NodeOSC_envVars, 'nodeosc_port_in', text="Input port")
+        row2.prop(bpy.context.scene.NodeOSC_envVars, 'nodeosc_port_out', text="Outport port")
+        layout.prop(bpy.context.scene.NodeOSC_envVars, 'nodeosc_rate', text="Update rate(ms)")
+        layout.prop(bpy.context.scene.NodeOSC_envVars, 'nodeosc_autorun', text="Start at Launch")
  
 #######################################
 #  CUSTOM RX PANEL                    #
@@ -47,7 +47,7 @@ class OSC_PT_Operations(bpy.types.Panel):
             box3 = layout.box()
             split = box3.split()
             colItm1 = split.column()
-            if bpy.context.window_manager.nodeosc_monitor == True:
+            if bpy.context.scene.NodeOSC_envVars.nodeosc_monitor == True:
                 colItm1.operator("nodeosc.pick", text='', icon='EYEDROPPER').i_addr = item.osc_address
             colItm1.prop(item, 'osc_address',text='address')
             colItm1.prop(item, 'osc_index',text='argument[index]')
@@ -57,7 +57,7 @@ class OSC_PT_Operations(bpy.types.Panel):
             colItm2.prop(item,'data_path',text='path')
             colItm2.prop(item,'id',text='id')
             
-            if bpy.context.window_manager.nodeosc_monitor == True:
+            if bpy.context.scene.NodeOSC_envVars.nodeosc_monitor == True:
                 rowItm3 = box3.row()
                 rowItm3.prop(item, 'value',text='current value')
             
@@ -72,13 +72,13 @@ class OSC_PT_Operations(bpy.types.Panel):
 
         row = layout.row(align=False)
         row.prop(bpy.context.scene, 'nodeosc_defaultaddr', text="Default Address")
-        row.prop(bpy.context.window_manager, 'nodeosc_monitor', text="Monitoring")
+        row.prop(bpy.context.scene.NodeOSC_envVars, 'nodeosc_monitor', text="Monitoring")
 
-        if context.window_manager.nodeosc_monitor == True:
+        if bpy.context.scene.NodeOSC_envVars.nodeosc_monitor == True:
             box = layout.box()
             row5 = box.column(align=True)
-            row5.prop(bpy.context.window_manager, 'nodeosc_lastaddr', text="Last OSC address")
-            row5.prop(bpy.context.window_manager, 'nodeosc_lastpayload', text="Last OSC message")
+            row5.prop(bpy.context.scene.NodeOSC_envVars, 'nodeosc_lastaddr', text="Last OSC address")
+            row5.prop(bpy.context.scene.NodeOSC_envVars, 'nodeosc_lastpayload', text="Last OSC message")
 
         layout.separator()
         layout.operator("nodeosc.importks", text='Import Keying Set')
@@ -105,7 +105,7 @@ class OSC_PT_Nodes(bpy.types.Panel):
             box3 = layout.box()
             split = box3.split()
             colItm1 = split.column()
-            if bpy.context.window_manager.nodeosc_monitor == True:
+            if bpy.context.scene.NodeOSC_envVars.nodeosc_monitor == True:
                 colItm1.operator("nodeosc.pick", text='', icon='EYEDROPPER').i_addr = item.osc_address
             colItm1.prop(item, 'osc_address',text='address')
             colItm1.prop(item, 'osc_index',text='argument[index]')
@@ -115,7 +115,7 @@ class OSC_PT_Nodes(bpy.types.Panel):
             colItm2.prop(item,'data_path',text='path')
             colItm2.prop(item,'id',text='id')
             
-            if bpy.context.window_manager.nodeosc_monitor == True:
+            if bpy.context.scene.NodeOSC_envVars.nodeosc_monitor == True:
                 rowItm3 = box3.row()
                 rowItm3.prop(item, 'value',text='current value')
                         
