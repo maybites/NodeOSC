@@ -51,6 +51,10 @@ def parse_ks(item):
 
     return full_p, path, prop
 
+dataDirectionItems = {
+    ("INPUT", "Input", "Receive the OSC message from somewhere else", "IMPORT", 0),
+    ("OUTPUT", "Output", "Send the OSC message from this node", "EXPORT", 1) }
+
 class NodeOSCMsgValues(bpy.types.PropertyGroup):
         #key_path = bpy.props.StringProperty(name="Key", default="Unknown")
         osc_address: bpy.props.StringProperty(name="address", default="")
@@ -60,6 +64,8 @@ class NodeOSCMsgValues(bpy.types.PropertyGroup):
         osc_index: bpy.props.StringProperty(name="argument indices", default="Unknown")
         value: bpy.props.StringProperty(name="value", default="Unknown")
         idx: bpy.props.IntProperty(name="Index", min=0, default=0)
+        osc_direction: bpy.props.EnumProperty(name = "RX/TX", default = "INPUT",
+        items = dataDirectionItems)
 
 #######################################
 #  Create OSC Settings                #

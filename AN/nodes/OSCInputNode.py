@@ -7,14 +7,14 @@ from animation_nodes.base_types import AnimationNode
 dataByIdentifier = defaultdict(None)
 
 dataDirectionItems = {
-    ("IMPORT", "Import", "Receive the data from somewhere else", "IMPORT", 0),
-    ("EXPORT", "Export", "Another script can read the data from this node", "EXPORT", 1) }
+    ("INPUT", "Input", "Receive the OSC message from somewhere else", "IMPORT", 0),
+    ("OUTPUT", "Output", "Send the OSC message from this node", "EXPORT", 1) }
 
 class OSCInputNode(bpy.types.Node, AnimationNode):
     bl_idname = "an_OSCInputNode"
     bl_label = "OSC Interface"
 
-    dataDirection: EnumProperty(name = "Data Direction", default = "IMPORT",
+    dataDirection: EnumProperty(name = "Data Direction", default = "INPUT",
         items = dataDirectionItems, update = AnimationNode.refresh)
 
     osc_address: StringProperty(name = "osc.address", default = "",
@@ -37,11 +37,14 @@ class OSCInputNode(bpy.types.Node, AnimationNode):
             #self.oscHandler.data_path = self.identifier
             self.oscHandler.osc_address = self.osc_address
             self.oscHandler.osc_index = self.osc_index
-            self.oscHandler.id = "value"
         
-        if self.dataDirection == "EXPORT":
+        if self.dataDirection == "OUTPUT":
+            self.oscHandler.id = "value"
+            self.oscHandler.osc_direction = "OUTPUT"
             self.newInput("Generic", "Value", "value")
-        if self.dataDirection == "IMPORT":
+        if self.dataDirection == "INPUT":
+            self.oscHandler.id = "setValue"
+            self.oscHandler.osc_direction = "INPUT"
             self.newOutput("Generic", "Value", "value")
 
     def delete(self):
@@ -54,9 +57,9 @@ class OSCInputNode(bpy.types.Node, AnimationNode):
         layout.prop(self, "dataDirection", text = "")
 
     def getExecutionCode(self, required):
-        if self.dataDirection == "EXPORT":
+        if self.dataDirection == "OUTPUT":
             return "self.setValue(value)"
-        if self.dataDirection == "IMPORT":
+        if self.dataDirection == "INPUT":
             return "value = self.getValue()"
 
     def setValue(self, value):

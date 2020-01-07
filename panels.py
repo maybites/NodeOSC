@@ -49,15 +49,20 @@ class OSC_PT_Operations(bpy.types.Panel):
         index = 0
         for item in bpy.context.scene.OSC_keys:
             box3 = layout.box()
-            split = box3.split()
-            colItm1 = split.column()
+            colItm1 = box3.column(align=True)
+            colItm1.prop(item, 'osc_direction',text='RX/TX')
             if bpy.context.scene.nodeosc_envars.nodeosc_monitor == True:
-                colItm1.operator("nodeosc.pick", text='', icon='EYEDROPPER').i_addr = item.osc_address
-            colItm1.prop(item, 'osc_address',text='address')
-            colItm1.prop(item, 'osc_index',text='argument[index]')
+                rowItmA = colItm1.row(align=True)
+                rowItmA.prop(item, 'osc_address',text='address')
+                rowItmA.operator("nodeosc.pick", text='', icon='EYEDROPPER').i_addr = item.osc_address
+            else: 
+                colItm1.prop(item, 'osc_address',text='address')
+            colItm1.prop(item, 'osc_index',text='arg [idx]')
+            if item.osc_direction == "OUTPUT":
+                colItm1.prop(item, 'osc_type',text='arg types')
             #rowItm1.label(text="("+item.osc_type+")")
              
-            colItm2 = split.column()
+            colItm2 = box3.column(align=True)
             colItm2.prop(item,'data_path',text='path')
             colItm2.prop(item,'id',text='id')
             
@@ -107,22 +112,15 @@ class OSC_PT_Nodes(bpy.types.Panel):
         index = 0
         for item in bpy.context.scene.OSC_nodes:
             box3 = layout.box()
-            split = box3.split()
-            colItm1 = split.column()
-            if bpy.context.scene.nodeosc_envars.nodeosc_monitor == True:
-                colItm1.operator("nodeosc.pick", text='', icon='EYEDROPPER').i_addr = item.osc_address
+            colItm1 = box3.column(align=True)
+            colItm1.prop(item, 'osc_direction',text='RX/TX')
             colItm1.prop(item, 'osc_address',text='address')
-            colItm1.prop(item, 'osc_index',text='argument[index]')
-            #rowItm1.label(text="("+item.osc_type+")")
+            colItm1.prop(item, 'osc_index',text='arg[idx]')
              
-            colItm2 = split.column()
+            colItm2 = box3.column(align=True)
             colItm2.prop(item,'data_path',text='path')
             colItm2.prop(item,'id',text='id')
-            
-            if bpy.context.scene.nodeosc_envars.nodeosc_monitor == True:
-                rowItm3 = box3.row()
-                rowItm3.prop(item, 'value',text='current value')
-                        
+                                    
             index = index + 1
 
 
