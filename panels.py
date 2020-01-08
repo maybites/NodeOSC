@@ -12,25 +12,29 @@ class OSC_PT_Settings(bpy.types.Panel):
     bl_context = "objectmode"
 
     def draw(self, context):
+        envars = bpy.context.scene.nodeosc_envars
         layout = self.layout
         col = layout.column(align=True)
-        col.label(text="OSC Settings:")
-        row = col.row(align=True)
-        if bpy.context.scene.nodeosc_envars.status == "Stopped":
+        if envars.status == "Stopped":
+            col.label(text="OSC Settings:")
+            row = col.row(align=True)
             row.operator("nodeosc.startudp", text='Start', icon='PLAY')
+            col1 = layout.column(align=True)
+            row1 = col1.row(align=True)
+            row1.prop(envars, 'udp_in', text="Input")
+            row1.prop(envars, 'port_in', text="Port")
+            col2 = layout.column(align=True)
+            row2 = col2.row(align=True)
+            row2.prop(envars, 'udp_out', text="Output")
+            row2.prop(envars, 'port_out', text="Port")
+            layout.prop(envars, 'output_rate', text="Update rate(ms)")
+            layout.prop(envars, 'autorun', text="Start at Launch")
         else:
-            row.operator("nodeosc.startudp", text='Stop', icon='PAUSE')
-        #layout.prop(bpy.context.scene.nodeosc_envars, 'status', text="Running Status")
-        col1 = layout.column(align=True)
-        row1 = col1.row(align=True)
-        row1.prop(bpy.context.scene.nodeosc_envars, 'udp_in', text="Input")
-        row1.prop(bpy.context.scene.nodeosc_envars, 'port_in', text="Port")
-        col2 = layout.column(align=True)
-        row2 = col2.row(align=True)
-        row2.prop(bpy.context.scene.nodeosc_envars, 'udp_out', text="Output")
-        row2.prop(bpy.context.scene.nodeosc_envars, 'port_out', text="Port")
-        layout.prop(bpy.context.scene.nodeosc_envars, 'output_rate', text="Update rate(ms)")
-        layout.prop(bpy.context.scene.nodeosc_envars, 'autorun', text="Start at Launch")
+            col.operator("nodeosc.startudp", text='Stop', icon='PAUSE')
+            col.label(text="Server is running...")
+            col.label(text=" listening at " + envars.udp_in + " on port " + str(envars.port_in))
+            col.label(text=" sending to " + envars.udp_out + " on port " + str(envars.port_out))
+            
  
 #######################################
 #  CUSTOM RX PANEL                    #
@@ -38,7 +42,7 @@ class OSC_PT_Settings(bpy.types.Panel):
 
 class OSC_PT_Operations(bpy.types.Panel):
     bl_category = "NodeOSC"
-    bl_label = "Custom RX"
+    bl_label = "Custom Messages"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_context = "objectmode"
@@ -107,7 +111,12 @@ class OSC_PT_Nodes(bpy.types.Panel):
     bl_context = "objectmode"
 
     def draw(self, context):
+        envars = bpy.context.scene.nodeosc_envars
         layout = self.layout
+        layout.label(text="Node tree execute mode:")
+        layout.prop(envars, 'node_update', text="")
+        if envars.node_update == "MESSAGE":
+            layout.prop(envars, 'node_frameMessage', text="message")        
         layout.label(text="Node message handlers:")
         index = 0
         for item in bpy.context.scene.OSC_nodes:

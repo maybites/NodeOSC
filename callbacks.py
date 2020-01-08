@@ -20,6 +20,9 @@ queue_repeat_filter = {}
 # define the method the timer thread is calling when it is appropriate
 def execute_queued_OSC_callbacks():
     queue_repeat_filter.clear()
+    
+    node_execute = bpy.context.scene.nodeosc_envars.node_update == "EACH"
+    
     # while there are callbacks stored inside the queue
     while not OSC_callback_queue.empty():
         items = OSC_callback_queue.get()
@@ -30,6 +33,8 @@ def execute_queued_OSC_callbacks():
             args = items[1:]
             # execute them 
             func(*args)
+            if node_execute == True:
+                bpy.data.node_groups[0].execute()
         queue_repeat_filter[address] = True
     return 0
 
@@ -66,7 +71,8 @@ def OSC_callback_properties(address, obj, attr, attrIdx, oscArgs, oscIndex):
 # called by the queue execution thread
 def OSC_callback_nodelist(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
-        getattr(obj, attr)(oscArgs[i] for i in oscIndex)
+        val = tuple(oscArgs[i] for i in oscIndex)
+        getattr(obj, attr)(val)
     except:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
             print ("Improper properties received: "+address + " " + str(oscArgs))

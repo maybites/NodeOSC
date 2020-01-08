@@ -2,6 +2,11 @@ import bpy
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty, IntProperty, BoolProperty
 
+nodeUpdateItems = {
+    ("NONE", "None", "Node Tree execution is managed by the node tree settings", "NONE", 0),
+    ("EACH", "Each", "Node Tree is executed on each message (ideal for low frequency messages)", "NONE", 1),
+    ("MESSAGE", "Message", "Node Tree is executed on a specific message (ideal for high frequency messages)", "NONE", 2) }
+
 class NodeOSCEnvVarSettings(bpy.types.PropertyGroup):
     udp_in: bpy.props.StringProperty(default="127.0.0.1", description='The IP of the interface of your Blender machine to listen on, set to 0.0.0.0 for all of them')
     udp_out: bpy.props.StringProperty(default="127.0.0.1", description='The IP of the destination machine to send messages to')
@@ -13,6 +18,8 @@ class NodeOSCEnvVarSettings(bpy.types.PropertyGroup):
     autorun: bpy.props.BoolProperty(description="Start the OSC engine automatically after loading a project")
     lastaddr: bpy.props.StringProperty(description="Display the last OSC address received")
     lastpayload: bpy.props.StringProperty(description="Display the last OSC message content")
+    node_update: bpy.props.EnumProperty(name = "node update", default = "NONE", items = nodeUpdateItems)
+    node_frameMessage: bpy.props.StringProperty(default="/frame/end",description="OSC message that triggers a node tree execution")
 
 class NodeOSCPreferences(AddonPreferences):
     # this must match the addon name, use '__package__'
