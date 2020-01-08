@@ -134,31 +134,32 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
                                 area.tag_redraw()
             #Sending
             for item in bpy.context.scene.OSC_keys:
-                #print( "sending  :{}".format(item) )
-                if item.id[0:2] == '["' and item.id[-2:] == '"]':
-                    prop = eval(item.data_path+item.id)
-                else:
-                    prop = eval(item.data_path+'.'+item.id)
+                if item.osc_direction == "OUTPUT":
+                    #print( "sending  :{}".format(item) )
+                    if item.id[0:2] == '["' and item.id[-2:] == '"]':
+                        prop = eval(item.data_path+item.id)
+                    else:
+                        prop = eval(item.data_path+'.'+item.id)
 
-                if isinstance(prop, mathutils.Vector):
-                    prop = list(prop)
+                    if isinstance(prop, mathutils.Vector):
+                        prop = list(prop)
 
-                if isinstance(prop, mathutils.Quaternion):
-                    prop = list(prop)
+                    if isinstance(prop, mathutils.Quaternion):
+                        prop = list(prop)
 
-                if str(prop) != item.value:
-                    item.value = str(prop)
+                    if str(prop) != item.value:
+                        item.value = str(prop)
 
-                    if item.idx == 0:
-                        msg = osc_message_builder.OscMessageBuilder(address=item.osc_address)
-                        #print( "sending prop :{}".format(prop) )
-                        if isinstance(prop, list):
-                            for argmnts in prop:
-                                msg.add_arg(argmnts)
-                        else:
-                            msg.add_arg(prop)
-                        msg = msg.build()
-                        self.client.send(msg)
+                        if item.idx == 0:
+                            msg = osc_message_builder.OscMessageBuilder(address=item.osc_address)
+                            #print( "sending prop :{}".format(prop) )
+                            if isinstance(prop, list):
+                                for argmnts in prop:
+                                    msg.add_arg(argmnts)
+                            else:
+                                msg.add_arg(prop)
+                            msg = msg.build()
+                            self.client.send(msg)
         return {'PASS_THROUGH'}
 
     #######################################
@@ -184,40 +185,41 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
         try:
             self.dispatcher = dispatcher.Dispatcher()  
             for item in bpy.context.scene.OSC_keys:
-
-                #For ID custom properties (with brackets)
-                if item.id[0:2] == '["' and item.id[-2:] == '"]':
-                    dataTuple = (1, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                    self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
-                #For normal properties
-                #with index in brackets -: i_num
-                elif item.id[-1] == ']':
-                    d_p = item.id[:-3]
-                    i_num = int(item.id[-2])
-                    dataTuple = (2, eval(item.data_path), d_p, i_num, make_tuple(item.osc_index))
-                    self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
-                #without index in brackets
-                else:
-                    try:
-                        if isinstance(getattr(eval(item.data_path), item.id), mathutils.Vector):
-                            dataTuple = (3, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                            self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
-                        elif isinstance(getattr(eval(item.data_path), item.id), mathutils.Quaternion):
-                            dataTuple = (3, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                            self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
-                        elif isinstance(getattr(eval(item.data_path), item.id), tuple):
-                            dataTuple = (3, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                            self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
-                    except:
-                        print ("Improper setup received: object '"+item.data_path+"' with id'"+item.id+"' is no recognized dataformat")
+                if item.osc_direction == "INPUT":
+                    #For ID custom properties (with brackets)
+                    if item.id[0:2] == '["' and item.id[-2:] == '"]':
+                        dataTuple = (1, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                        self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
+                    #For normal properties
+                    #with index in brackets -: i_num
+                    elif item.id[-1] == ']':
+                        d_p = item.id[:-3]
+                        i_num = int(item.id[-2])
+                        dataTuple = (2, eval(item.data_path), d_p, i_num, make_tuple(item.osc_index))
+                        self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
+                    #without index in brackets
+                    else:
+                        try:
+                            if isinstance(getattr(eval(item.data_path), item.id), mathutils.Vector):
+                                dataTuple = (3, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                                self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
+                            elif isinstance(getattr(eval(item.data_path), item.id), mathutils.Quaternion):
+                                dataTuple = (3, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                                self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
+                            elif isinstance(getattr(eval(item.data_path), item.id), tuple):
+                                dataTuple = (3, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                                self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
+                        except:
+                            print ("Improper setup received: object '"+item.data_path+"' with id'"+item.id+"' is no recognized dataformat")
 
             for item in bpy.context.scene.OSC_nodes:
-                try:
-                    if isinstance(getattr(eval(item.data_path), item.id), types.MethodType):
-                        dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                        self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
-                except:
-                    print ("Improper setup received: object '"+item.data_path+"' with id '"+item.id+"' is no recognized dataformat")
+                if item.osc_direction == "INPUT":
+                    try:
+                        if isinstance(getattr(eval(item.data_path), item.id), types.MethodType):
+                            dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                            self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
+                    except:
+                        print ("Improper setup received: object '"+item.data_path+"' with id '"+item.id+"' is no recognized dataformat")
 
             self.dispatcher.set_default_handler(OSC_callback_pythonosc_undef)
  
@@ -342,35 +344,44 @@ class OSC_OT_PyLibloServer(bpy.types.Operator):
         try:
             self.st = liblo.ServerThread(envars.port_in)
             print("Created Server Thread on Port", self.st.port)
-            createServerHandles()          
             for item in bpy.context.scene.OSC_handles:
+                if item.osc_direction == "INPUT":
+                    #For ID custom properties (with brackets)
+                    if item.id[0:2] == '["' and item.id[-2:] == '"]':
+                        dataTuple = (1, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                        self.st.add_method(item.address, None, OSC_callback_pyliblo, dataTuple)
+                    #For normal properties
+                    #with index in brackets -: i_num
+                    elif item.id[-1] == ']':
+                        d_p = item.id[:-3]
+                        i_num = int(item.id[-2])
+                        dataTuple = (2, eval(item.data_path), d_p, i_num, make_tuple(item.osc_index))
+                        self.st.add_method(item.address, None, OSC_callback_pyliblo, dataTuple)
+                    #without index in brackets
+                    else:
+                        try:
+                            if isinstance(getattr(eval(item.data_path), item.id), mathutils.Vector):
+                                dataTuple = (3, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                                self.st.add_method(item.osc_address, None, OSC_callback_pyliblo, dataTuple)
+                            elif isinstance(getattr(eval(item.data_path), item.id), mathutils.Quaternion):
+                                dataTuple = (3, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                                self.st.add_method(item.osc_address, None, OSC_callback_pyliblo, dataTuple)
+                        except:
+                            print ("Improper setup received: object '"+item.data_path+"' with id'"+item.id+"' is no recognized dataformat")
 
-                #For ID custom properties (with brackets)
-                if item.id[0:2] == '["' and item.id[-2:] == '"]':
-                    dataTuple = (1, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                    self.st.add_method(item.address, None, OSC_callback_pyliblo, dataTuple)
-                #For normal properties
-                #with index in brackets -: i_num
-                elif item.id[-1] == ']':
-                    d_p = item.id[:-3]
-                    i_num = int(item.id[-2])
-                    dataTuple = (2, eval(item.data_path), d_p, i_num, make_tuple(item.osc_index))
-                    self.st.add_method(item.address, None, OSC_callback_pyliblo, dataTuple)
-                #without index in brackets
-                else:
+            for item in bpy.context.scene.OSC_nodes:
+                if item.osc_direction == "INPUT":
                     try:
-                        if isinstance(getattr(eval(item.data_path), item.id), mathutils.Vector):
-                            dataTuple = (3, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                            self.st.add_method(item.osc_address, None, OSC_callback_pyliblo, dataTuple)
-                        elif isinstance(getattr(eval(item.data_path), item.id), mathutils.Quaternion):
-                            dataTuple = (3, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                            self.st.add_method(item.osc_address, None, OSC_callback_pyliblo, dataTuple)
+                        if isinstance(getattr(eval(item.data_path), item.id), types.MethodType):
+                            dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                            self.st.add_method(item.osc_address, None, OSC_callback_pythonosc, dataTuple)
                     except:
-                        print ("Improper setup received: object '"+item.data_path+"' with id'"+item.id+"' is no recognized dataformat")
- 
+                        print ("Improper setup received: object '"+item.data_path+"' with id '"+item.id+"' is no recognized dataformat")
+
+    
             #self.st.add_method(None, None, OSC_callback_unkown)
-            print("self.st.start():")
             self.st.start()
+            print("PyLiblo Server started")
             # register the execute queue method
             bpy.app.timers.register(execute_queued_OSC_callbacks)
 
