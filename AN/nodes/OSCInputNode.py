@@ -4,62 +4,57 @@ from collections import defaultdict
 from animation_nodes.sockets.info import toIdName
 from animation_nodes.base_types import AnimationNode
 
+from ...utils import *
+
 dataByIdentifier = defaultdict(None)
 
-dataDirectionItems = {
-    ("INPUT", "Input", "Receive the OSC message from somewhere else", "IMPORT", 0),
-    ("OUTPUT", "Output", "Send the OSC message from this node", "EXPORT", 1) }
-
 class OSCInputNode(bpy.types.Node, AnimationNode):
-    bl_idname = "an_OSCInputNode"
-    bl_label = "OSC Interface"
+    bl_idname = "an_OSCListNode"
+    bl_label = "OSCList"
 
-    dataDirection: EnumProperty(name = "Data Direction", default = "INPUT",
-        items = dataDirectionItems, update = AnimationNode.refresh)
-
-    osc_address: StringProperty(name = "osc.address", default = "",
+    osc_address: bpy.props.StringProperty(name="address", 
+        default="/custom/address", 
         update = AnimationNode.refresh)
-
-    osc_index: StringProperty(name = "osc.index", default = "",
+    osc_type: bpy.props.StringProperty(
+        name="Type", 
+        default="fff")
+    osc_index: bpy.props.StringProperty(
+        name="argument indices", 
+        default="(0, 1, 2)",
         update = AnimationNode.refresh)
-
-    oscHandlerID = -1
-    oscHandler = None
-
-    def create(self):
-        if self.oscHandlerID == -1:
-            bpy.context.scene.OSC_nodes.clear()
-            self.oscHandlerID = len(bpy.context.scene.OSC_nodes)
-            print("created node: ", self.oscHandlerID)
-            self.oscHandler = bpy.context.scene.OSC_nodes.add()
-            self.oscHandler.data_path = 'bpy.data.node_groups[\'' + self.nodeTree.name + '\'].nodes[\'' + self.name +'\']'
-            #self.oscHandler.data_path = self.getValue.__module__
-            #self.oscHandler.data_path = self.identifier
-            self.oscHandler.osc_address = self.osc_address
-            self.oscHandler.osc_index = self.osc_index
+    osc_direction: bpy.props.EnumProperty(
+        name = "RX/TX", 
+        default = "INPUT", 
+        items = dataDirectionItems, 
+        update = AnimationNode.refresh)
+    data_path: bpy.props.StringProperty(
+        name="data path", 
+        default="")
+    id: bpy.props.StringProperty(
+        name="id", 
+        default="")
         
-        if self.dataDirection == "OUTPUT":
-            self.oscHandler.id = "value"
-            self.oscHandler.osc_direction = "OUTPUT"
+    def create(self):
+        self.data_path = 'bpy.data.node_groups[\'' + self.nodeTree.name + '\'].nodes[\'' + self.name +'\']'
+        
+        if self.osc_direction == "OUTPUT":
+            self.id = "value"
             self.newInput("Generic", "Value", "value")
-        if self.dataDirection == "INPUT":
-            self.oscHandler.id = "setValue"
-            self.oscHandler.osc_direction = "INPUT"
+        if self.osc_direction == "INPUT":
+            self.id = "setValue"
             self.newOutput("Generic", "Value", "value")
 
-    def delete(self):
-        bpy.context.scene.OSC_nodes.remove(self.oscHandlerID)
-        print("removed node:", self.oscHandlerID)
+    #def delete(self):
 
     def draw(self, layout):
-        layout.prop(self, "osc_address", text = "OSC address string")
-        layout.prop(self, "osc_index", text = "OSC argument indices")
-        layout.prop(self, "dataDirection", text = "")
+        layout.prop(self, "osc_address", text = "")
+        layout.prop(self, "osc_index", text = "")
+        layout.prop(self, "osc_direction", text = "")
 
     def getExecutionCode(self, required):
-        if self.dataDirection == "OUTPUT":
+        if self.osc_direction == "OUTPUT":
             return "self.setValue(value)"
-        if self.dataDirection == "INPUT":
+        if self.osc_direction == "INPUT":
             return "value = self.getValue()"
 
     def setValue(self, value):

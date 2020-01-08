@@ -3,6 +3,8 @@ import json
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty, IntProperty, BoolProperty
 
+from .utils import *
+
 def osc_export_config(scene):
     config_table = {}
     for osc_item in scene.OSC_keys:
@@ -51,21 +53,16 @@ def parse_ks(item):
 
     return full_p, path, prop
 
-dataDirectionItems = {
-    ("INPUT", "Input", "Receive the OSC message from somewhere else", "IMPORT", 0),
-    ("OUTPUT", "Output", "Send the OSC message from this node", "EXPORT", 1) }
-
 class NodeOSCMsgValues(bpy.types.PropertyGroup):
         #key_path = bpy.props.StringProperty(name="Key", default="Unknown")
         osc_address: bpy.props.StringProperty(name="address", default="")
-        data_path: bpy.props.StringProperty(name="data path", default="")
-        id: bpy.props.StringProperty(name="id", default="")
         osc_type: bpy.props.StringProperty(name="Type", default="Unknown")
         osc_index: bpy.props.StringProperty(name="argument indices", default="Unknown")
+        osc_direction: bpy.props.EnumProperty(name = "RX/TX", default = "INPUT", items = dataDirectionItems)
+        data_path: bpy.props.StringProperty(name="data path", default="")
+        id: bpy.props.StringProperty(name="id", default="")
         value: bpy.props.StringProperty(name="value", default="Unknown")
         idx: bpy.props.IntProperty(name="Index", min=0, default=0)
-        osc_direction: bpy.props.EnumProperty(name = "RX/TX", default = "INPUT",
-        items = dataDirectionItems)
 
 #######################################
 #  Create OSC Settings                #
@@ -301,11 +298,9 @@ def register():
     bpy.types.Scene.OSC_keys = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
     bpy.types.Scene.OSC_keys_tmp = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
     bpy.types.Scene.OSC_nodes = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
-    bpy.types.Scene.OSC_handles = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
 
 
 def unregister():
-    del bpy.types.Scene.OSC_handles
     del bpy.types.Scene.OSC_keys
     del bpy.types.Scene.OSC_nodes
     del bpy.types.Scene.OSC_keys_tmp

@@ -1,6 +1,8 @@
 import bpy
 import queue
 
+from .nodes import *
+
 #######################################
 #  OSC Receive Method                 #
 #######################################
@@ -21,7 +23,7 @@ queue_repeat_filter = {}
 def execute_queued_OSC_callbacks():
     queue_repeat_filter.clear()
     
-    node_execute = bpy.context.scene.nodeosc_envars.node_update == "EACH"
+    node_execute = bpy.context.scene.nodeosc_envars.node_update == "EACH" and hasAnimationNodes()
     
     # while there are callbacks stored inside the queue
     while not OSC_callback_queue.empty():
@@ -34,7 +36,7 @@ def execute_queued_OSC_callbacks():
             # execute them 
             func(*args)
             if node_execute == True:
-                bpy.data.node_groups[0].execute()
+                executeNodeTrees()
         queue_repeat_filter[address] = True
     return 0
 
@@ -77,6 +79,10 @@ def OSC_callback_nodelist(address, obj, attr, attrIdx, oscArgs, oscIndex):
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
             print ("Improper properties received: "+address + " " + str(oscArgs))
 
+# called by the queue execution thread
+def OSC_callback_nodeexecute(address, obj, attr, attrIdx, oscArgs, oscIndex):
+    executeNodeTrees()
+
 # method called by the pythonosc library in case of an unmapped message
 def OSC_callback_pythonosc_undef(* args):
     address = args[0]
@@ -97,7 +103,9 @@ def OSC_callback_pythonosc(* args):
 
     oscArgs = args[2:]
 
-    if mytype == 1:
+    if mytype == -1:
+        OSC_callback_queue.put((OSC_callback_nodeexecute, address, obj, attr, attrIdx, oscArgs, oscIndex))
+    elif mytype == 1:
         OSC_callback_queue.put((OSC_callback_custom, address, obj, attr, attrIdx, oscArgs, oscIndex))
     elif mytype == 2:
         OSC_callback_queue.put((OSC_callback_property, address, obj, attr, attrIdx, oscArgs, oscIndex))
@@ -116,7 +124,9 @@ def OSC_callback_pyliblo(path, args, types, src, data):
     attrIdx = data[3]       # ID-index (not used)
     oscIndex = data[4]      # osc argument index to use (should be a tuplet, like (1,2,3))
 
-    if mytype == 0:
+    if mytype == -1:
+        OSC_callback_queue.put((OSC_callback_nodeexecute, address, obj, attr, attrIdx, args, oscIndex))
+    elif mytype == 0:
         OSC_callback_queue.put((OSC_callback_unkown, address, args, data))
     elif mytype == 1:
         OSC_callback_queue.put((OSC_callback_custom, address, obj, attr, attrIdx, args, oscIndex))
@@ -124,3 +134,5 @@ def OSC_callback_pyliblo(path, args, types, src, data):
         OSC_callback_queue.put((OSC_callback_property, address, obj, attr, attrIdx, args, oscIndex))
     elif mytype == 3:
         OSC_callback_queue.put((OSC_callback_properties, address, obj, attr, attrIdx, args, oscIndex))
+    elif mytype == 4:
+        OSC_callback_queue.put((OSC_callback_nodelist, address, obj, attr, attrIdx, args, oscIndex))

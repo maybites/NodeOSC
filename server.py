@@ -29,10 +29,11 @@ from pythonosc import osc_server
 import threading
 import socketserver
 
-from callbacks import *
+from .callbacks import *
+from .nodes import *
 
 _report= ["",""] #This for reporting OS network errors
-
+        
 class StartUDP(bpy.types.Operator):
     bl_idname = "nodeosc.startudp"
     bl_label = "Start UDP Connection"
@@ -76,26 +77,6 @@ class PickOSCaddress(bpy.types.Operator):
                 if item.osc_address == self.i_addr :
                     item.osc_address = last_event
         return{'FINISHED'}
-
-# fill up the OSC_handles with all the current OSC_keys and OSC_nodes
-def createServerHandles():
-    item = bpy.context.scene.OSC_handles.clear()
-    for tmp_item in bpy.context.scene.OSC_keys:
-        item = bpy.context.scene.OSC_handles.add()
-        item.id = tmp_item.id
-        item.data_path = tmp_item.data_path
-        item.osc_address = tmp_item.osc_address
-        item.osc_type = tmp_item.osc_type
-        item.osc_index = tmp_item.osc_index
-        item.idx = tmp_item.idx
-    for tmp_item in bpy.context.scene.OSC_nodes:
-        item = bpy.context.scene.OSC_handles.add()
-        item.id = tmp_item.id
-        item.data_path = tmp_item.data_path
-        item.osc_address = tmp_item.osc_address
-        item.osc_type = tmp_item.osc_type
-        item.osc_index = tmp_item.osc_index
-        item.idx = tmp_item.idx
  
 #######################################
 #  Setup PythonOSC Server             #
@@ -184,6 +165,12 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
         #Setting up the dispatcher for receiving
         try:
             self.dispatcher = dispatcher.Dispatcher()  
+            
+            # register a message for executing 
+            if envars.node_update == "MESSAGE" and hasAnimationNodes():
+                dataTuple = (-1, None, None, None, None)
+                self.dispatcher.map(envars.node_frameMessage, OSC_callback_pythonosc, dataTuple)
+            
             for item in bpy.context.scene.OSC_keys:
                 if item.osc_direction == "INPUT":
                     #For ID custom properties (with brackets)
@@ -212,6 +199,9 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
                         except:
                             print ("Improper setup received: object '"+item.data_path+"' with id'"+item.id+"' is no recognized dataformat")
 
+            # lets go and find all nodes in all nodetrees that are relevant for us
+            createNodeHandleCollection()
+            
             for item in bpy.context.scene.OSC_nodes:
                 if item.osc_direction == "INPUT":
                     try:
@@ -344,7 +334,13 @@ class OSC_OT_PyLibloServer(bpy.types.Operator):
         try:
             self.st = liblo.ServerThread(envars.port_in)
             print("Created Server Thread on Port", self.st.port)
-            for item in bpy.context.scene.OSC_handles:
+            
+             # register a message for executing 
+            if envars.node_update == "MESSAGE" and hasAnimationNodes():
+                dataTuple = (-1, None, None, None, None)
+                self.st.add_method(envars.node_frameMessage, None, OSC_callback_pyliblo, dataTuple)
+
+            for item in bpy.context.scene.OSC_keys:
                 if item.osc_direction == "INPUT":
                     #For ID custom properties (with brackets)
                     if item.id[0:2] == '["' and item.id[-2:] == '"]':
@@ -369,12 +365,15 @@ class OSC_OT_PyLibloServer(bpy.types.Operator):
                         except:
                             print ("Improper setup received: object '"+item.data_path+"' with id'"+item.id+"' is no recognized dataformat")
 
+            # lets go and find all nodes in all nodetrees that are relevant for us
+            createNodeHandleCollection()
+
             for item in bpy.context.scene.OSC_nodes:
                 if item.osc_direction == "INPUT":
                     try:
                         if isinstance(getattr(eval(item.data_path), item.id), types.MethodType):
                             dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                            self.st.add_method(item.osc_address, None, OSC_callback_pythonosc, dataTuple)
+                            self.st.add_method(item.osc_address, None, OSC_callback_pyliblo, dataTuple)
                     except:
                         print ("Improper setup received: object '"+item.data_path+"' with id '"+item.id+"' is no recognized dataformat")
 

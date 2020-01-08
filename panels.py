@@ -113,25 +113,23 @@ class OSC_PT_Nodes(bpy.types.Panel):
     def draw(self, context):
         envars = bpy.context.scene.nodeosc_envars
         layout = self.layout
-        layout.label(text="Node tree execute mode:")
-        layout.prop(envars, 'node_update', text="")
-        if envars.node_update == "MESSAGE":
-            layout.prop(envars, 'node_frameMessage', text="message")        
-        layout.label(text="Node message handlers:")
-        index = 0
-        for item in bpy.context.scene.OSC_nodes:
-            box3 = layout.box()
-            colItm1 = box3.column(align=True)
-            colItm1.prop(item, 'osc_direction',text='RX/TX')
-            colItm1.prop(item, 'osc_address',text='address')
-            colItm1.prop(item, 'osc_index',text='arg[idx]')
-             
-            colItm2 = box3.column(align=True)
-            colItm2.prop(item,'data_path',text='path')
-            colItm2.prop(item,'id',text='id')
-                                    
-            index = index + 1
-
+        if envars.status == "Stopped":
+            layout.label(text="Node tree execute mode:")
+            layout.prop(envars, 'node_update', text="")
+            if envars.node_update == "MESSAGE":
+                layout.prop(envars, 'node_frameMessage', text="message")        
+        else:
+            layout.label(text="Node tree execute mode:" + envars.node_update) 
+            if envars.node_update == "MESSAGE":
+                layout.label(text="Execute on message: " + envars.node_frameMessage)        
+            layout.label(text="Node message handlers:")
+            for item in bpy.context.scene.OSC_nodes:
+                box3 = layout.box()
+                colItm1 = box3.column(align=True)
+                colItm1.label(text='direction: '+ item.osc_direction)
+                colItm1.label(text='address  : ' + item.osc_address)
+                colItm1.label(text='data_path: ' + item.data_path)
+                            
 
 panel_classes = (
     OSC_PT_Settings,

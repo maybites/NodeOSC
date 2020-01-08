@@ -22,7 +22,7 @@ class OSCMenu(bpy.types.Menu):
 
     def draw(self, context):
         layout = self.layout
-        insertNode(layout, "an_OSCInputNode", "Integer", {"assignedType" : repr("Integer")})
+        insertNode(layout, "an_OSCListNode", "List", {"assignedType" : repr("List")})
         layout.separator()
  
 def insertNode(layout, type, text, settings = {}, icon = "NONE"):
