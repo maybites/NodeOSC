@@ -51,7 +51,7 @@ from bpy.app.handlers import persistent
 #Restore saved settings
 @persistent
 def nodeosc_handler(scene):
-    if bpy.context.scene.nodeosc_envars.nodeosc_autorun == True:
+    if bpy.context.scene.nodeosc_envars.autorun == True:
         bpy.ops.nodeosc.startudp()
 
 

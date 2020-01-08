@@ -40,7 +40,7 @@ class StartUDP(bpy.types.Operator):
 
     def execute(self, context):
         global _report
-        if bpy.context.scene.nodeosc_envars.nodeosc_port_in == bpy.context.scene.nodeosc_envars.nodeosc_port_out:
+        if bpy.context.scene.nodeosc_envars.port_in == bpy.context.scene.nodeosc_envars.port_out:
             self.report({'INFO'}, "Ports must be different.")
             return{'FINISHED'}
         if bpy.context.scene.nodeosc_envars.status != "Running" :
@@ -70,7 +70,7 @@ class PickOSCaddress(bpy.types.Operator):
     i_addr: bpy.props.StringProperty()
 
     def execute(self, context):
-        last_event = bpy.context.scene.nodeosc_envars.nodeosc_lastaddr
+        last_event = bpy.context.scene.nodeosc_envars.lastaddr
         if len(last_event) > 1 and last_event[0] == "/":
             for item in bpy.context.scene.OSC_keys:
                 if item.osc_address == self.i_addr :
@@ -123,10 +123,10 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
 
         if event.type == 'TIMER':
             #hack to refresh the GUI
-            self.count = self.count + envars.nodeosc_rate
+            self.count = self.count + envars.output_rate
             if self.count >= 500:
                 self.count = 0
-                if envars.nodeosc_monitor == True:
+                if envars.message_monitor == True:
                     for window in bpy.context.window_manager.windows:
                         screen = window.screen
                         for area in screen.areas:
@@ -171,7 +171,7 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
 
         #For sending
         try:
-            self.client = udp_client.UDPClient(envars.nodeosc_udp_out, envars.nodeosc_port_out)
+            self.client = udp_client.UDPClient(envars.udp_out, envars.port_out)
             msg = osc_message_builder.OscMessageBuilder(address="/blender")
             msg.add_arg("Hello from Blender, simple test.")
             msg = msg.build()
@@ -221,13 +221,13 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
 
             self.dispatcher.set_default_handler(OSC_callback_pythonosc_undef)
  
-            print("Create Server Thread on Port", envars.nodeosc_port_in)
+            print("Create Server Thread on Port", envars.port_in)
             # creating a blocking UDP Server
             #   Each message will be handled sequentially on the same thread.
             #   the alternative: 
             #       ThreadingOSCUDPServer creates loads of threads 
             #       that are not cleaned up properly
-            self.server = osc_server.BlockingOSCUDPServer((envars.nodeosc_udp_in, envars.nodeosc_port_in), self.dispatcher)
+            self.server = osc_server.BlockingOSCUDPServer((envars.udp_in, envars.port_in), self.dispatcher)
             self.server_thread = threading.Thread(target=self.server.serve_forever)
             self.server_thread.start()
             # register the execute queue method
@@ -240,7 +240,7 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
 
         #inititate the modal timer thread
         context.window_manager.modal_handler_add(self)
-        self._timer = context.window_manager.event_timer_add(envars.nodeosc_rate/1000, window = context.window)
+        self._timer = context.window_manager.event_timer_add(envars.output_rate/1000, window = context.window)
         envars.status = "Running"
 
         return {'RUNNING_MODAL'}
@@ -281,10 +281,10 @@ class OSC_OT_PyLibloServer(bpy.types.Operator):
 
         if event.type == 'TIMER':
             #hack to refresh the GUI
-            self.count = self.count + envars.nodeosc_rate
+            self.count = self.count + envars.output_rate
             if self.count >= 500:
                 self.count = 0
-                if envars.nodeosc_monitor == True:
+                if envars.message_monitor == True:
                     for window in bpy.context.window_manager.windows:
                         screen = window.screen
                         for area in screen.areas:
@@ -328,7 +328,7 @@ class OSC_OT_PyLibloServer(bpy.types.Operator):
         #For sending
         """
         try:
-            self.client = udp_client.UDPClient(envars.nodeosc_udp_out, envars.nodeosc_port_out)
+            self.client = udp_client.UDPClient(envars.udp_out, envars.port_out)
             msg = osc_message_builder.OscMessageBuilder(address="/blender")
             msg.add_arg("Hello from Blender, simple test.")
             msg = msg.build()
@@ -340,7 +340,7 @@ class OSC_OT_PyLibloServer(bpy.types.Operator):
 
         #Setting up the dispatcher for receiving
         try:
-            self.st = liblo.ServerThread(envars.nodeosc_port_in)
+            self.st = liblo.ServerThread(envars.port_in)
             print("Created Server Thread on Port", self.st.port)
             createServerHandles()          
             for item in bpy.context.scene.OSC_handles:
@@ -385,7 +385,7 @@ class OSC_OT_PyLibloServer(bpy.types.Operator):
 
         #inititate the modal timer thread
         context.window_manager.modal_handler_add(self)
-        self._timer = context.window_manager.event_timer_add(envars.nodeosc_rate/1000, window = context.window)
+        self._timer = context.window_manager.event_timer_add(envars.output_rate/1000, window = context.window)
         envars.status = "Running"
 
         return {'RUNNING_MODAL'}

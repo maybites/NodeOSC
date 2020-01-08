@@ -35,16 +35,16 @@ def execute_queued_OSC_callbacks():
 
 # called by the queue execution thread
 def OSC_callback_unkown(address, args):
-    if bpy.context.scene.nodeosc_envars.nodeosc_monitor == True:
-        bpy.context.scene.nodeosc_envars.nodeosc_lastaddr = address
-        bpy.context.scene.nodeosc_envars.nodeosc_lastpayload = str(args)
+    if bpy.context.scene.nodeosc_envars.message_monitor == True:
+        bpy.context.scene.nodeosc_envars.lastaddr = address
+        bpy.context.scene.nodeosc_envars.lastpayload = str(args)
 
 # called by the queue execution thread
 def OSC_callback_custom(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
         obj[attr] = oscArgs[oscIndex]
     except:
-        if bpy.context.scene.nodeosc_envars.nodeosc_monitor == True:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
             print ("Improper content received: "+ address + " " + str(oscArgs))
 
 # called by the queue execution thread
@@ -52,7 +52,7 @@ def OSC_callback_property(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
         getattr(obj,attr)[attrIdx] = oscArgs[oscIndex]
     except:
-        if bpy.context.scene.nodeosc_envars.nodeosc_monitor == True:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
             print ("Improper property received:: "+address + " " + str(oscArgs))
 
 # called by the queue execution thread
@@ -60,7 +60,7 @@ def OSC_callback_properties(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
         getattr(obj, attr)[:] = (oscArgs[i] for i in oscIndex)
     except:
-        if bpy.context.scene.nodeosc_envars.nodeosc_monitor == True:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
             print ("Improper properties received: "+address + " " + str(oscArgs))
 
 # called by the queue execution thread
@@ -68,7 +68,7 @@ def OSC_callback_nodelist(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
         getattr(obj, attr)(oscArgs[i] for i in oscIndex)
     except:
-        if bpy.context.scene.nodeosc_envars.nodeosc_monitor == True:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
             print ("Improper properties received: "+address + " " + str(oscArgs))
 
 # method called by the pythonosc library in case of an unmapped message
