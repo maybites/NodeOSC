@@ -58,10 +58,15 @@ def OSC_callback_property(address, obj, attr, attrIdx, oscArgs, oscIndex):
 # called by the queue execution thread
 def OSC_callback_properties(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
-        if len(oscIndex) == 3:
-            getattr(obj, attr)[:] = oscArgs[oscIndex[0]], oscArgs[oscIndex[1]], oscArgs[oscIndex[2]]
-        if len(oscIndex) == 4:
-            getattr(obj, attr)[:] = oscArgs[oscIndex[0]], oscArgs[oscIndex[1]], oscArgs[oscIndex[2]], oscArgs[oscIndex[3]]
+        getattr(obj, attr)[:] = (oscArgs[i] for i in oscIndex)
+    except:
+        if bpy.context.scene.nodeosc_envars.nodeosc_monitor == True:
+            print ("Improper properties received: "+address + " " + str(oscArgs))
+
+# called by the queue execution thread
+def OSC_callback_nodelist(address, obj, attr, attrIdx, oscArgs, oscIndex):
+    try:
+        getattr(obj, attr)(oscArgs[i] for i in oscIndex)
     except:
         if bpy.context.scene.nodeosc_envars.nodeosc_monitor == True:
             print ("Improper properties received: "+address + " " + str(oscArgs))
@@ -92,6 +97,8 @@ def OSC_callback_pythonosc(* args):
         OSC_callback_queue.put((OSC_callback_property, address, obj, attr, attrIdx, oscArgs, oscIndex))
     elif mytype == 3:
         OSC_callback_queue.put((OSC_callback_properties, address, obj, attr, attrIdx, oscArgs, oscIndex))
+    elif mytype == 4:
+        OSC_callback_queue.put((OSC_callback_nodelist, address, obj, attr, attrIdx, oscArgs, oscIndex))
  
 # method called by the pyliblo library in case of a mapped message
 def OSC_callback_pyliblo(path, args, types, src, data):

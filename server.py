@@ -1,4 +1,5 @@
 import bpy
+import types
 import sys
 from select import select
 import socket
@@ -182,8 +183,7 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
         #Setting up the dispatcher for receiving
         try:
             self.dispatcher = dispatcher.Dispatcher()  
-            createServerHandles()          
-            for item in bpy.context.scene.OSC_handles:
+            for item in bpy.context.scene.OSC_keys:
 
                 #For ID custom properties (with brackets)
                 if item.id[0:2] == '["' and item.id[-2:] == '"]':
@@ -210,7 +210,15 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
                             self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
                     except:
                         print ("Improper setup received: object '"+item.data_path+"' with id'"+item.id+"' is no recognized dataformat")
- 
+
+            for item in bpy.context.scene.OSC_nodes:
+                try:
+                    if isinstance(getattr(eval(item.data_path), item.id), types.MethodType):
+                        dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                        self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
+                except:
+                    print ("Improper setup received: object '"+item.data_path+"' with id '"+item.id+"' is no recognized dataformat")
+
             self.dispatcher.set_default_handler(OSC_callback_pythonosc_undef)
  
             print("Create Server Thread on Port", envars.nodeosc_port_in)

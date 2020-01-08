@@ -52,8 +52,8 @@ class OSCInputNode(bpy.types.Node, AnimationNode):
         print("removed node:", self.oscHandlerID)
 
     def draw(self, layout):
-        layout.prop(self, "osc_address", text = "")
-        layout.prop(self, "osc_index", text = "")
+        layout.prop(self, "osc_address", text = "OSC address string")
+        layout.prop(self, "osc_index", text = "OSC argument indices")
         layout.prop(self, "dataDirection", text = "")
 
     def getExecutionCode(self, required):
