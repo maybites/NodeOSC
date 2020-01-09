@@ -33,8 +33,8 @@ class OSCInputNode(bpy.types.Node, AnimationNode):
     id: bpy.props.StringProperty(
         name="id", 
         default="")
-        
-    def create(self):
+               
+    def create(self):        
         self.data_path = 'bpy.data.node_groups[\'' + self.nodeTree.name + '\'].nodes[\'' + self.name +'\']'
         
         if self.osc_direction == "OUTPUT":
@@ -45,7 +45,7 @@ class OSCInputNode(bpy.types.Node, AnimationNode):
             self.newOutput("Generic", "Value", "value")
 
     #def delete(self):
-
+        
     def draw(self, layout):
         layout.prop(self, "osc_address", text = "")
         layout.prop(self, "osc_index", text = "")

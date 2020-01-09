@@ -58,7 +58,16 @@ def OSC_callback_custom(address, obj, attr, attrIdx, oscArgs, oscIndex):
             print ("Improper content received: "+ address + " " + str(oscArgs))
 
 # called by the queue execution thread
-def OSC_callback_property(address, obj, attr, attrIdx, oscArgs, oscIndex):
+def OSC_callback_Property(address, obj, attr, attrIdx, oscArgs, oscIndex):
+    try:
+        val = oscArgs[oscIndex]
+        setattr(obj,attr,val)
+    except:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
+            print ("Improper property received:: "+address + " " + str(oscArgs))
+
+# called by the queue execution thread
+def OSC_callback_IndexedProperty(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
         getattr(obj,attr)[attrIdx] = oscArgs[oscIndex]
     except:
@@ -108,10 +117,12 @@ def OSC_callback_pythonosc(* args):
     elif mytype == 1:
         OSC_callback_queue.put((OSC_callback_custom, address, obj, attr, attrIdx, oscArgs, oscIndex))
     elif mytype == 2:
-        OSC_callback_queue.put((OSC_callback_property, address, obj, attr, attrIdx, oscArgs, oscIndex))
+        OSC_callback_queue.put((OSC_callback_Property, address, obj, attr, attrIdx, oscArgs, oscIndex))
     elif mytype == 3:
-        OSC_callback_queue.put((OSC_callback_properties, address, obj, attr, attrIdx, oscArgs, oscIndex))
+        OSC_callback_queue.put((OSC_callback_IndexedProperty, address, obj, attr, attrIdx, oscArgs, oscIndex))
     elif mytype == 4:
+        OSC_callback_queue.put((OSC_callback_properties, address, obj, attr, attrIdx, oscArgs, oscIndex))
+    elif mytype == 5:
         OSC_callback_queue.put((OSC_callback_nodelist, address, obj, attr, attrIdx, oscArgs, oscIndex))
  
 # method called by the pyliblo library in case of a mapped message
@@ -132,8 +143,10 @@ def OSC_callback_pyliblo(path, args, types, src, data):
     elif mytype == 1:
         OSC_callback_queue.put((OSC_callback_custom, address, obj, attr, attrIdx, args, oscIndex))
     elif mytype == 2:
-        OSC_callback_queue.put((OSC_callback_property, address, obj, attr, attrIdx, args, oscIndex))
+        OSC_callback_queue.put((OSC_callback_Property, address, obj, attr, attrIdx, args, oscIndex))
     elif mytype == 3:
-        OSC_callback_queue.put((OSC_callback_properties, address, obj, attr, attrIdx, args, oscIndex))
+        OSC_callback_queue.put((OSC_callback_IndexedProperty, address, obj, attr, attrIdx, args, oscIndex))
     elif mytype == 4:
+        OSC_callback_queue.put((OSC_callback_properties, address, obj, attr, attrIdx, args, oscIndex))
+    elif mytype == 5:
         OSC_callback_queue.put((OSC_callback_nodelist, address, obj, attr, attrIdx, args, oscIndex))

@@ -51,33 +51,51 @@ class OSC_PT_Operations(bpy.types.Panel):
         layout = self.layout
         layout.label(text="Message handlers:")
         index = 0
+        col = layout.column()
         for item in bpy.context.scene.OSC_keys:
-            box3 = layout.box()
-            colItm1 = box3.column(align=True)
-            colItm1.prop(item, 'osc_direction',text='RX/TX')
-            if bpy.context.scene.nodeosc_envars.message_monitor == True:
-                rowItmA = colItm1.row(align=True)
-                rowItmA.prop(item, 'osc_address',text='address')
-                rowItmA.operator("nodeosc.pick", text='', icon='EYEDROPPER').i_addr = item.osc_address
-            else: 
-                colItm1.prop(item, 'osc_address',text='address')
-            colItm1.prop(item, 'osc_index',text='arg [idx]')
-            if item.osc_direction == "OUTPUT":
-                colItm1.prop(item, 'osc_type',text='arg types')
-            #rowItm1.label(text="("+item.osc_type+")")
-             
-            colItm2 = box3.column(align=True)
-            colItm2.prop(item,'data_path',text='path')
-            colItm2.prop(item,'id',text='id')
+            col_box = col.column()
+            box = col_box.box()
+            colsub = box.column()
+            row = colsub.row(align=True)
+
+            row.prop(item, "ui_expanded", text = "", 
+                        icon='DISCLOSURE_TRI_DOWN' if item.ui_expanded else 'DISCLOSURE_TRI_RIGHT', 
+                        emboss = False)
+            row.prop(item, "enabled", text = "", 
+                        icon='CHECKBOX_HLT' if item.enabled else 'CHECKBOX_DEHLT', 
+                        emboss = False)
+            row.label(text = "", 
+                        icon='EXPORT' if item.osc_direction == "OUTPUT" else 'IMPORT')
             
-            if bpy.context.scene.nodeosc_envars.message_monitor == True:
-                rowItm3 = box3.row()
-                rowItm3.prop(item, 'value',text='current value')
+            sub = row.row()
+            sub.active = item.enabled
+            sub.label(text=item.osc_address)
+            subsub = sub.row()
+            subsub.operator("nodeosc.deleteitem", icon='CANCEL', text = "").index = index
             
-            rowItm4 = box3.row()
-            rowItm4.operator("nodeosc.deleteitem", icon='CANCEL').index = index
-            
-            index = index + 1
+            if item.ui_expanded:
+                colItm1 = colsub.column(align=True)
+                colItm1.prop(item, 'osc_direction',text='RX/TX')
+                if bpy.context.scene.nodeosc_envars.message_monitor == True:
+                    rowItmA = colItm1.row(align=True)
+                    rowItmA.prop(item, 'osc_address',text='address')
+                    rowItmA.operator("nodeosc.pick", text='', icon='EYEDROPPER').i_addr = item.osc_address
+                else: 
+                    colItm1.prop(item, 'osc_address',text='address')
+                colItm1.prop(item, 'osc_index',text='arg [idx]')
+                if item.osc_direction == "OUTPUT":
+                    colItm1.prop(item, 'osc_type',text='arg types')
+                #rowItm1.label(text="("+item.osc_type+")")
+                
+                colItm2 = colsub.column(align=True)
+                colItm2.prop(item,'data_path',text='datapath')
+                colItm2.prop(item,'id',text='property')
+                
+                if bpy.context.scene.nodeosc_envars.message_monitor == True:
+                    rowItm3 = colsub.row()
+                    rowItm3.prop(item, 'value',text='current value')
+                                
+                index = index + 1
         
         layout.operator("nodeosc.createitem", icon='PRESET_NEW', text='Create new message handler')
 
@@ -113,7 +131,6 @@ class OSC_PT_Nodes(bpy.types.Panel):
     def draw(self, context):
         envars = bpy.context.scene.nodeosc_envars
         layout = self.layout
-        layout.label(text="Works only if \'Auto Execution\' and \'Porperty Changed\' is toggled on", icon="ERROR")
         if envars.status == "Stopped":
             layout.label(text="Node tree execute mode:")
             layout.prop(envars, 'node_update', text="execute ")
@@ -124,12 +141,38 @@ class OSC_PT_Nodes(bpy.types.Panel):
             if envars.node_update == "MESSAGE":
                 layout.label(text="Execute on message: " + envars.node_frameMessage)        
             layout.label(text="Node message handlers:")
+            col = layout.column()
             for item in bpy.context.scene.OSC_nodes:
-                box3 = layout.box()
-                colItm1 = box3.column(align=True)
-                colItm1.label(text='direction: '+ item.osc_direction)
-                colItm1.label(text='address  : ' + item.osc_address)
-                colItm1.label(text='data_path: ' + item.data_path)
+                col_box = col.column()
+                box = col_box.box()
+                colsub = box.column()
+                row = colsub.row(align=True)
+
+                row.prop(item, "ui_expanded", text = "", 
+                         icon='DISCLOSURE_TRI_DOWN' if item.ui_expanded else 'DISCLOSURE_TRI_RIGHT', 
+                         emboss = False)
+                
+                sub = row.row()
+                sub.active = item.enabled
+                sub.label(text="%s: %s" % ("address", item.osc_address))
+
+                if item.ui_expanded:
+                    split = colsub.row().split(factor=0.15)
+                    split.label(text="direction:")
+                    split.label(text=item.osc_direction)
+
+                    split = colsub.row().split(factor=0.15)
+                    split.label(text="address:")
+                    split.label(text=item.osc_address)
+
+                    split = colsub.row().split(factor=0.15)
+                    split.label(text="data_path:")
+                    split.label(text=item.data_path)
+        
+        #layout.label(text="Works only if \'Auto Execution\' and \'Porperty Changed\' is toggled on", icon="ERROR")
+        layout.label(text="Works only with AnimationNodes if ", icon="ERROR")
+        layout.label(text="      \'Auto Execution\' and")
+        layout.label(text="      \'Property Changed\' is toggled on")
                             
 
 panel_classes = (
