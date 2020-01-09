@@ -49,7 +49,7 @@ class OSC_PT_Operations(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        layout.label(text="Message handlers:")
+        layout.label(text="Message handlers: (restart server to apply changes)")
         index = 0
         col = layout.column()
         for item in bpy.context.scene.OSC_keys:
@@ -83,8 +83,8 @@ class OSC_PT_Operations(bpy.types.Panel):
                 else: 
                     colItm1.prop(item, 'osc_address',text='address')
                 colItm1.prop(item, 'osc_index',text='arg [idx]')
-                if item.osc_direction == "OUTPUT":
-                    colItm1.prop(item, 'osc_type',text='arg types')
+                #if item.osc_direction == "OUTPUT":
+                #    colItm1.prop(item, 'osc_type',text='arg types')
                 #rowItm1.label(text="("+item.osc_type+")")
                 
                 colItm2 = colsub.column(align=True)

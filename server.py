@@ -288,26 +288,27 @@ class OSC_OT_PyLibloServer(bpy.types.Operator):
                                 area.tag_redraw()
             #Sending
             for item in bpy.context.scene.OSC_keys:
-                #print( "sending  :{}".format(item) )
-                if item.id[0:2] == '["' and item.id[-2:] == '"]':
-                    prop = eval(item.data_path+item.id)
-                else:
-                    prop = eval(item.data_path+'.'+item.id)
-                if isinstance(prop, mathutils.Vector):
-                    prop = list(prop);
-                if isinstance(prop, mathutils.Quaternion):
-                    prop = list(prop);
-                if str(prop) != item.value:
-                    item.value = str(prop)
-                    if item.idx == 0:
-                        msg = liblo.Message(address=item.address)
-                        #print( "sending prop :{}".format(prop) )
-                        if isinstance(prop, list):
-                            for argum in prop:
-                                msg.add(argum)
-                        else:
-                            msg.add(prop)
-                        self.st.send(self.address, msg)
+                if item.osc_direction == "OUTPUT" and item.enabled:
+                    #print( "sending  :{}".format(item) )
+                    if item.id[0:2] == '["' and item.id[-2:] == '"]':
+                        prop = eval(item.data_path+item.id)
+                    else:
+                        prop = eval(item.data_path+'.'+item.id)
+                    if isinstance(prop, mathutils.Vector):
+                        prop = list(prop);
+                    if isinstance(prop, mathutils.Quaternion):
+                        prop = list(prop);
+                    if str(prop) != item.value:
+                        item.value = str(prop)
+                        if item.idx == 0:
+                            msg = liblo.Message(item.osc_address)
+                            #print( "sending prop :{}".format(prop) )
+                            if isinstance(prop, list):
+                                for argum in prop:
+                                    msg.add(argum)
+                            else:
+                                msg.add(prop)
+                            self.st.send(self.address, msg)
         return {'PASS_THROUGH'}
 
     #######################################
