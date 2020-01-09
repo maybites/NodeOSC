@@ -22,9 +22,12 @@ queue_repeat_filter = {}
 # define the method the timer thread is calling when it is appropriate
 def execute_queued_OSC_callbacks():
     queue_repeat_filter.clear()
-        
+    
+    hasOscMessages = False
+    
     # while there are callbacks stored inside the queue
     while not OSC_callback_queue.empty():
+        hasOscMessages = True
         items = OSC_callback_queue.get()
         address = items[1]
         # if the address has not been here before:
@@ -36,7 +39,7 @@ def execute_queued_OSC_callbacks():
         queue_repeat_filter[address] = True
     
     #when all the messages are applied, execute the node trees
-    if bpy.context.scene.nodeosc_envars.node_update != "MESSAGE":
+    if bpy.context.scene.nodeosc_envars.node_update != "MESSAGE" and hasOscMessages:
         executeNodeTrees()
     return 0
 
