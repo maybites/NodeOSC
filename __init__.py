@@ -52,7 +52,8 @@ from bpy.app.handlers import persistent
 @persistent
 def nodeosc_handler(scene):
     if bpy.context.scene.nodeosc_envars.autorun == True:
-        bpy.ops.nodeosc.startudp()
+        if bpy.context.scene.nodeosc_envars.status == "Stopped":
+            bpy.ops.nodeosc.startudp()
 
 
 from . import preferences

@@ -123,7 +123,7 @@ class OSC_PT_Operations(bpy.types.Panel):
 
 class OSC_PT_Nodes(bpy.types.Panel):
     bl_category = "NodeOSC"
-    bl_label = "Nodes"
+    bl_label = "Node Messages"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_context = "objectmode"

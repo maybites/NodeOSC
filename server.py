@@ -154,8 +154,8 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
         #For sending
         try:
             self.client = udp_client.UDPClient(envars.udp_out, envars.port_out)
-            msg = osc_message_builder.OscMessageBuilder(address="/blender")
-            msg.add_arg("Hello from Blender, simple test.")
+            msg = osc_message_builder.OscMessageBuilder(address="/NodeOSC")
+            msg.add_arg("python server started up")
             msg = msg.build()
             self.client.send(msg)
         except OSError as err:
@@ -391,7 +391,7 @@ class OSC_OT_PyLibloServer(bpy.types.Operator):
         try:
             self.address = liblo.Address(envars.udp_out, envars.port_out)
             msg = liblo.Message("/NodeOSC")
-            msg.add("started up")
+            msg.add("pyliblo server started up")
             self.st.send(self.address, msg)
         except OSError as err:
             _report[1] = err
