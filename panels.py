@@ -105,7 +105,7 @@ class OSC_PT_Operations(bpy.types.Panel):
 
 class OSC_PT_Nodes(bpy.types.Panel):
     bl_category = "NodeOSC"
-    bl_label = "Node RX"
+    bl_label = "Nodes"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_context = "objectmode"
@@ -113,9 +113,10 @@ class OSC_PT_Nodes(bpy.types.Panel):
     def draw(self, context):
         envars = bpy.context.scene.nodeosc_envars
         layout = self.layout
+        layout.label(text="Works only if \'Auto Execution\' and \'Porperty Changed\' is toggled on", icon="ERROR")
         if envars.status == "Stopped":
             layout.label(text="Node tree execute mode:")
-            layout.prop(envars, 'node_update', text="")
+            layout.prop(envars, 'node_update', text="execute ")
             if envars.node_update == "MESSAGE":
                 layout.prop(envars, 'node_frameMessage', text="message")        
         else:

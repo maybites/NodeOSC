@@ -22,9 +22,7 @@ queue_repeat_filter = {}
 # define the method the timer thread is calling when it is appropriate
 def execute_queued_OSC_callbacks():
     queue_repeat_filter.clear()
-    
-    node_execute = bpy.context.scene.nodeosc_envars.node_update == "EACH" and hasAnimationNodes()
-    
+        
     # while there are callbacks stored inside the queue
     while not OSC_callback_queue.empty():
         items = OSC_callback_queue.get()
@@ -35,9 +33,11 @@ def execute_queued_OSC_callbacks():
             args = items[1:]
             # execute them 
             func(*args)
-            if node_execute == True:
-                executeNodeTrees()
         queue_repeat_filter[address] = True
+    
+    #when all the messages are applied, execute the node trees
+    if bpy.context.scene.nodeosc_envars.node_update != "MESSAGE":
+        executeNodeTrees()
     return 0
 
 # called by the queue execution thread
@@ -79,10 +79,6 @@ def OSC_callback_nodelist(address, obj, attr, attrIdx, oscArgs, oscIndex):
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
             print ("Improper properties received: "+address + " " + str(oscArgs))
 
-# called by the queue execution thread
-def OSC_callback_nodeexecute(address, obj, attr, attrIdx, oscArgs, oscIndex):
-    executeNodeTrees()
-
 # method called by the pythonosc library in case of an unmapped message
 def OSC_callback_pythonosc_undef(* args):
     address = args[0]
@@ -104,7 +100,8 @@ def OSC_callback_pythonosc(* args):
     oscArgs = args[2:]
 
     if mytype == -1:
-        OSC_callback_queue.put((OSC_callback_nodeexecute, address, obj, attr, attrIdx, oscArgs, oscIndex))
+        #special type reserved for message that triggers the execution of nodetrees
+        executeNodeTrees()
     elif mytype == 1:
         OSC_callback_queue.put((OSC_callback_custom, address, obj, attr, attrIdx, oscArgs, oscIndex))
     elif mytype == 2:
@@ -125,7 +122,8 @@ def OSC_callback_pyliblo(path, args, types, src, data):
     oscIndex = data[4]      # osc argument index to use (should be a tuplet, like (1,2,3))
 
     if mytype == -1:
-        OSC_callback_queue.put((OSC_callback_nodeexecute, address, obj, attr, attrIdx, args, oscIndex))
+        #special type reserved for message that triggers the execution of nodetrees
+        executeNodeTrees()
     elif mytype == 0:
         OSC_callback_queue.put((OSC_callback_unkown, address, args, data))
     elif mytype == 1:

@@ -1,4 +1,5 @@
 import bpy
+from animation_nodes.events import propertyChanged
 
 # fill up the OSC_handles with all the current OSC_keys and OSC_nodes
 def createNodeHandleCollection():
@@ -35,7 +36,8 @@ def executeNodeTrees():
 
 # executes only animation node systems
 def executeAnimationNodeTrees():
-    for node_group in bpy.data.node_groups:
-        bpy.ops.an.execute_tree(name = node_group.name)
+    propertyChanged()
+    # for node_group in bpy.data.node_groups:
+    #    bpy.ops.an.execute_tree(name = node_group.name)
     
 
