@@ -19,8 +19,8 @@ ordered_classes = None
 def init():
     global modules
     global ordered_classes
-    print(Path(__file__).parent.parent)
-    modules = get_all_submodules(Path(__file__).parent.parent, Path(__file__).parent)
+    print(Path(__file__).parent.parent.parent)
+    modules = get_all_submodules(Path(__file__).parent.parent.parent, Path(__file__).parent)
     ordered_classes = get_ordered_classes_to_register(modules)
 
 def register():
@@ -60,7 +60,7 @@ def iter_submodules(path, package_name):
         print("name: ", name, " package_name ", package_name)
         yield importlib.import_module("." + name, package_name)
 
-def iter_submodule_names(path, root="AN."):
+def iter_submodule_names(path, root="nodes.AN."):
     for _, module_name, is_package in pkgutil.iter_modules([str(path)]):
         if is_package:
             sub_path = path / module_name

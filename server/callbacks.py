@@ -1,7 +1,7 @@
 import bpy
 import queue
 
-from .nodes import *
+from ..nodes.nodes import *
 
 #######################################
 #  OSC Receive Method                 #

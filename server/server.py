@@ -30,54 +30,10 @@ import threading
 import socketserver
 
 from .callbacks import *
-from .nodes import *
+from ..nodes.nodes import *
 
 _report= ["",""] #This for reporting OS network errors
-        
-class StartUDP(bpy.types.Operator):
-    bl_idname = "nodeosc.startudp"
-    bl_label = "Start UDP Connection"
-    bl_description ="Start/Stop the OSC engine"
-
-    def execute(self, context):
-        global _report
-        if bpy.context.scene.nodeosc_envars.port_in == bpy.context.scene.nodeosc_envars.port_out:
-            self.report({'INFO'}, "Ports must be different.")
-            return{'FINISHED'}
-        if bpy.context.scene.nodeosc_envars.status != "Running" :
-            preferences = context.preferences
-            addon_prefs = preferences.addons[__package__].preferences           
-            if addon_prefs.usePyLiblo == False:
-                bpy.ops.nodeosc.pythonosc_operator()
-            else:
-                bpy.ops.nodeosc.pyliblo_operator()
-            if _report[0] != '':
-                self.report({'INFO'}, "Input error: {0}".format(_report[0]))
-                _report[0] = ''
-            elif _report[1] != '':
-                self.report({'INFO'}, "Output error: {0}".format(_report[1]))
-                _report[1] = ''
-        else:
-            self.report({'INFO'}, "Disconnected !")
-            bpy.context.scene.nodeosc_envars.status = "Stopped"
-        return{'FINISHED'}
-
-class PickOSCaddress(bpy.types.Operator):
-    bl_idname = "nodeosc.pick"
-    bl_label = "Pick the last event OSC address"
-    bl_options = {'UNDO'}
-    bl_description ="Pick the address of the last OSC message received"
-
-    i_addr: bpy.props.StringProperty()
-
-    def execute(self, context):
-        last_event = bpy.context.scene.nodeosc_envars.lastaddr
-        if len(last_event) > 1 and last_event[0] == "/":
-            for item in bpy.context.scene.OSC_keys:
-                if item.osc_address == self.i_addr :
-                    item.osc_address = last_event
-        return{'FINISHED'}
- 
+         
 #######################################
 #  Setup PythonOSC Server             #
 #######################################
@@ -419,8 +375,6 @@ class OSC_OT_PyLibloServer(bpy.types.Operator):
 panel_classes = (
     OSC_OT_PythonOSCServer,
     OSC_OT_PyLibloServer,
-    StartUDP,
-    PickOSCaddress,
 )
 
 def register():

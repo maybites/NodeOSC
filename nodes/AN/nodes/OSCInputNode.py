@@ -4,7 +4,7 @@ from collections import defaultdict
 from animation_nodes.sockets.info import toIdName
 from animation_nodes.base_types import AnimationNode
 
-from ...utils import *
+from ....utils.utils import *
 
 dataByIdentifier = defaultdict(None)
 
