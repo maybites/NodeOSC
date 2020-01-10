@@ -32,8 +32,35 @@ import socketserver
 from .callbacks import *
 from ..nodes.nodes import *
 
-_report= ["",""] #This for reporting OS network errors
-         
+_report= ["",""] #This for reporting OS network error
+
+def make_osc_messages(myOscKeys, myOscMsg):
+    for item in myOscKeys:
+        if item.osc_direction == "OUTPUT" and item.enabled:
+            #print( "sending  :{}".format(item) )
+            if item.id[0:2] == '["' and item.id[-2:] == '"]':
+                prop = eval(item.data_path+item.id)
+            else:
+                prop = eval(item.data_path+'.'+item.id)
+            if isinstance(prop, mathutils.Vector):
+                prop = tuple(prop);
+            if isinstance(prop, mathutils.Quaternion):
+                prop = tuple(prop);
+            if isinstance(prop, mathutils.Euler):
+                prop = tuple(prop);
+            if isinstance(prop, mathutils.Matrix):
+                prop = tuple(prop);
+            if prop is None:
+                prop = 'None'
+            if str(prop) != item.value:
+                item.value = str(prop)
+                # sort the properties according to the osc_indices
+                indices = make_tuple(item.osc_index)
+                if prop is not None and not isinstance(prop, str) and len(indices) > 0:
+                    prop = tuple(prop[i] for i in indices)
+                myOscMsg[item.osc_address] = prop
+    return myOscMsg
+
 #######################################
 #  Setup PythonOSC Server             #
 #######################################
@@ -45,9 +72,6 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
     _timer = None
     client = "" #for the sending socket
     count = 0
-
-    #modes_enum = [('Replace','Replace','Replace'),('Update','Update','Update')]
-    #bpy.types.WindowManager.nodeosc_mode = bpy.props.EnumProperty(name = "import mode", items = modes_enum)
 
     #######################################
     #  Sending OSC                        #
@@ -69,34 +93,24 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
                         for area in screen.areas:
                             if area.type == 'VIEW_3D':
                                 area.tag_redraw()
-            #Sending
-            for item in bpy.context.scene.OSC_keys:
-                if item.osc_direction == "OUTPUT" and item.enabled:
-                    #print( "sending  :{}".format(item) )
-                    if item.id[0:2] == '["' and item.id[-2:] == '"]':
-                        prop = eval(item.data_path+item.id)
-                    else:
-                        prop = eval(item.data_path+'.'+item.id)
+            
+            oscMessage = {}
+            
+            # gather all the ouput bound osc messages
+            make_osc_messages(bpy.context.scene.OSC_keys, oscMessage)
+            make_osc_messages(bpy.context.scene.OSC_nodes, oscMessage)
+            
+            # and send them 
+            for key, args in oscMessage.items():
+                msg = osc_message_builder.OscMessageBuilder(address=key)
+                if isinstance(args, tuple):
+                    for argum in args:
+                        msg.add_arg(argum)
+                else:
+                    msg.add_arg(args)
+                msg = msg.build()
+                self.client.send(msg)
 
-                    if isinstance(prop, mathutils.Vector):
-                        prop = list(prop)
-
-                    if isinstance(prop, mathutils.Quaternion):
-                        prop = list(prop)
-
-                    if str(prop) != item.value:
-                        item.value = str(prop)
-
-                        if item.idx == 0:
-                            msg = osc_message_builder.OscMessageBuilder(address=item.osc_address)
-                            #print( "sending prop :{}".format(prop) )
-                            if isinstance(prop, list):
-                                for argmnts in prop:
-                                    msg.add_arg(argmnts)
-                            else:
-                                msg.add_arg(prop)
-                            msg = msg.build()
-                            self.client.send(msg)
         return {'PASS_THROUGH'}
 
     #######################################
@@ -159,7 +173,7 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
                             print ("Improper setup received: object '"+item.data_path+"' with id'"+item.id+"' is no recognized dataformat")
 
             # lets go and find all nodes in all nodetrees that are relevant for us
-            createNodeHandleCollection()
+            nodes_createHandleCollection()
             
             for item in bpy.context.scene.OSC_nodes:
                 if item.osc_direction == "INPUT":
@@ -187,7 +201,6 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
         except OSError as err:
             _report[0] = err
             return {'CANCELLED'}
-
 
         #inititate the modal timer thread
         context.window_manager.modal_handler_add(self)
@@ -243,28 +256,21 @@ class OSC_OT_PyLibloServer(bpy.types.Operator):
                             if area.type == 'VIEW_3D':
                                 area.tag_redraw()
             #Sending
-            for item in bpy.context.scene.OSC_keys:
-                if item.osc_direction == "OUTPUT" and item.enabled:
-                    #print( "sending  :{}".format(item) )
-                    if item.id[0:2] == '["' and item.id[-2:] == '"]':
-                        prop = eval(item.data_path+item.id)
-                    else:
-                        prop = eval(item.data_path+'.'+item.id)
-                    if isinstance(prop, mathutils.Vector):
-                        prop = list(prop);
-                    if isinstance(prop, mathutils.Quaternion):
-                        prop = list(prop);
-                    if str(prop) != item.value:
-                        item.value = str(prop)
-                        if item.idx == 0:
-                            msg = liblo.Message(item.osc_address)
-                            #print( "sending prop :{}".format(prop) )
-                            if isinstance(prop, list):
-                                for argum in prop:
-                                    msg.add(argum)
-                            else:
-                                msg.add(prop)
-                            self.st.send(self.address, msg)
+            
+            oscMessage = {}
+            
+            make_osc_messages(bpy.context.scene.OSC_keys, oscMessage)
+            make_osc_messages(bpy.context.scene.OSC_nodes, oscMessage)
+            
+            for key, args in oscMessage.items():
+                msg = liblo.Message(key)
+                if isinstance(args, tuple):
+                    for argum in args:
+                        msg.add(argum)
+                else:
+                    msg.add(args)
+                self.st.send(self.address, msg)
+                
         return {'PASS_THROUGH'}
 
     #######################################
@@ -317,7 +323,7 @@ class OSC_OT_PyLibloServer(bpy.types.Operator):
                             print ("Improper setup received: object '"+item.data_path+"' with id'"+item.id+"' is no recognized dataformat")
 
             # lets go and find all nodes in all nodetrees that are relevant for us
-            createNodeHandleCollection()
+            nodes_createHandleCollection()
 
             for item in bpy.context.scene.OSC_nodes:
                 if item.osc_direction == "INPUT":
@@ -363,7 +369,7 @@ class OSC_OT_PyLibloServer(bpy.types.Operator):
     def cancel(self, context):
         envars = bpy.context.scene.nodeosc_envars
         context.window_manager.event_timer_remove(self._timer)
-        print("self.st.free():")
+        print("stopping PyLiblo Server..")
         self.st.stop()
         self.st.free()
         #self.server.shutdown()

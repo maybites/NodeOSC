@@ -52,7 +52,10 @@ def OSC_callback_unkown(address, args):
 # called by the queue execution thread
 def OSC_callback_custom(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
-        obj[attr] = oscArgs[oscIndex]
+        if len(oscIndex) > 0:
+            obj[attr] = oscArgs[oscIndex[0]]
+        else:
+            obj[attr] = oscArgs[0]
     except:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
             print ("Improper content received: "+ address + " " + str(oscArgs))
@@ -60,7 +63,9 @@ def OSC_callback_custom(address, obj, attr, attrIdx, oscArgs, oscIndex):
 # called by the queue execution thread
 def OSC_callback_Property(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
-        val = oscArgs[oscIndex]
+        val = oscArgs[0]
+        if len(oscIndex) > 0:
+            val = oscArgs[oscIndex[0]]
         setattr(obj,attr,val)
     except:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
@@ -69,7 +74,10 @@ def OSC_callback_Property(address, obj, attr, attrIdx, oscArgs, oscIndex):
 # called by the queue execution thread
 def OSC_callback_IndexedProperty(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
-        getattr(obj,attr)[attrIdx] = oscArgs[oscIndex]
+        if len(oscIndex) > 0:
+            getattr(obj,attr)[attrIdx] = oscArgs[oscIndex[0]]
+        else:
+            getattr(obj,attr)[attrIdx] = oscArgs[0]
     except:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
             print ("Improper property received:: "+address + " " + str(oscArgs))
@@ -77,7 +85,11 @@ def OSC_callback_IndexedProperty(address, obj, attr, attrIdx, oscArgs, oscIndex)
 # called by the queue execution thread
 def OSC_callback_properties(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
-        getattr(obj, attr)[:] = (oscArgs[i] for i in oscIndex)
+        if len(oscIndex) > 0:
+            getattr(obj, attr)[:] = (oscArgs[i] for i in oscIndex)
+        else:
+            getattr(obj, attr)[:] = oscArgs
+            
     except:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
             print ("Improper properties received: "+address + " " + str(oscArgs))
@@ -85,7 +97,9 @@ def OSC_callback_properties(address, obj, attr, attrIdx, oscArgs, oscIndex):
 # called by the queue execution thread
 def OSC_callback_nodelist(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
-        val = tuple(oscArgs[i] for i in oscIndex)
+        val = oscArgs
+        if len(oscIndex) > 0:
+            val = tuple(oscArgs[i] for i in oscIndex)
         getattr(obj, attr)(val)
     except:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
@@ -108,6 +122,11 @@ def OSC_callback_pythonosc(* args):
     attr = args[1][0][2]        # blender object ID (i.e. location)
     attrIdx = args[1][0][3]         # ID-index (not used)
     oscIndex = args[1][0][4]    # osc argument index to use (should be a tuplet, like (1,2,3))
+
+    # we have to make sure the oscIndex is a tuple. 
+    # there is a cornercase '(0)' where make_tuple doesn't return tuple (how stupid is that)
+    if isinstance(oscIndex, int): 
+        oscIndex = (oscIndex,)
 
     oscArgs = args[2:]
 
@@ -134,6 +153,11 @@ def OSC_callback_pyliblo(path, args, types, src, data):
     attr = data[2]          # blender object ID (i.e. location)
     attrIdx = data[3]       # ID-index (not used)
     oscIndex = data[4]      # osc argument index to use (should be a tuplet, like (1,2,3))
+
+    # we have to make sure the oscIndex is a tuple. 
+    # there is a cornercase '(0)' where make_tuple doesn't return tuple (how stupid is that)
+    if isinstance(oscIndex, int): 
+        oscIndex = (oscIndex,)
 
     if mytype == -1:
         #special type reserved for message that triggers the execution of nodetrees

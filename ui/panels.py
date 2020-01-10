@@ -1,4 +1,5 @@
 import bpy
+from pathlib import Path
 
 #######################################
 #  MAIN GUI PANEL                     #
@@ -12,11 +13,13 @@ class OSC_PT_Settings(bpy.types.Panel):
     bl_context = "objectmode"
 
     def draw(self, context):
+        preferences = context.preferences
+        addon_prefs = preferences.addons[self.bl_category].preferences           
+ 
         envars = bpy.context.scene.nodeosc_envars
         layout = self.layout
         col = layout.column(align=True)
         if envars.status == "Stopped":
-            col.label(text="OSC Settings:")
             row = col.row(align=True)
             row.operator("nodeosc.startudp", text='Start', icon='PLAY')
             col1 = layout.column(align=True)
@@ -31,7 +34,10 @@ class OSC_PT_Settings(bpy.types.Panel):
             layout.prop(envars, 'autorun', text="Start at Launch")
         else:
             col.operator("nodeosc.startudp", text='Stop', icon='PAUSE')
-            col.label(text="Server is running...")
+            if addon_prefs.usePyLiblo == False:
+                col.label(text="pure python server is running...")
+            else:
+                col.label(text="pyLiblo server is running...")                
             col.label(text=" listening at " + envars.udp_in + " on port " + str(envars.port_in))
             col.label(text=" sending to " + envars.udp_out + " on port " + str(envars.port_out))
             
@@ -48,8 +54,12 @@ class OSC_PT_Operations(bpy.types.Panel):
     bl_context = "objectmode"
 
     def draw(self, context):
+        envars = bpy.context.scene.nodeosc_envars
         layout = self.layout
-        layout.label(text="Message handlers: (restart server to apply changes)")
+        if envars.status == "Stopped":
+            layout.label(text="Message handlers:")
+        else:
+            layout.label(text="Message handlers: (restart server to apply changes)")
         index = 0
         col = layout.column()
         for item in bpy.context.scene.OSC_keys:
@@ -151,22 +161,24 @@ class OSC_PT_Nodes(bpy.types.Panel):
                 row.prop(item, "ui_expanded", text = "", 
                          icon='DISCLOSURE_TRI_DOWN' if item.ui_expanded else 'DISCLOSURE_TRI_RIGHT', 
                          emboss = False)
+                row.label(text = "", 
+                        icon='EXPORT' if item.osc_direction == "OUTPUT" else 'IMPORT')
                 
                 sub = row.row()
                 sub.active = item.enabled
-                sub.label(text="%s: %s" % ("address", item.osc_address))
+                sub.label(text=item.osc_address)
 
                 if item.ui_expanded:
-                    split = colsub.row().split(factor=0.15)
+                    split = colsub.row().split(factor=0.2)
                     split.label(text="direction:")
                     split.label(text=item.osc_direction)
 
-                    split = colsub.row().split(factor=0.15)
+                    split = colsub.row().split(factor=0.2)
                     split.label(text="address:")
                     split.label(text=item.osc_address)
 
-                    split = colsub.row().split(factor=0.15)
-                    split.label(text="data_path:")
+                    split = colsub.row().split(factor=0.2)
+                    split.label(text="datapath:")
                     split.label(text=item.data_path)
         
         #layout.label(text="Works only if \'Auto Execution\' and \'Porperty Changed\' is toggled on", icon="ERROR")

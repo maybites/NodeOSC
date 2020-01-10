@@ -12,15 +12,15 @@ class OSCInputNode(bpy.types.Node, AnimationNode):
     bl_idname = "an_OSCListNode"
     bl_label = "OSCList"
 
-    osc_address: bpy.props.StringProperty(name="address", 
+    osc_address: bpy.props.StringProperty(name="Osc address", 
         default="/custom/address", 
         update = AnimationNode.refresh)
     osc_type: bpy.props.StringProperty(
         name="Type", 
         default="fff")
     osc_index: bpy.props.StringProperty(
-        name="argument indices", 
-        default="(0, 1, 2)",
+        name="Argument indices. Indicate in which order the arguments will be handled inside blender. Have to be in the format \'() or (0 [, 1, 2])\' with 0...n integers, separated by a comma, and inside two parantheses \'()\'. There should be no more indices than arriving arguments, otherwise the message will be ignored", 
+        default="()",
         update = AnimationNode.refresh)
     osc_direction: bpy.props.EnumProperty(
         name = "RX/TX", 

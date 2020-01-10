@@ -2,7 +2,7 @@ import bpy
 from animation_nodes.events import propertyChanged
 
 # fill up the OSC_handles with all the current OSC_keys and OSC_nodes
-def createNodeHandleCollection():
+def nodes_createHandleCollection():
     bpy.context.scene.OSC_nodes.clear()
     for node_group in bpy.data.node_groups:
         if node_group.bl_idname == 'an_AnimationNodeTree':
