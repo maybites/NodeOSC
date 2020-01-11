@@ -95,7 +95,18 @@ def OSC_callback_properties(address, obj, attr, attrIdx, oscArgs, oscIndex):
             print ("Improper properties received: "+address + " " + str(oscArgs))
 
 # called by the queue execution thread
-def OSC_callback_nodelist(address, obj, attr, attrIdx, oscArgs, oscIndex):
+def OSC_callback_nodeFLOAT(address, obj, attr, attrIdx, oscArgs, oscIndex):
+    try:
+        val = oscArgs[0]
+        if len(oscIndex) > 0:
+            val = oscArgs[oscIndex[0]]
+        getattr(obj, attr)(val)
+    except:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
+            print ("Improper properties received: "+address + " " + str(oscArgs))
+
+# called by the queue execution thread
+def OSC_callback_nodeLIST(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
         val = oscArgs
         if len(oscIndex) > 0:
@@ -142,7 +153,9 @@ def OSC_callback_pythonosc(* args):
     elif mytype == 4:
         OSC_callback_queue.put((OSC_callback_properties, address, obj, attr, attrIdx, oscArgs, oscIndex))
     elif mytype == 5:
-        OSC_callback_queue.put((OSC_callback_nodelist, address, obj, attr, attrIdx, oscArgs, oscIndex))
+        OSC_callback_queue.put((OSC_callback_nodeFLOAT, address, obj, attr, attrIdx, oscArgs, oscIndex))
+    elif mytype == 6:
+        OSC_callback_queue.put((OSC_callback_nodeLIST, address, obj, attr, attrIdx, oscArgs, oscIndex))
  
 # method called by the pyliblo library in case of a mapped message
 def OSC_callback_pyliblo(path, args, types, src, data):
@@ -173,4 +186,6 @@ def OSC_callback_pyliblo(path, args, types, src, data):
     elif mytype == 4:
         OSC_callback_queue.put((OSC_callback_properties, address, obj, attr, attrIdx, args, oscIndex))
     elif mytype == 5:
-        OSC_callback_queue.put((OSC_callback_nodelist, address, obj, attr, attrIdx, args, oscIndex))
+        OSC_callback_queue.put((OSC_callback_nodeFLOAT, address, obj, attr, attrIdx, args, oscIndex))
+    elif mytype == 6:
+        OSC_callback_queue.put((OSC_callback_nodeLIST, address, obj, attr, attrIdx, args, oscIndex))

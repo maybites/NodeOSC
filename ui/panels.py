@@ -10,7 +10,6 @@ class OSC_PT_Settings(bpy.types.Panel):
     bl_label = "NodeOSC Server"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_context = "objectmode"
 
     def draw(self, context):
         preferences = context.preferences
@@ -51,7 +50,6 @@ class OSC_PT_Operations(bpy.types.Panel):
     bl_label = "Custom Messages"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_context = "objectmode"
 
     def draw(self, context):
         envars = bpy.context.scene.nodeosc_envars
@@ -136,7 +134,6 @@ class OSC_PT_Nodes(bpy.types.Panel):
     bl_label = "Node Messages"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_context = "objectmode"
 
     def draw(self, context):
         envars = bpy.context.scene.nodeosc_envars

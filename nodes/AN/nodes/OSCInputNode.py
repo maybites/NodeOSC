@@ -13,7 +13,7 @@ class OSCInputNode(bpy.types.Node, AnimationNode):
     bl_label = "OSCList"
 
     osc_address: bpy.props.StringProperty(name="Osc address", 
-        default="/custom/address", 
+        default="/an/list", 
         update = AnimationNode.refresh)
     osc_type: bpy.props.StringProperty(
         name="Type", 
@@ -33,6 +33,10 @@ class OSCInputNode(bpy.types.Node, AnimationNode):
     id: bpy.props.StringProperty(
         name="id", 
         default="")
+    node_data_type: bpy.props.EnumProperty(
+        name="NodeDataType", 
+        default="TUPLE", 
+        items = nodeDataTypeItems)
                
     def create(self):        
         self.data_path = 'bpy.data.node_groups[\'' + self.nodeTree.name + '\'].nodes[\'' + self.name +'\']'

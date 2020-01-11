@@ -39,7 +39,6 @@ bl_info = {
     "blender": (2, 80, 0),
     "location": "View3D > Tools > NodeOSC",
     "description": "Realtime control of Blender using OSC protocol",
-    "warning": "Please read the disclaimer about network security on the download site.",
     "wiki_url": "",
     "tracker_url": "",
     "category": "System"}
@@ -89,8 +88,7 @@ def nodeosc_handler(scene):
 from . import preferences
 from .server import server, operators, keys
 from .ui import panels
-from .nodes.AN import auto_load
-auto_load.init()
+from .nodes import nodes
 
 panel_classes = (
     StartUDP,
@@ -102,7 +100,7 @@ def register():
     operators.register()
     panels.register()
     server.register()
-    auto_load.register()
+    nodes.register()
     for cls in panel_classes:
         bpy.utils.register_class(cls)
     bpy.app.handlers.load_post.append(nodeosc_handler)
@@ -110,7 +108,7 @@ def register():
 def unregister():
     for cls in reversed(panel_classes):
         bpy.utils.unregister_class(cls)
-    auto_load.unregister()
+    nodes.unregister()
     server.unregister()
     panels.unregister()
     operators.unregister()

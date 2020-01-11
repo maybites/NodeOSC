@@ -52,6 +52,10 @@ def make_osc_messages(myOscKeys, myOscMsg):
                 prop = tuple(prop);
             if prop is None:
                 prop = 'None'
+            if prop is int:
+                prop = (prop,)
+            if prop is float:
+                prop = (prop,)
             if str(prop) != item.value:
                 item.value = str(prop)
                 # sort the properties according to the osc_indices
@@ -178,8 +182,11 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
             for item in bpy.context.scene.OSC_nodes:
                 if item.osc_direction == "INPUT":
                     try:
-                        if isinstance(getattr(eval(item.data_path), item.id), types.MethodType):
+                        if item.node_data_type == "FLOAT":
                             dataTuple = (5, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                            self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
+                        elif item.node_data_type == "TUPLE":
+                            dataTuple = (6, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
                             self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
                     except:
                         print ("Improper setup received: object '"+item.data_path+"' with id '"+item.id+"' is no recognized dataformat")
@@ -328,8 +335,11 @@ class OSC_OT_PyLibloServer(bpy.types.Operator):
             for item in bpy.context.scene.OSC_nodes:
                 if item.osc_direction == "INPUT":
                     try:
-                        if isinstance(getattr(eval(item.data_path), item.id), types.MethodType):
+                        if item.node_data_type == "FLOAT":
                             dataTuple = (5, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                            self.st.add_method(item.osc_address, None, OSC_callback_pyliblo, dataTuple)
+                        elif item.node_data_type == "TUPLE":
+                            dataTuple = (6, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
                             self.st.add_method(item.osc_address, None, OSC_callback_pyliblo, dataTuple)
                     except:
                         print ("Improper setup received: object '"+item.data_path+"' with id '"+item.id+"' is no recognized dataformat")
