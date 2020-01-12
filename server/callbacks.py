@@ -2,6 +2,7 @@ import bpy
 import queue
 
 from ..nodes.nodes import *
+from ..utils import utils
 
 #######################################
 #  OSC Receive Method                 #
@@ -45,9 +46,8 @@ def execute_queued_OSC_callbacks():
 
 # called by the queue execution thread
 def OSC_callback_unkown(address, args):
-    if bpy.context.scene.nodeosc_envars.message_monitor == True:
-        bpy.context.scene.nodeosc_envars.lastaddr = address
-        bpy.context.scene.nodeosc_envars.lastpayload = str(args)
+    bpy.context.scene.nodeosc_envars.lastaddr = address
+    bpy.context.scene.nodeosc_envars.lastpayload = str(args)
 
 # called by the queue execution thread
 def OSC_callback_custom(address, obj, attr, attrIdx, oscArgs, oscIndex):
@@ -56,9 +56,12 @@ def OSC_callback_custom(address, obj, attr, attrIdx, oscArgs, oscIndex):
             obj[attr] = oscArgs[oscIndex[0]]
         else:
             obj[attr] = oscArgs[0]
+    except TypeError as err:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
+            bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
     except:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            print ("Improper content received: "+ address + " " + str(oscArgs))
+            bpy.context.scene.nodeosc_envars.error =  "Improper attributes received: "+address + " " + str(oscArgs)
 
 # called by the queue execution thread
 def OSC_callback_Property(address, obj, attr, attrIdx, oscArgs, oscIndex):
@@ -67,9 +70,12 @@ def OSC_callback_Property(address, obj, attr, attrIdx, oscArgs, oscIndex):
         if len(oscIndex) > 0:
             val = oscArgs[oscIndex[0]]
         setattr(obj,attr,val)
+    except TypeError as err:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
+            bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
     except:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            print ("Improper property received:: "+address + " " + str(oscArgs))
+            bpy.context.scene.nodeosc_envars.error =  "Improper attributes received: "+address + " " + str(oscArgs)
 
 # called by the queue execution thread
 def OSC_callback_IndexedProperty(address, obj, attr, attrIdx, oscArgs, oscIndex):
@@ -78,9 +84,12 @@ def OSC_callback_IndexedProperty(address, obj, attr, attrIdx, oscArgs, oscIndex)
             getattr(obj,attr)[attrIdx] = oscArgs[oscIndex[0]]
         else:
             getattr(obj,attr)[attrIdx] = oscArgs[0]
+    except TypeError as err:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
+            bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
     except:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            print ("Improper property received:: "+address + " " + str(oscArgs))
+            bpy.context.scene.nodeosc_envars.error =  "Improper attributes received: "+address + " " + str(oscArgs)
 
 # called by the queue execution thread
 def OSC_callback_properties(address, obj, attr, attrIdx, oscArgs, oscIndex):
@@ -90,9 +99,12 @@ def OSC_callback_properties(address, obj, attr, attrIdx, oscArgs, oscIndex):
         else:
             getattr(obj, attr)[:] = oscArgs
             
+    except TypeError as err:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
+            bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
     except:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            print ("Improper properties received: "+address + " " + str(oscArgs))
+            bpy.context.scene.nodeosc_envars.error =  "Improper attributes received: "+address + " " + str(oscArgs)
 
 # called by the queue execution thread
 def OSC_callback_nodeFLOAT(address, obj, attr, attrIdx, oscArgs, oscIndex):
@@ -101,9 +113,12 @@ def OSC_callback_nodeFLOAT(address, obj, attr, attrIdx, oscArgs, oscIndex):
         if len(oscIndex) > 0:
             val = oscArgs[oscIndex[0]]
         getattr(obj, attr)(val)
+    except TypeError as err:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
+            bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
     except:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            print ("Improper properties received: "+address + " " + str(oscArgs))
+            bpy.context.scene.nodeosc_envars.error =  "Improper attributes received: "+address + " " + str(oscArgs)
 
 # called by the queue execution thread
 def OSC_callback_nodeLIST(address, obj, attr, attrIdx, oscArgs, oscIndex):
@@ -112,14 +127,18 @@ def OSC_callback_nodeLIST(address, obj, attr, attrIdx, oscArgs, oscIndex):
         if len(oscIndex) > 0:
             val = tuple(oscArgs[i] for i in oscIndex)
         getattr(obj, attr)(val)
+    except TypeError as err:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
+            bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
     except:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            print ("Improper properties received: "+address + " " + str(oscArgs))
+            bpy.context.scene.nodeosc_envars.error =  "Improper attributes received: "+address + " " + str(oscArgs)
 
 # method called by the pythonosc library in case of an unmapped message
 def OSC_callback_pythonosc_undef(* args):
-    address = args[0]
-    OSC_callback_queue.put((OSC_callback_unkown, address, args[2:]))
+    if bpy.context.scene.nodeosc_envars.message_monitor == True:
+        address = args[0]
+        OSC_callback_queue.put((OSC_callback_unkown, address, args[1:]))
 
 # method called by the pythonosc library in case of a mapped message
 def OSC_callback_pythonosc(* args):

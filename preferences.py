@@ -1,4 +1,6 @@
 import bpy
+import platform
+
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty, IntProperty, BoolProperty
 
@@ -14,11 +16,12 @@ class NodeOSCEnvVarSettings(bpy.types.PropertyGroup):
     output_rate: bpy.props.IntProperty(default=10 ,description="The refresh rate of the engine (millisecond)", min=1)
     status: bpy.props.StringProperty(default="Stopped", description='Show if the engine is running or not')
     message_monitor: bpy.props.BoolProperty(description="Display the current value of your keys, the last message received and some infos in console")
-    autorun: bpy.props.BoolProperty(description="Start the OSC engine automatically after loading a project")
+    autorun: bpy.props.BoolProperty(description="Start the OSC engine automatically after loading a project. IMPORTANT: This only works if the project is saved while the server is NOT running!")
     lastaddr: bpy.props.StringProperty(description="Display the last OSC address received")
     lastpayload: bpy.props.StringProperty(description="Display the last OSC message content")
     node_update: bpy.props.EnumProperty(name = "node update", default = "EACH", items = nodeUpdateItems)
     node_frameMessage: bpy.props.StringProperty(default="/frame/end",description="OSC message that triggers a node tree execution")
+    error: bpy.props.StringProperty(default="",description="Last error message")
 
 class NodeOSCPreferences(AddonPreferences):
     # this must match the addon name, use '__package__'
@@ -35,7 +38,9 @@ class NodeOSCPreferences(AddonPreferences):
         view = prefs.view
 
         layout = self.layout
-        layout.prop(self, "usePyLiblo")
+        if platform.system() != "Linux":
+            layout.prop(self, "usePyLiblo")
+            
         layout.label(text="Helpfull to get full data paths is to enable python tool tips:")
         layout.prop(view, "show_tooltips_python")
         layout.label(text="Use Ctrl-Alt-Shift-C to copy the full datapath to the clipboard")

@@ -1,4 +1,5 @@
 import bpy
+import platform
 from pathlib import Path
 
 #######################################
@@ -20,27 +21,49 @@ class OSC_PT_Settings(bpy.types.Panel):
         col = layout.column(align=True)
         if envars.status == "Stopped":
             row = col.row(align=True)
-            row.operator("nodeosc.startudp", text='Start', icon='PLAY')
+            if addon_prefs.usePyLiblo == False:
+                row.operator("nodeosc.pythonosc_operator", text='Start', icon='PLAY')
+            else:
+                row.operator("nodeosc.pyliblo_operator", text='Start', icon='PLAY')
+            if platform.system() != "Linux":
+                row.prop(addon_prefs, "usePyLiblo", text = '', icon='CHECKBOX_HLT' if addon_prefs.usePyLiblo else 'CHECKBOX_DEHLT')
+
+            
             col1 = layout.column(align=True)
             row1 = col1.row(align=True)
-            row1.prop(envars, 'udp_in', text="Input")
+            row1.prop(envars, 'udp_in', text="In")
             row1.prop(envars, 'port_in', text="Port")
             col2 = layout.column(align=True)
             row2 = col2.row(align=True)
-            row2.prop(envars, 'udp_out', text="Output")
+            row2.prop(envars, 'udp_out', text="Out")
             row2.prop(envars, 'port_out', text="Port")
             layout.prop(envars, 'output_rate', text="Update rate(ms)")
             layout.prop(envars, 'autorun', text="Start at Launch")
         else:
-            col.operator("nodeosc.startudp", text='Stop', icon='PAUSE')
             if addon_prefs.usePyLiblo == False:
+                col.operator("nodeosc.pythonosc_operator", text='Stop', icon='PAUSE')
                 col.label(text="pure python server is running...")
             else:
-                col.label(text="pyLiblo server is running...")                
+                col.operator("nodeosc.pyliblo_operator", text='Stop', icon='PAUSE')
+                col.label(text="pyLiblo server is running...")               
+                 
             col.label(text=" listening at " + envars.udp_in + " on port " + str(envars.port_in))
             col.label(text=" sending to " + envars.udp_out + " on port " + str(envars.port_out))
+        
+            col.prop(bpy.context.scene.nodeosc_envars, 'message_monitor', text="Monitoring and Error reporting")
+
+            if bpy.context.scene.nodeosc_envars.message_monitor == True: 
+                box = col.box()
+                row5 = box.column(align=True)
+                if addon_prefs.usePyLiblo == False:
+                    row5.label(text="Last OSC ..")
+                    row5.prop(bpy.context.scene.nodeosc_envars, 'lastaddr', text="address")
+                    row5.prop(bpy.context.scene.nodeosc_envars, 'lastpayload', text="values")
+                else:
+                    row5.label(text="pyLiblo server ignores all unknown osc messages")
+                    
+
             
- 
 #######################################
 #  CUSTOM RX PANEL                    #
 #######################################
@@ -79,6 +102,7 @@ class OSC_PT_Operations(bpy.types.Panel):
             sub.active = item.enabled
             sub.label(text=item.osc_address)
             subsub = sub.row()
+            subsub.operator("nodeosc.createitem", icon='PLUS', text='').copy = index
             subsub.operator("nodeosc.deleteitem", icon='CANCEL', text = "").index = index
             
             if item.ui_expanded:
@@ -103,21 +127,14 @@ class OSC_PT_Operations(bpy.types.Panel):
                     rowItm3 = colsub.row()
                     rowItm3.prop(item, 'value',text='current value')
                                 
-                index = index + 1
+            index = index + 1
         
-        layout.operator("nodeosc.createitem", icon='PRESET_NEW', text='Create new message handler')
+        layout.operator("nodeosc.createitem", icon='PRESET_NEW', text='Create new message handler').copy = -1
 
         layout.separator()
 
         row = layout.row(align=False)
         row.prop(bpy.context.scene, 'nodeosc_defaultaddr', text="Default Address")
-        row.prop(bpy.context.scene.nodeosc_envars, 'message_monitor', text="Monitoring")
-
-        if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            box = layout.box()
-            row5 = box.column(align=True)
-            row5.prop(bpy.context.scene.nodeosc_envars, 'lastaddr', text="Last OSC address")
-            row5.prop(bpy.context.scene.nodeosc_envars, 'lastpayload', text="Last OSC message")
 
         layout.separator()
         layout.operator("nodeosc.importks", text='Import Keying Set')

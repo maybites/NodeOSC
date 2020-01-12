@@ -62,7 +62,7 @@ class OSC_OT_ItemCreate(bpy.types.Operator):
 
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
-    index: bpy.props.IntProperty(default=0)
+    copy: bpy.props.IntProperty(default=0)
 
     @classmethod
     def poll(cls, context):
@@ -74,11 +74,18 @@ class OSC_OT_ItemCreate(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        new_item = bpy.context.scene.OSC_keys.add()
-        new_item.id = "location"
-        new_item.data_path = "bpy.data.objects['Cube']"
-        new_item.osc_address = "/example/address"
-        new_item.osc_index = "(0)"
+        keys = bpy.context.scene.OSC_keys
+        new_item = keys.add()
+        if self.copy == -1:
+            new_item.id = "location"
+            new_item.data_path = "bpy.data.objects['Cube']"
+            new_item.osc_address = "/cube/location"
+            new_item.osc_index = "()"
+        else:
+            new_item.id = keys[self.copy].id
+            new_item.data_path = keys[self.copy].data_path
+            new_item.osc_address = keys[self.copy].osc_address
+            new_item.osc_index = keys[self.copy].osc_index
 
         #bpy.context.scene.OSC_keys.remove(self.index)
 

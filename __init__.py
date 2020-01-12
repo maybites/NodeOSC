@@ -46,53 +46,24 @@ bl_info = {
 import bpy
 
 from bpy.app.handlers import persistent
-
-_report= ["",""] #This for reporting OS network errors
-
-class StartUDP(bpy.types.Operator):
-    bl_idname = "nodeosc.startudp"
-    bl_label = "Start UDP Connection"
-    bl_description ="Start/Stop the OSC engine"
-
-    def execute(self, context):
-        global _report
-        if bpy.context.scene.nodeosc_envars.port_in == bpy.context.scene.nodeosc_envars.port_out:
-            self.report({'INFO'}, "Ports must be different.")
-            return{'FINISHED'}
-        if bpy.context.scene.nodeosc_envars.status != "Running" :
-            preferences = context.preferences
-            addon_prefs = preferences.addons[__package__].preferences           
-            if addon_prefs.usePyLiblo == False:
-                bpy.ops.nodeosc.pythonosc_operator()
-            else:
-                bpy.ops.nodeosc.pyliblo_operator()
-            if _report[0] != '':
-                self.report({'INFO'}, "Input error: {0}".format(_report[0]))
-                _report[0] = ''
-            elif _report[1] != '':
-                self.report({'INFO'}, "Output error: {0}".format(_report[1]))
-                _report[1] = ''
-        else:
-            self.report({'INFO'}, "Disconnected !")
-            bpy.context.scene.nodeosc_envars.status = "Stopped"
-        return{'FINISHED'}
     
 #Restore saved settings
 @persistent
 def nodeosc_handler(scene):
     if bpy.context.scene.nodeosc_envars.autorun == True:
         if bpy.context.scene.nodeosc_envars.status == "Stopped":
-            bpy.ops.nodeosc.startudp()
+            preferences = bpy.context.preferences
+            addon_prefs = preferences.addons[__package__].preferences
+            if addon_prefs.usePyLiblo == False:
+                bpy.ops.nodeosc.pythonosc_operator()
+            else:
+                bpy.ops.nodeosc.pyliblo_operator()
 
 
 from . import preferences
 from .server import server, operators, keys
 from .ui import panels
 from .nodes import nodes
-
-panel_classes = (
-    StartUDP,
-)
 
 def register():
     preferences.register()
@@ -101,13 +72,9 @@ def register():
     panels.register()
     server.register()
     nodes.register()
-    for cls in panel_classes:
-        bpy.utils.register_class(cls)
     bpy.app.handlers.load_post.append(nodeosc_handler)
 
 def unregister():
-    for cls in reversed(panel_classes):
-        bpy.utils.unregister_class(cls)
     nodes.unregister()
     server.unregister()
     panels.unregister()

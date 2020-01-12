@@ -6,10 +6,24 @@ import nodeitems_utils
 
 from nodeitems_utils import NodeItem
 from pathlib import Path
-from animation_nodes.events import propertyChanged
-from Sorcar.helper import print_log
-from Sorcar.tree.ScNodeCategory import ScNodeCategory
 
+# try loading the node modules
+load_an_success = False
+load_sc_success = False
+
+try:
+    from animation_nodes.events import propertyChanged
+    load_an_success = True
+except ModuleNotFoundError:
+    load_an_success = False
+
+try:
+    from Sorcar.helper import print_log
+    from Sorcar.tree.ScNodeCategory import ScNodeCategory
+    load_sc_success = True
+except ModuleNotFoundError:
+    load_sc_success = False
+    
 # fill up the OSC_handles with all the current OSC_keys and OSC_nodes
 def nodes_createHandleCollection():
     bpy.context.scene.OSC_nodes.clear()
@@ -54,8 +68,10 @@ def hasAnimationNodes():
 
 # executes all the active and supported node system
 def executeNodeTrees():
-    executeAnimationNodeTrees()
-    #executeSorcarNodeTrees()
+    if load_an_success:
+        executeAnimationNodeTrees()
+    #if load_sc_success:
+    #    executeSorcarNodeTrees()
 
 # executes only animation node systems
 def executeAnimationNodeTrees():
@@ -77,43 +93,52 @@ def import_sorcar_nodes(path):
             out[cat].append(getattr(importlib.import_module(".nodes.sorcar.nodes." + cat + "." + i[0], path.name), i[0]))
             print_log("IMPORT NODE", bpy.path.display_name(cat), msg=i[0])
     return out
-    
-from .AN import auto_load
-auto_load.init()
 
-from Sorcar import all_classes
-classes_nodes = []
+if load_an_success:
+    from .AN import auto_load
+    auto_load.init()
+
+if load_sc_success:
+    from Sorcar import all_classes
+    classes_nodes = []
 
 def register():
-    # importing and registering animation nodes...
-    auto_load.register()
+    global load_an_success
+    global load_sc_success
     
-    # importing and registering sorcar nodes...
-    packagePath = Path(__file__).parent.parent
+    if load_an_success:
+        # importing and registering animation nodes...
+        auto_load.register()
     
-    global classes_nodes
-    
-    classes_nodes = import_sorcar_nodes(packagePath)
+    if load_sc_success:
+        # importing and registering sorcar nodes...
+        packagePath = Path(__file__).parent.parent
+        
+        global classes_nodes
+        
+        classes_nodes = import_sorcar_nodes(packagePath)
 
-#    global all_classes
-    
-    total_nodes = 0
-    node_categories = []
-    for cat in classes_nodes:
-        total_nodes += len(classes_nodes[cat])
-        node_categories.append(ScNodeCategory(identifier="sc_"+cat, name=bpy.path.display_name(cat), items=[NodeItem(i.bl_idname) for i in classes_nodes[cat]]))
-#        all_classes.extend(classes_nodes[cat])
-        for c in classes_nodes[cat]:
-            bpy.utils.register_class(c)
-    
-    nodeitems_utils.register_node_categories("osc_node_categories", node_categories)
+    #    global all_classes
+        
+        total_nodes = 0
+        node_categories = []
+        for cat in classes_nodes:
+            total_nodes += len(classes_nodes[cat])
+            node_categories.append(ScNodeCategory(identifier="sc_"+cat, name=bpy.path.display_name(cat), items=[NodeItem(i.bl_idname) for i in classes_nodes[cat]]))
+    #        all_classes.extend(classes_nodes[cat])
+            for c in classes_nodes[cat]:
+                bpy.utils.register_class(c)
+        
+        nodeitems_utils.register_node_categories("osc_node_categories", node_categories)
 
 def unregister():
-    auto_load.unregister()
+    if load_an_success:
+        auto_load.unregister()
     
-    global classes_nodes
+    if load_sc_success:
+        global classes_nodes
 
-    for cat in classes_nodes:
-        for c in classes_nodes[cat]:
-            bpy.utils.unregister_class(c)
-    nodeitems_utils.unregister_node_categories("osc_node_categories")
+        for cat in classes_nodes:
+            for c in classes_nodes[cat]:
+                bpy.utils.unregister_class(c)
+        nodeitems_utils.unregister_node_categories("osc_node_categories")

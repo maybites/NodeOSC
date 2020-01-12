@@ -7,3 +7,5 @@ dataDirectionItems = {
 nodeDataTypeItems = {
     ("TUPLE", "Tuple", "Expects Tuple", "IMPORT", 0),
     ("FLOAT", "Float", "Expects Float", "IMPORT", 1) } 
+
+__error_report = ""
