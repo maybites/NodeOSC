@@ -15,7 +15,7 @@ class NodeOSCMsgValues(bpy.types.PropertyGroup):
         enabled: bpy.props.BoolProperty(name="Enabled", default=True)
         ui_expanded: bpy.props.BoolProperty(name="Expanded", default=False)
         node_data_type: bpy.props.EnumProperty(name = "Node data type", default = "TUPLE", items = nodeDataTypeItems)
-        node_type: bpy.props.EnumProperty(name = "Node type", default = "NONE", items = nodeTypeItems)
+        node_type: bpy.props.IntProperty(name = "Node type", default = 0)
 
 key_classes = (
     NodeOSCMsgValues,

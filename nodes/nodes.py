@@ -40,7 +40,7 @@ def nodes_createHandleCollection():
                     item.osc_index = node.osc_index
                     item.osc_direction = node.osc_direction
                     item.node_data_type = node.node_data_type
-                    item.node_type = "AN"
+                    item.node_type = node.node_type
         if node_group.bl_idname == 'ScNodeTree':
             for node in node_group.nodes:
                 if node.bl_idname.find("ScOSC") != -1:
@@ -53,40 +53,45 @@ def nodes_createHandleCollection():
                     item.osc_index = node.osc_index
                     item.osc_direction = node.osc_direction
                     item.node_data_type = node.node_data_type
-                    item.node_type = "SORCAR"
+                    item.node_type = node.node_type
 
 
 # checks if there is any active and supported node system
 def hasNodes():
-    if hasAnimationNodes() == True:
+    if hasAnimationNodes() or hasSorcarNodes():
         return True
     return False
 
 # checks if there is any active animation node system
 def hasAnimationNodes():
-    for node_group in bpy.data.node_groups:
-        if node_group.bl_idname == 'an_AnimationNodeTree':
-            return True
+    if bpy.context.scene.nodeosc_AN_isLoaded:
+        for node_group in bpy.data.node_groups:
+            if node_group.bl_idname == 'an_AnimationNodeTree':
+                return True
     return False
 
-# executes all the active and supported node system
-def executeNodeTrees():
-    if load_an_success:
-        executeAnimationNodeTrees()
-    #if load_sc_success:
-    #    executeSorcarNodeTrees()
+# checks if there is any active sorcar node system
+def hasSorcarNodes():
+    if bpy.context.scene.nodeosc_AN_isLoaded:
+        for node_group in bpy.data.node_groups:
+            if node_group.bl_idname == 'ScNodeTree':
+                return True
+    return False
 
 # executes only animation node systems
 def executeAnimationNodeTrees():
-    propertyChanged()
-    # for node_group in bpy.data.node_groups:
-    #    bpy.ops.an.execute_tree(name = node_group.name)
+    if bpy.context.scene.nodeosc_AN_needsUpdate:
+        propertyChanged()
+        bpy.context.scene.nodeosc_AN_needsUpdate = False
 
-# executes only animation node systems
-def executeSorcarNodeTrees():
-    for node_group in bpy.data.node_groups:
-        if node_group.bl_idname == 'ScNodeTree':
-            node_group.execute_node()
+# executes only sorcar node systems
+# this method needs to be called from a server Modal
+def executeSorcarNodeTrees(context):
+    if bpy.context.scene.nodeosc_SORCAR_needsUpdate:
+        for node_group in bpy.data.node_groups:
+            if node_group.bl_idname == 'ScNodeTree':
+                node_group.execute_node()
+        bpy.context.scene.nodeosc_SORCAR_needsUpdate = False
 
 def import_sorcar_nodes(path):
     out = {}
@@ -108,10 +113,16 @@ if load_sc_success:
 def register():
     global load_an_success
     global load_sc_success
-    
+
+    bpy.types.Scene.nodeosc_AN_needsUpdate = bpy.props.BoolProperty(default=False)
+    bpy.types.Scene.nodeosc_SORCAR_needsUpdate = bpy.props.BoolProperty(default=False)
+
     if load_an_success:
         # importing and registering animation nodes...
         auto_load.register()
+        bpy.types.Scene.nodeosc_AN_isLoaded = bpy.props.BoolProperty(default=True, description='AN addon detected')
+    else:
+        bpy.types.Scene.nodeosc_AN_isLoaded = bpy.props.BoolProperty(default=False, description='AN addon detected')
     
     if load_sc_success:
         # importing and registering sorcar nodes...
@@ -120,21 +131,28 @@ def register():
         global classes_nodes
         
         classes_nodes = import_sorcar_nodes(packagePath)
-
-    #    global all_classes
-        
+       
         total_nodes = 0
         node_categories = []
         for cat in classes_nodes:
             total_nodes += len(classes_nodes[cat])
             node_categories.append(ScNodeCategory(identifier="sc_"+cat, name=bpy.path.display_name(cat), items=[NodeItem(i.bl_idname) for i in classes_nodes[cat]]))
-    #        all_classes.extend(classes_nodes[cat])
             for c in classes_nodes[cat]:
                 bpy.utils.register_class(c)
         
         nodeitems_utils.register_node_categories("osc_node_categories", node_categories)
+        bpy.types.Scene.nodeosc_SORCAR_isLoaded = bpy.props.BoolProperty(default=True, description='SORCAR addon detected')
+    else:
+        bpy.types.Scene.nodeosc_SORCAR_isLoaded = bpy.props.BoolProperty(default=False, description='SORCAR addon detected')
+
 
 def unregister():
+    del bpy.types.Scene.nodeosc_AN_isLoaded
+    del bpy.types.Scene.nodeosc_AN_needsUpdate
+
+    del bpy.types.Scene.nodeosc_SORCAR_isLoaded
+    del bpy.types.Scene.nodeosc_SORCAR_needsUpdate
+    
     if load_an_success:
         auto_load.unregister()
     

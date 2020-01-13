@@ -8,14 +8,18 @@ from numpy import array, uint32
 
 from .....utils.utils import *
 
+def sorcarTreeUpdate(self, context):
+    bpy.context.scene.nodeosc_SORCAR_needsUpdate = True
+
+
 class ScOSCNumber(Node, ScNode):
     bl_idname = "ScOSCNumber"
     bl_label = "OSCNumber"
 
     prop_type: EnumProperty(name="Type", items=[("FLOAT", "Float", ""), ("INT", "Integer", ""), ("ANGLE", "Angle", "")], default="FLOAT", update=ScNode.update_value)
-    prop_float: FloatProperty(name="Float")
-    prop_int: IntProperty(name="Integer")
-    prop_angle: FloatProperty(name="Angle", unit="ROTATION")
+    prop_float: FloatProperty(name="Float", update=sorcarTreeUpdate, description='this value updates the node tree only, if the nodeosc server is running')
+    prop_int: IntProperty(name="Integer", update=sorcarTreeUpdate, description='this value updates the node tree only, if the nodeosc server is running')
+    prop_angle: FloatProperty(name="Angle", unit="ROTATION", update=sorcarTreeUpdate, description='this value updates the node tree only, if the nodeosc server is running')
 
     osc_address: bpy.props.StringProperty(name="Osc address", 
         default="/sorcar/number")
@@ -39,6 +43,9 @@ class ScOSCNumber(Node, ScNode):
         name="NodeDataType", 
         default="FLOAT", 
         items = nodeDataTypeItems)
+    node_type: bpy.props.IntProperty(
+        name="NodeType", 
+        default=2)
      
     def init(self, context):
         super().init(context)
@@ -50,15 +57,21 @@ class ScOSCNumber(Node, ScNode):
         
         if self.osc_direction == "OUTPUT":
             self.id = "value"
-            self.inputs.new("ScNodeSocketNumber", "Value")
         if self.osc_direction == "INPUT":
             self.id = "setValue"
-            self.outputs.new("ScNodeSocketNumber", "Value")
+
+        self.outputs.new("ScNodeSocketNumber", "Value")
     
     def draw_buttons(self, context, layout):
         super().draw_buttons(context, layout)
         #if (not self.inputs["Random"].default_value):
         layout.prop(self, "prop_type", expand=True)
+        if (self.prop_type == "FLOAT"):
+            layout.prop(self, "prop_float")
+        elif (self.prop_type == "INT"):
+            layout.prop(self, "prop_int")
+        elif (self.prop_type == "ANGLE"):
+            layout.prop(self, "prop_angle")
         layout.prop(self, "osc_address", text="")
         layout.prop(self, "osc_index", text="")
         #layout.prop(self, "osc_direction", text="")
@@ -85,6 +98,7 @@ class ScOSCNumber(Node, ScNode):
             self.prop_int = value
         elif (self.prop_type == "ANGLE"):
             self.prop_angle = value
+        bpy.context.scene.nodeosc_SORCAR_needsUpdate = True
         self.post_execute()
 
     def getValue(self):

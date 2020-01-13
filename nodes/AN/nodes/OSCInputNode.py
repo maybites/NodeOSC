@@ -37,6 +37,9 @@ class OSCInputNode(bpy.types.Node, AnimationNode):
         name="NodeDataType", 
         default="TUPLE", 
         items = nodeDataTypeItems)
+    node_type: bpy.props.IntProperty(
+        name="NodeType", 
+        default=1)
                
     def create(self):        
         self.data_path = 'bpy.data.node_groups[\'' + self.nodeTree.name + '\'].nodes[\'' + self.name +'\']'

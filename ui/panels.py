@@ -101,9 +101,9 @@ class OSC_PT_Operations(bpy.types.Panel):
             sub = row.row()
             sub.active = item.enabled
             sub.label(text=item.osc_address)
-            subsub = sub.row()
-            subsub.operator("nodeosc.createitem", icon='PLUS', text='').copy = index
-            subsub.operator("nodeosc.deleteitem", icon='CANCEL', text = "").index = index
+            subsub = sub.row(align=True)
+            subsub.operator("nodeosc.createitem", icon='ADD', text='').copy = index
+            subsub.operator("nodeosc.deleteitem", icon='PANEL_CLOSE', text = "").index = index
             
             if item.ui_expanded:
                 colItm1 = colsub.column(align=True)

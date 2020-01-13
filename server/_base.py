@@ -13,6 +13,42 @@ from ast import literal_eval as make_tuple
 from .callbacks import *
 from ..nodes.nodes import *
 
+def make_osc_messages(myOscKeys, myOscMsg):
+    for item in myOscKeys:
+        if item.osc_direction == "OUTPUT" and item.enabled:
+            #print( "sending  :{}".format(item) )
+            if item.id[0:2] == '["' and item.id[-2:] == '"]':
+                prop = eval(item.data_path+item.id)
+            else:
+                prop = eval(item.data_path+'.'+item.id)
+            
+            # now make the values to be sent a tuple (unless its a string or None)
+            if isinstance(prop, mathutils.Vector):
+                prop = tuple(prop);
+            elif isinstance(prop, mathutils.Quaternion):
+                prop = tuple(prop);
+            elif isinstance(prop, mathutils.Euler):
+                prop = tuple(prop);
+            elif isinstance(prop, mathutils.Matrix):
+                prop = tuple(prop);
+            elif isinstance(prop, (bool, int, float)):
+                prop = (prop,)
+            elif prop is None:
+                prop = 'None'
+                
+            if str(prop) != item.value:
+                item.value = str(prop)
+
+                # make sure the osc indices are a tuple
+                indices = make_tuple(item.osc_index)
+                if isinstance(indices, int): 
+                    indices = (indices,)
+                    
+                # sort the properties according to the osc_indices
+                if prop is not None and not isinstance(prop, str) and len(indices) > 0:
+                    prop = tuple(prop[i] for i in indices)
+                myOscMsg[item.osc_address] = prop
+    return myOscMsg
 
 #######################################
 #  PythonOSC Server  BASE CLASS       #
@@ -86,9 +122,8 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                             if area.type == 'VIEW_3D':
                                 area.tag_redraw()
 
-            for node_group in bpy.data.node_groups:
-                if node_group.bl_idname == 'ScNodeTree':
-                    node_group.execute_node()
+            # only available spot where updating the sorcar tree doesn't throw errors...
+            executeSorcarNodeTrees(context)
 
             try:
                 self.sendingOSC(context, event)
@@ -120,7 +155,7 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                 
                 # register a message for executing 
                 if envars.node_update == "MESSAGE" and hasAnimationNodes():
-                    dataTuple = (-1, None, None, None, None)
+                    dataTuple = (-1, None, None, None, None, 0)
                 
                 self.addMethod(envars.node_frameMessage, dataTuple)
                 
@@ -129,23 +164,23 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                         try:
                             #For ID custom properties (with brackets)
                             if item.id[0:2] == '["' and item.id[-2:] == '"]':
-                                dataTuple = (1, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                                dataTuple = (1, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)
                             #For normal properties
                             #with index in brackets -: i_num
                             elif item.id[-1] == ']':
                                 d_p = item.id[:-3]
                                 i_num = int(item.id[-2])
-                                dataTuple = (3, eval(item.data_path), d_p, i_num, make_tuple(item.osc_index))
+                                dataTuple = (3, eval(item.data_path), d_p, i_num, make_tuple(item.osc_index), item.node_type)
                             #without index in brackets
                             else:
                                 if isinstance(getattr(eval(item.data_path), item.id), (int, float, str)):
-                                    dataTuple = (2, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                                    dataTuple = (2, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)
                                 elif isinstance(getattr(eval(item.data_path), item.id), (list, tuple)):
-                                    dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                                    dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)
                                 elif isinstance(getattr(eval(item.data_path), item.id), mathutils.Vector):
-                                    dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                                    dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)
                                 elif isinstance(getattr(eval(item.data_path), item.id), mathutils.Quaternion):
-                                    dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                                    dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)
 
                             self.addMethod(item.osc_address, dataTuple)
 
@@ -159,9 +194,9 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                     if item.osc_direction == "INPUT":
                         try:
                             if item.node_data_type == "FLOAT":
-                                dataTuple = (5, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                                dataTuple = (5, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)
                             elif item.node_data_type == "TUPLE":
-                                dataTuple = (6, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
+                                dataTuple = (6, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)
 
                             self.addMethod(item.osc_address, dataTuple)
                         except Exception as err:

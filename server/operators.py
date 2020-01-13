@@ -52,6 +52,19 @@ def parse_ks(item):
     return full_p, path, prop
 
 #######################################
+#  Force Update Sorcar Tree           #
+#######################################
+
+class OSC_OT_SorcarTreepdate(bpy.types.Operator):
+    """Update sorcar tree"""
+    bl_idname = "nodeosc.sorcar_tree_update"
+    bl_label = "Create"
+
+    def execute(self, context):
+        bpy.context.scene.nodeosc_SORCAR_needsUpdate = True
+        return {'FINISHED'}
+
+#######################################
 #  Create OSC Settings                #
 #######################################
 
@@ -304,6 +317,7 @@ op_classes = (
     NodeOSC_ImportKS,
     OSC_OT_ItemDelete,
     OSC_OT_ItemCreate,
+    OSC_OT_SorcarTreepdate,
 )
 
 def register():

@@ -35,43 +35,6 @@ from ._base import *
 from .callbacks import *
 from ..nodes.nodes import *
 
-def make_osc_messages(myOscKeys, myOscMsg):
-    for item in myOscKeys:
-        if item.osc_direction == "OUTPUT" and item.enabled:
-            #print( "sending  :{}".format(item) )
-            if item.id[0:2] == '["' and item.id[-2:] == '"]':
-                prop = eval(item.data_path+item.id)
-            else:
-                prop = eval(item.data_path+'.'+item.id)
-            
-            # now make the values to be sent a tuple (unless its a string or None)
-            if isinstance(prop, mathutils.Vector):
-                prop = tuple(prop);
-            elif isinstance(prop, mathutils.Quaternion):
-                prop = tuple(prop);
-            elif isinstance(prop, mathutils.Euler):
-                prop = tuple(prop);
-            elif isinstance(prop, mathutils.Matrix):
-                prop = tuple(prop);
-            elif isinstance(prop, (bool, int, float)):
-                prop = (prop,)
-            elif prop is None:
-                prop = 'None'
-                
-            if str(prop) != item.value:
-                item.value = str(prop)
-
-                # make sure the osc indices are a tuple
-                indices = make_tuple(item.osc_index)
-                if isinstance(indices, int): 
-                    indices = (indices,)
-                    
-                # sort the properties according to the osc_indices
-                if prop is not None and not isinstance(prop, str) and len(indices) > 0:
-                    prop = tuple(prop[i] for i in indices)
-                myOscMsg[item.osc_address] = prop
-    return myOscMsg
-
 #######################################
 #  Setup PythonOSC Server             #
 #######################################

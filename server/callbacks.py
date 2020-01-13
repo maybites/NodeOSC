@@ -39,9 +39,13 @@ def execute_queued_OSC_callbacks():
             func(*args)
         queue_repeat_filter[address] = True
     
-    #when all the messages are applied, execute the node trees
     if bpy.context.scene.nodeosc_envars.node_update != "MESSAGE" and hasOscMessages:
-        executeNodeTrees()
+            bpy.context.scene.nodeosc_AN_needsUpdate = True
+            bpy.context.scene.nodeosc_SORCAR_needsUpdate = True
+
+    #when all the messages are applied, execute the Animation node tree
+    #  the SORCAR node tree needs to be executed from the server modal method..
+    executeAnimationNodeTrees()
     return 0
 
 # called by the queue execution thread
@@ -152,6 +156,7 @@ def OSC_callback_pythonosc(* args):
     attr = args[1][0][2]        # blender object ID (i.e. location)
     attrIdx = args[1][0][3]         # ID-index (not used)
     oscIndex = args[1][0][4]    # osc argument index to use (should be a tuplet, like (1,2,3))
+    nodeType = args[1][0][5]    # node type 
 
     # we have to make sure the oscIndex is a tuple. 
     # there is a cornercase '(0)' where make_tuple doesn't return tuple (how stupid is that)
@@ -162,7 +167,10 @@ def OSC_callback_pythonosc(* args):
 
     if mytype == -1:
         #special type reserved for message that triggers the execution of nodetrees
-        executeNodeTrees()
+        if nodeType == 1:
+            bpy.context.scene.nodeosc_AN_needsUpdate = True
+        elif nodeType == 2:
+            bpy.context.scene.nodeosc_SORCAR_needsUpdate = True
     elif mytype == 1:
         OSC_callback_queue.put((OSC_callback_custom, address, obj, attr, attrIdx, oscArgs, oscIndex))
     elif mytype == 2:
@@ -185,6 +193,7 @@ def OSC_callback_pyliblo(path, args, types, src, data):
     attr = data[2]          # blender object ID (i.e. location)
     attrIdx = data[3]       # ID-index (not used)
     oscIndex = data[4]      # osc argument index to use (should be a tuplet, like (1,2,3))
+    nodeType = data[5]      # node type 
 
     # we have to make sure the oscIndex is a tuple. 
     # there is a cornercase '(0)' where make_tuple doesn't return tuple (how stupid is that)
