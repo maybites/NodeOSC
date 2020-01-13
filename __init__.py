@@ -51,7 +51,7 @@ from bpy.app.handlers import persistent
 @persistent
 def nodeosc_handler(scene):
     if bpy.context.scene.nodeosc_envars.autorun == True:
-        if bpy.context.scene.nodeosc_envars.status == "Stopped":
+        if bpy.context.scene.nodeosc_envars.isServerRunning == False:
             preferences = bpy.context.preferences
             addon_prefs = preferences.addons[__package__].preferences
             if addon_prefs.usePyLiblo == False:

@@ -88,7 +88,7 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
 
     def modal(self, context, event):
         envars = bpy.context.scene.nodeosc_envars
-        if envars.status == "Stopped":
+        if envars.isServerRunning == False:
             return self.cancel(context)
         if envars.message_monitor and envars.error != "":
             self.report({'WARNING'}, envars.error)
@@ -106,6 +106,11 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
                         for area in screen.areas:
                             if area.type == 'VIEW_3D':
                                 area.tag_redraw()
+
+        for node_group in bpy.data.node_groups:
+            if node_group.bl_idname == 'ScNodeTree':
+                node_group.execute_node()
+
         
             try:
                 oscMessage = {}
@@ -140,7 +145,7 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
         if envars.port_in == envars.port_out:
             self.report({'WARNING'}, "Ports must be different.")
             return{'FINISHED'}
-        if envars.status != "Running" :
+        if envars.isServerRunning == False:
 
             #For sending
             try:
@@ -231,15 +236,15 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
                 self.report({'WARNING'}, "Server startup: {0}".format(err))
                 return {'CANCELLED'}
 
-            envars.status = "Running"
+            envars.isServerRunning = True
             
             self.report({'INFO'}, "Server successfully started!")
 
             return {'RUNNING_MODAL'}
         else:
             self.report({'INFO'}, "Server stopped!")
-            envars.status = "Stopped"
-        
+            envars.isServerRunning = False    
+                
         return{'FINISHED'}
 
 
@@ -248,7 +253,6 @@ class OSC_OT_PythonOSCServer(bpy.types.Operator):
         context.window_manager.event_timer_remove(self._timer)
         print("OSC server.shutdown()")
         self.server.shutdown()
-        envars.status = "Stopped"
         bpy.app.timers.unregister(execute_queued_OSC_callbacks)
         return {'CANCELLED'}
 
@@ -275,8 +279,9 @@ class OSC_OT_PyLibloServer(bpy.types.Operator):
 
     def modal(self, context, event):
         envars = bpy.context.scene.nodeosc_envars
-        if bpy.context.scene.nodeosc_envars.status == "Stopped":
+        if envars.isServerRunning == False:
             return self.cancel(context)
+        
         if envars.message_monitor and envars.error != "":
             self.report({'WARNING'}, envars.error)
             print(envars.error)
@@ -324,7 +329,7 @@ class OSC_OT_PyLibloServer(bpy.types.Operator):
         if envars.port_in == envars.port_out:
             self.report({'WARNING'}, "Ports must be different.")
             return{'FINISHED'}
-        if envars.status != "Running" :
+        if envars.isServerRunning == False:
 
             #Setting up the dispatcher for receiving
             try:
@@ -407,16 +412,16 @@ class OSC_OT_PyLibloServer(bpy.types.Operator):
                 self.report({'WARNING'}, "Server send test: {0}".format(err))
                 # we start running modal anyway, only to be stopped right away
                 return {'RUNNING_MODAL'}
-
-            envars.status = "Running"
             
             self.report({'INFO'}, "Server successfully started!")
+            envars.isServerRunning = True
 
             return {'RUNNING_MODAL'}
         
         else:
             self.report({'INFO'}, "Server stopped!")
-            envars.status = "Stopped"
+            envars.isServerRunning = False
+            
         return{'FINISHED'}
 
     def cancel(self, context):
@@ -428,7 +433,6 @@ class OSC_OT_PyLibloServer(bpy.types.Operator):
         #self.server.shutdown()
         # unregister the execute queue method
         bpy.app.timers.unregister(execute_queued_OSC_callbacks)
-        envars.status = "Stopped"
         return {'CANCELLED'}
 
 panel_classes = (

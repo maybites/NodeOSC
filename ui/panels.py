@@ -19,7 +19,7 @@ class OSC_PT_Settings(bpy.types.Panel):
         envars = bpy.context.scene.nodeosc_envars
         layout = self.layout
         col = layout.column(align=True)
-        if envars.status == "Stopped":
+        if envars.isServerRunning == False:
             row = col.row(align=True)
             if addon_prefs.usePyLiblo == False:
                 row.operator("nodeosc.pythonosc_operator", text='Start', icon='PLAY')
@@ -77,7 +77,7 @@ class OSC_PT_Operations(bpy.types.Panel):
     def draw(self, context):
         envars = bpy.context.scene.nodeosc_envars
         layout = self.layout
-        if envars.status == "Stopped":
+        if envars.isServerRunning == False:
             layout.label(text="Message handlers:")
         else:
             layout.label(text="Message handlers: (restart server to apply changes)")
@@ -155,7 +155,7 @@ class OSC_PT_Nodes(bpy.types.Panel):
     def draw(self, context):
         envars = bpy.context.scene.nodeosc_envars
         layout = self.layout
-        if envars.status == "Stopped":
+        if envars.isServerRunning == False:
             layout.label(text="Node tree execute mode:")
             layout.prop(envars, 'node_update', text="execute ")
             if envars.node_update == "MESSAGE":
