@@ -40,6 +40,7 @@ def nodes_createHandleCollection():
                     item.osc_index = node.osc_index
                     item.osc_direction = node.osc_direction
                     item.node_data_type = node.node_data_type
+                    item.node_type = "AN"
         if node_group.bl_idname == 'ScNodeTree':
             for node in node_group.nodes:
                 if node.bl_idname.find("ScOSC") != -1:
@@ -52,6 +53,8 @@ def nodes_createHandleCollection():
                     item.osc_index = node.osc_index
                     item.osc_direction = node.osc_direction
                     item.node_data_type = node.node_data_type
+                    item.node_type = "SORCAR"
+
 
 # checks if there is any active and supported node system
 def hasNodes():
