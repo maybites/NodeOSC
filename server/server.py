@@ -30,6 +30,8 @@ from pythonosc import osc_server
 import threading
 import socketserver
 
+from ._base import *
+
 from .callbacks import *
 from ..nodes.nodes import *
 
@@ -74,367 +76,148 @@ def make_osc_messages(myOscKeys, myOscMsg):
 #  Setup PythonOSC Server             #
 #######################################
 
-class OSC_OT_PythonOSCServer(bpy.types.Operator):
+class OSC_OT_PythonOSCServer(OSC_OT_OSCServer):
     bl_idname = "nodeosc.pythonosc_operator"
     bl_label = "OSCMainThread"
 
     _timer = None
-    client = "" #for the sending socket
     count = 0
 
-    #######################################
-    #  Sending OSC                        #
-    #######################################
+    #####################################
+    # CUSTOMIZEABLE FUNCTIONS:
 
-    def modal(self, context, event):
-        envars = bpy.context.scene.nodeosc_envars
-        if envars.isServerRunning == False:
-            return self.cancel(context)
-        if envars.message_monitor and envars.error != "":
-            self.report({'WARNING'}, envars.error)
-            print(envars.error)
-            envars.error = ""
+    inputServer = "" #for the receiving socket
+    outputServer = "" #for the sending socket
+    dispatcher = "" #dispatcher function
+            
+    # setup the sending server
+    def setupInputServer(self, context, envars):
+        self.dispatcher = dispatcher.Dispatcher()   
+ 
+    # setup the receiving server
+    def setupOutputServer(self, context, envars):
+        #For sending
+        self.outputServer = udp_client.UDPClient(envars.udp_out, envars.port_out)
+        msg = osc_message_builder.OscMessageBuilder(address="/NodeOSC")
+        msg.add_arg("Python server started up")
+        msg = msg.build()
+        self.outputServer.send(msg)     
+        print("Python Server sended test message to " + envars.udp_out + " on port " + str(envars.port_out))
 
-        if event.type == 'TIMER':
-            #hack to refresh the GUI
-            self.count = self.count + envars.output_rate
-            if self.count >= 500:
-                self.count = 0
-                if envars.message_monitor == True:
-                    for window in bpy.context.window_manager.windows:
-                        screen = window.screen
-                        for area in screen.areas:
-                            if area.type == 'VIEW_3D':
-                                area.tag_redraw()
-
-        for node_group in bpy.data.node_groups:
-            if node_group.bl_idname == 'ScNodeTree':
-                node_group.execute_node()
-
+    def sendingOSC(self, context, event):
+        oscMessage = {}
         
-            try:
-                oscMessage = {}
-                
-                # gather all the ouput bound osc messages
-                make_osc_messages(bpy.context.scene.OSC_keys, oscMessage)
-                make_osc_messages(bpy.context.scene.OSC_nodes, oscMessage)
-                
-                # and send them 
-                for key, args in oscMessage.items():
-                    msg = osc_message_builder.OscMessageBuilder(address=key)
-                    if isinstance(args, (tuple, list)):
-                        for argum in args:
-                            msg.add_arg(argum)
-                    else:
-                        msg.add_arg(args)
-                    msg = msg.build()
-                    self.client.send(msg)
-                    
-            except Exception as err:
-                self.report({'WARNING'}, "Output error: {0}".format(err))
-                return self.cancel(context)
-
-        return {'PASS_THROUGH'}
-
-    #######################################
-    #  Setup OSC Receiver and Sender      #
-    #######################################
-
-    def execute(self, context):
-        envars = bpy.context.scene.nodeosc_envars
-        if envars.port_in == envars.port_out:
-            self.report({'WARNING'}, "Ports must be different.")
-            return{'FINISHED'}
-        if envars.isServerRunning == False:
-
-            #For sending
-            try:
-                self.client = udp_client.UDPClient(envars.udp_out, envars.port_out)
-                msg = osc_message_builder.OscMessageBuilder(address="/NodeOSC")
-                msg.add_arg("python server started up")
-                msg = msg.build()
-                self.client.send(msg)
-            except OSError as err:
-                self.report({'WARNING'}, "Server send test: {0}".format(err))
-                return {'CANCELLED'}
+        # gather all the ouput bound osc messages
+        make_osc_messages(bpy.context.scene.OSC_keys, oscMessage)
+        make_osc_messages(bpy.context.scene.OSC_nodes, oscMessage)
+        
+        # and send them 
+        for key, args in oscMessage.items():
+            msg = osc_message_builder.OscMessageBuilder(address=key)
+            if isinstance(args, (tuple, list)):
+                for argum in args:
+                    msg.add_arg(argum)
+            else:
+                msg.add_arg(args)
+            msg = msg.build()
+            self.outputServer.send(msg)
+   
+    # add method 
+    def addMethod(self, address, data):
+        self.dispatcher.map(address, OSC_callback_pythonosc, data)
+ 
+    # add default method 
+    def addDefaultMethod(self):
+        self.dispatcher.set_default_handler(OSC_callback_pythonosc_undef)
     
-            #Setting up the dispatcher for receiving
-            try:
-                self.dispatcher = dispatcher.Dispatcher()  
-                
-                # register a message for executing 
-                if envars.node_update == "MESSAGE" and hasAnimationNodes():
-                    dataTuple = (-1, None, None, None, None)
-                    self.dispatcher.map(envars.node_frameMessage, OSC_callback_pythonosc, dataTuple)
-                
-                for item in bpy.context.scene.OSC_keys:
-                    if item.osc_direction == "INPUT" and item.enabled:
-                        #For ID custom properties (with brackets)
-                        if item.id[0:2] == '["' and item.id[-2:] == '"]':
-                            dataTuple = (1, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                            self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
-                        #For normal properties
-                        #with index in brackets -: i_num
-                        elif item.id[-1] == ']':
-                            d_p = item.id[:-3]
-                            i_num = int(item.id[-2])
-                            dataTuple = (3, eval(item.data_path), d_p, i_num, make_tuple(item.osc_index))
-                            self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
-                        #without index in brackets
-                        else:
-                            try:
-                                if isinstance(getattr(eval(item.data_path), item.id), (int, float, str)):
-                                    dataTuple = (2, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                                    self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
-                                elif isinstance(getattr(eval(item.data_path), item.id), (list, tuple)):
-                                    dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                                    self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
-                                elif isinstance(getattr(eval(item.data_path), item.id), mathutils.Vector):
-                                    dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                                    self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
-                                elif isinstance(getattr(eval(item.data_path), item.id), mathutils.Quaternion):
-                                    dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                                    self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
-                            except Exception as err:
-                                self.report({'WARNING'}, "Register node handle: object '"+item.data_path+"' with id '"+item.id+"' : {0}".format(err))
+    # start receiving 
+    def startupInputServer(self, context, envars):
+        print("Create Python Server Thread...")
+        # creating a blocking UDP Server
+        #   Each message will be handled sequentially on the same thread.
+        #   the alternative: 
+        #       ThreadingOSCUDPServer creates loads of threads 
+        #       that are not cleaned up properly
+        self.inputServer = osc_server.BlockingOSCUDPServer((envars.udp_in, envars.port_in), self.dispatcher)
+        self.server_thread = threading.Thread(target=self.inputServer.serve_forever)
+        self.server_thread.start()
+        print("... server started on ", envars.port_in)
 
-                # lets go and find all nodes in all nodetrees that are relevant for us
-                nodes_createHandleCollection()
-                
-                for item in bpy.context.scene.OSC_nodes:
-                    if item.osc_direction == "INPUT":
-                        try:
-                            if item.node_data_type == "FLOAT":
-                                dataTuple = (5, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                                self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
-                            elif item.node_data_type == "TUPLE":
-                                dataTuple = (6, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                                self.dispatcher.map(item.osc_address, OSC_callback_pythonosc, dataTuple)
-                        except Exception as err:
-                            self.report({'WARNING'}, "Register node handle: object '"+item.data_path+"' with id '"+item.id+"' : {0}".format(err))
-
-                self.dispatcher.set_default_handler(OSC_callback_pythonosc_undef)
-
-                print("Create Server Thread on Port " +  str(envars.port_in) + " ...")
-                # creating a blocking UDP Server
-                #   Each message will be handled sequentially on the same thread.
-                #   the alternative: 
-                #       ThreadingOSCUDPServer creates loads of threads 
-                #       that are not cleaned up properly
-                self.server = osc_server.BlockingOSCUDPServer((envars.udp_in, envars.port_in), self.dispatcher)
-                self.server_thread = threading.Thread(target=self.server.serve_forever)
-                self.server_thread.start()
-                print("... server started", envars.port_in)
-                
-                # register the execute queue method
-                bpy.app.timers.register(execute_queued_OSC_callbacks)
-
-                #inititate the modal timer thread
-                context.window_manager.modal_handler_add(self)
-                self._timer = context.window_manager.event_timer_add(envars.output_rate/1000, window = context.window)
-            
-            except Exception as err:
-                self.report({'WARNING'}, "Server startup: {0}".format(err))
-                return {'CANCELLED'}
-
-            envars.isServerRunning = True
-            
-            self.report({'INFO'}, "Server successfully started!")
-
-            return {'RUNNING_MODAL'}
-        else:
-            self.report({'INFO'}, "Server stopped!")
-            envars.isServerRunning = False    
-                
-        return{'FINISHED'}
-
-
-    def cancel(self, context):
-        envars = bpy.context.scene.nodeosc_envars
-        context.window_manager.event_timer_remove(self._timer)
-        print("OSC server.shutdown()")
-        self.server.shutdown()
-        bpy.app.timers.unregister(execute_queued_OSC_callbacks)
-        return {'CANCELLED'}
-
+    # stop receiving
+    def shutDownInputServer(self, context, envars):
+        self.inputServer.shutdown()
+        print("Python Server is shutdown")
+ 
+ 
 
 #######################################
 #  Setup PyLiblo Server               #
 #######################################
 
-class OSC_OT_PyLibloServer(bpy.types.Operator):
+class OSC_OT_PyLibloServer(OSC_OT_OSCServer):
     bl_idname = "nodeosc.pyliblo_operator"
     bl_label = "OSCMainThread"
 
     _timer = None
-    client = "" #for the sending socket
     count = 0
+
+    #####################################
+    # CUSTOMIZEABLE FUNCTIONS:
+
+    st = "" #for the input and output server
     address = None
-
-    #modes_enum = [('Replace','Replace','Replace'),('Update','Update','Update')]
-    #bpy.types.WindowManager.addosc_mode = bpy.props.EnumProperty(name = "import mode", items = modes_enum)
-
-    #######################################
-    #  Sending OSC                        #
-    #######################################
-
-    def modal(self, context, event):
-        envars = bpy.context.scene.nodeosc_envars
-        if envars.isServerRunning == False:
-            return self.cancel(context)
-        
-        if envars.message_monitor and envars.error != "":
-            self.report({'WARNING'}, envars.error)
-            print(envars.error)
-            envars.error = ""
-       
-        if event.type == 'TIMER':
-            #hack to refresh the GUI
-            self.count = self.count + envars.output_rate
-            if self.count >= 500:
-                self.count = 0
-                if envars.message_monitor == True:
-                    for window in bpy.context.window_manager.windows:
-                        screen = window.screen
-                        for area in screen.areas:
-                            if area.type == 'VIEW_3D':
-                                area.tag_redraw()
-            #Sending
-            try:
-                oscMessage = {}
-                
-                make_osc_messages(bpy.context.scene.OSC_keys, oscMessage)
-                make_osc_messages(bpy.context.scene.OSC_nodes, oscMessage)
-                
-                for key, args in oscMessage.items():
-                    msg = liblo.Message(key)
-                    if isinstance(args, (tuple, list)):
-                        for argum in args:
-                            msg.add(argum)
-                    else:
-                        msg.add(args)
-                    self.st.send(self.address, msg)
-                    
-            except Exception as err:
-                self.report({'WARNING'}, "Output error: {0}".format(err))
-                return self.cancel(context)
-                   
-        return {'PASS_THROUGH'}
-
-    #######################################
-    #  Setup OSC Receiver and Sender      #
-    #######################################
-
-    def execute(self, context):
-        envars = bpy.context.scene.nodeosc_envars
-        if envars.port_in == envars.port_out:
-            self.report({'WARNING'}, "Ports must be different.")
-            return{'FINISHED'}
-        if envars.isServerRunning == False:
-
-            #Setting up the dispatcher for receiving
-            try:
-                self.st = liblo.ServerThread(envars.port_in)
-                print("Created Server Thread on Port", self.st.port)
-                
-                # register a message for executing 
-                if envars.node_update == "MESSAGE" and hasAnimationNodes():
-                    dataTuple = (-1, None, None, None, None)
-                    self.st.add_method(envars.node_frameMessage, None, OSC_callback_pyliblo, dataTuple)
-
-                for item in bpy.context.scene.OSC_keys:
-                    if item.osc_direction == "INPUT" and item.enabled:
-                        #For ID custom properties (with brackets)
-                        if item.id[0:2] == '["' and item.id[-2:] == '"]':
-                            dataTuple = (1, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                            self.st.add_method(item.address, None, OSC_callback_pyliblo, dataTuple)
-                        #For normal properties
-                        #with index in brackets -: i_num
-                        elif item.id[-1] == ']':
-                            d_p = item.id[:-3]
-                            i_num = int(item.id[-2])
-                            dataTuple = (3, eval(item.data_path), d_p, i_num, make_tuple(item.osc_index))
-                            self.st.add_method(item.address, None, OSC_callback_pyliblo, dataTuple)
-                        #without index in brackets
-                        else:
-                            try:
-                                if isinstance(getattr(eval(item.data_path), item.id), (int, float, str)):
-                                    dataTuple = (2, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                                    self.st.add_method(item.osc_address, None, OSC_callback_pyliblo, dataTuple)
-                                elif isinstance(getattr(eval(item.data_path), item.id), (list, tuple)):
-                                    dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                                    self.st.add_method(item.osc_address, None, OSC_callback_pyliblo, dataTuple)
-                                if isinstance(getattr(eval(item.data_path), item.id), mathutils.Vector):
-                                    dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                                    self.st.add_method(item.osc_address, None, OSC_callback_pyliblo, dataTuple)
-                                elif isinstance(getattr(eval(item.data_path), item.id), mathutils.Quaternion):
-                                    dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                                    self.st.add_method(item.osc_address, None, OSC_callback_pyliblo, dataTuple)
-                            except:
-                                print ("Improper setup received: object '"+item.data_path+"' with id'"+item.id+"' is no recognized dataformat")
-
-                # lets go and find all nodes in all nodetrees that are relevant for us
-                nodes_createHandleCollection()
-
-                for item in bpy.context.scene.OSC_nodes:
-                    if item.osc_direction == "INPUT":
-                        try:
-                            if item.node_data_type == "FLOAT":
-                                dataTuple = (5, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                                self.st.add_method(item.osc_address, None, OSC_callback_pyliblo, dataTuple)
-                            elif item.node_data_type == "TUPLE":
-                                dataTuple = (6, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index))
-                                self.st.add_method(item.osc_address, None, OSC_callback_pyliblo, dataTuple)
-                        except:
-                            self.report({'WARNING'}, "Register node handle: object '"+item.data_path+"' with id '"+item.id+"' : {0}".format(err))
-
-        
-                #self.st.add_method(None, None, OSC_callback_unkown)
-                self.st.start()
-                print("PyLiblo Server started")
-                # register the execute queue method
-                bpy.app.timers.register(execute_queued_OSC_callbacks)
-
-                #inititate the modal timer thread
-                context.window_manager.modal_handler_add(self)
-                self._timer = context.window_manager.event_timer_add(envars.output_rate/1000, window = context.window)
+            
+    # setup the sending server
+    def setupInputServer(self, context, envars):
+        self.st = liblo.ServerThread(envars.port_in)
+        print("Created Server Thread on Port", self.st.port)
  
-            except Exception as err:
-                self.report({'WARNING'}, "Server startup: {0}".format(err))
-                return {'CANCELLED'}
+    # setup the receiving server
+    def setupOutputServer(self, context, envars):
+        #For sending
+        self.address = liblo.Address(envars.udp_out, envars.port_out)
+        msg = liblo.Message("/NodeOSC")
+        msg.add("pyliblo server started up")
+        self.st.send(self.address, msg)
+        print("PyLiblo Server sended test message to " + envars.udp_out + " on port " + str(envars.port_out))
 
-            #For sending
-            try:
-                self.address = liblo.Address(envars.udp_out, envars.port_out)
-                msg = liblo.Message("/NodeOSC")
-                msg.add("pyliblo server started up")
-                self.st.send(self.address, msg)
-            except OSError as err:
-                self.report({'WARNING'}, "Server send test: {0}".format(err))
-                # we start running modal anyway, only to be stopped right away
-                return {'RUNNING_MODAL'}
-            
-            self.report({'INFO'}, "Server successfully started!")
-            envars.isServerRunning = True
-
-            return {'RUNNING_MODAL'}
+    def sendingOSC(self, context, event):
+        oscMessage = {}
         
-        else:
-            self.report({'INFO'}, "Server stopped!")
-            envars.isServerRunning = False
-            
-        return{'FINISHED'}
+        # gather all the ouput bound osc messages
+        make_osc_messages(bpy.context.scene.OSC_keys, oscMessage)
+        make_osc_messages(bpy.context.scene.OSC_nodes, oscMessage)
+        
+        # and send them 
+        for key, args in oscMessage.items():
+            msg = liblo.Message(key)
+            if isinstance(args, (tuple, list)):
+                for argum in args:
+                    msg.add(argum)
+            else:
+                msg.add(args)
+            self.st.send(self.address, msg)
+           
+    # add method 
+    def addMethod(self, address, data):
+        self.st.add_method(address, None, OSC_callback_pyliblo, data)
+ 
+    # add default method 
+    def addDefaultMethod(self):
+        pass
+    
+    # start receiving 
+    def startupInputServer(self, context, envars):
+        print("PyLiblo Server starting up....")
+        self.st.start()
+        print("... server started", envars.port_in)
 
-    def cancel(self, context):
-        envars = bpy.context.scene.nodeosc_envars
-        context.window_manager.event_timer_remove(self._timer)
-        print("stopping PyLiblo Server..")
+    # stop receiving
+    def shutDownInputServer(self, context, envars):
         self.st.stop()
         self.st.free()
-        #self.server.shutdown()
-        # unregister the execute queue method
-        bpy.app.timers.unregister(execute_queued_OSC_callbacks)
-        return {'CANCELLED'}
+        print("PyLiblo Server is shutdown.")
+
 
 panel_classes = (
     OSC_OT_PythonOSCServer,
