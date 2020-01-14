@@ -175,13 +175,9 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                             else:
                                 if isinstance(getattr(eval(item.data_path), item.id), (int, float, str)):
                                     dataTuple = (2, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)
-                                elif isinstance(getattr(eval(item.data_path), item.id), (list, tuple)):
+                                else:
                                     dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)
-                                elif isinstance(getattr(eval(item.data_path), item.id), mathutils.Vector):
-                                    dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)
-                                elif isinstance(getattr(eval(item.data_path), item.id), mathutils.Quaternion):
-                                    dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)
-
+                                    
                             self.addMethod(item.osc_address, dataTuple)
 
                         except Exception as err:
