@@ -189,7 +189,7 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                 for item in bpy.context.scene.OSC_nodes:
                     if item.osc_direction == "INPUT":
                         try:
-                            if item.node_data_type == "FLOAT":
+                            if item.node_data_type == "SINGLE":
                                 dataTuple = (5, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)
                             elif item.node_data_type == "TUPLE":
                                 dataTuple = (6, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)

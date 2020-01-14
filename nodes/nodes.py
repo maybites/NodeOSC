@@ -95,7 +95,7 @@ def executeSorcarNodeTrees(context):
 
 def import_sorcar_nodes(path):
     out = {}
-    for cat in [i for i in os.listdir(str(path) + "/nodes/sorcar/nodes") if not i.startswith("_") or not i.startswith(".")]:
+    for cat in [i for i in os.listdir(str(path) + "/nodes/sorcar/nodes") if not i.startswith("_") and not i.startswith(".")]:
         out[cat] = []
         for i in bpy.path.module_names(str(path) + "/nodes/sorcar/nodes/" + cat):
             out[cat].append(getattr(importlib.import_module(".nodes.sorcar.nodes." + cat + "." + i[0], path.name), i[0]))

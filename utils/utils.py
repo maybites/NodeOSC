@@ -6,7 +6,7 @@ dataDirectionItems = {
 
 nodeDataTypeItems = {
     ("TUPLE", "Tuple", "Expects Tuple", "IMPORT", 0),
-    ("FLOAT", "Float", "Expects Float", "IMPORT", 1) } 
+    ("SINGLE", "Single", "Expects single value", "IMPORT", 1) } 
 
 nodeTypeItems = {
     ("NONE", 0),
