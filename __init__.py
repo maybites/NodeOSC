@@ -25,11 +25,7 @@
 
 # TODO:
 #
-# attach the timer to the context window or not ?
 # pbm not set to None du modal timer when opening a new blend file
-# Bool are not part of OSC 1.0 (only later as extension)
-# Deal with tupple (x,y,z) or (r,g,b) usr "type(key).__name__" for Vector, Euler, etc...
-# Monitoring in console report error "Improper..." due to Monitoring refresh hack overhead
 
 
 bl_info = {

@@ -24,15 +24,15 @@ try:
 except ModuleNotFoundError:
     load_sc_success = False
     
-# fill up the OSC_handles with all the current OSC_keys and OSC_nodes
+# fill up the OSC_handles with all the current NodeOSC_keys and NodeOSC_nodes
 def nodes_createHandleCollection():
-    bpy.context.scene.OSC_nodes.clear()
+    bpy.context.scene.NodeOSC_nodes.clear()
     for node_group in bpy.data.node_groups:
         if node_group.bl_idname == 'an_AnimationNodeTree':
             for node in node_group.nodes:
                 if node.bl_idname.find("an_OSC") != -1:
                     node.refresh()
-                    item = bpy.context.scene.OSC_nodes.add()
+                    item = bpy.context.scene.NodeOSC_nodes.add()
                     item.data_path = node.data_path
                     item.id = node.id
                     item.osc_address = node.osc_address
@@ -45,7 +45,7 @@ def nodes_createHandleCollection():
             for node in node_group.nodes:
                 if node.bl_idname.find("ScOSC") != -1:
                     node.post_execute()
-                    item = bpy.context.scene.OSC_nodes.add()
+                    item = bpy.context.scene.NodeOSC_nodes.add()
                     item.data_path = node.data_path
                     item.id = node.id
                     item.osc_address = node.osc_address

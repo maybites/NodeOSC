@@ -5,12 +5,14 @@ from bpy.props import StringProperty, IntProperty, BoolProperty
 
 def osc_export_config(scene):
     config_table = {}
-    for osc_item in scene.OSC_keys:
+    for osc_item in scene.NodeOSC_keys:
         config_table[osc_item.osc_address] = {
             "data_path" : osc_item.data_path,
             "id" : osc_item.id,
             "osc_type" : osc_item.osc_type,
-            "osc_index" : osc_item.osc_index
+            "osc_index" : osc_item.osc_index,
+            "osc_direction" : osc_item.osc_direction,
+            "enabled" : osc_item.enabled,
         }
 
     return json.dumps(config_table)
@@ -20,12 +22,14 @@ def osc_import_config(scene, config_file):
     for address, values in config_table.items():
         print(address)
         print(values)
-        item = scene.OSC_keys.add()
+        item = scene.NodeOSC_keys.add()
         item.osc_address = address
         item.data_path = values["data_path"]
         item.id = values["id"]
         item.osc_type = values["osc_type"]
         item.osc_index = values["osc_index"]
+        item.osc_direction = values["osc_direction"]
+        item.enabled = values["enabled"]
 
 def parse_ks(item):
     dp = item.data_path
@@ -87,7 +91,7 @@ class OSC_OT_ItemCreate(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        keys = bpy.context.scene.OSC_keys
+        keys = bpy.context.scene.NodeOSC_keys
         new_item = keys.add()
         if self.copy == -1:
             new_item.id = "location"
@@ -99,12 +103,13 @@ class OSC_OT_ItemCreate(bpy.types.Operator):
             new_item.data_path = keys[self.copy].data_path
             new_item.osc_address = keys[self.copy].osc_address
             new_item.osc_index = keys[self.copy].osc_index
+            new_item.osc_direction = keys[self.copy].osc_direction
 
-        #bpy.context.scene.OSC_keys.remove(self.index)
+        #bpy.context.scene.NodeOSC_keys.remove(self.index)
 
-        #for item in bpy.context.scene.OSC_keys:
+        #for item in bpy.context.scene.NodeOSC_keys:
         #    if item.idx == self.index:
-        #        print(bpy.context.scene.OSC_keys.find(item))
+        #        print(bpy.context.scene.NodeOSC_keys.find(item))
         return {'RUNNING_MODAL'}
 
 #######################################
@@ -130,11 +135,11 @@ class OSC_OT_ItemDelete(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        bpy.context.scene.OSC_keys.remove(self.index)
+        bpy.context.scene.NodeOSC_keys.remove(self.index)
 
-        #for item in bpy.context.scene.OSC_keys:
+        #for item in bpy.context.scene.NodeOSC_keys:
         #    if item.idx == self.index:
-        #        print(bpy.context.scene.OSC_keys.find(item))
+        #        print(bpy.context.scene.NodeOSC_keys.find(item))
         return {'RUNNING_MODAL'}
 
 #######################################
@@ -178,7 +183,7 @@ class OSC_Import(bpy.types.Operator):
         return context.object is not None
 
     def execute(self, context):
-        context.scene.OSC_keys.clear()
+        context.scene.NodeOSC_keys.clear()
         config_file = open(self.filepath, 'r')
         osc_import_config(context.scene, config_file)
         return {'FINISHED'}
@@ -235,7 +240,7 @@ class NodeOSC_ImportKS(Operator):
 
 
             #what is the highest ID number ?
-            for item in bpy.context.scene.OSC_keys:
+            for item in bpy.context.scene.NodeOSC_keys:
                 split = item.address.split('/')
                 try:
                     if split[1] == bpy.context.scene.nodeosc_defaultaddr[1:]:
@@ -245,11 +250,11 @@ class NodeOSC_ImportKS(Operator):
                     pass
 
 
-            #Transfer of tvar2 into the OSC_keys_tmp property
-            bpy.context.scene.OSC_keys_tmp.clear()
+            #Transfer of tvar2 into the NodeOSC_keys_tmp property
+            bpy.context.scene.NodeOSC_keys_tmp.clear()
             index = 0
             for i,j in t_arr:
-                my_item = bpy.context.scene.OSC_keys_tmp.add()
+                my_item = bpy.context.scene.NodeOSC_keys_tmp.add()
                 my_item.id = i
                 my_item.idx = index
                 my_item.data_path = j
@@ -263,9 +268,9 @@ class NodeOSC_ImportKS(Operator):
                 my_item.osc_type = repr(type(eval(t_eval)))[8:-2]
                 index = index + 1
 
-            #Copy addresses from OSC_keys if there are some
-            for item_tmp in bpy.context.scene.OSC_keys_tmp:
-                for item in bpy.context.scene.OSC_keys:
+            #Copy addresses from NodeOSC_keys if there are some
+            for item_tmp in bpy.context.scene.NodeOSC_keys_tmp:
+                for item in bpy.context.scene.NodeOSC_keys:
                     if item_tmp.id == item.id and item_tmp.data_path == item.data_path:
                         item_tmp.osc_address = item.osc_address
                         item_tmp.idx = item.idx
@@ -273,15 +278,17 @@ class NodeOSC_ImportKS(Operator):
                     id_n += 1
                     item_tmp.address = bpy.context.scene.nodeosc_defaultaddr + "/" + str(id_n)
 
-            #Simple copy OSC_keys_tmp toward OSC_keys
-            item = bpy.context.scene.OSC_keys.clear()
-            for tmp_item in bpy.context.scene.OSC_keys_tmp:
-                item = bpy.context.scene.OSC_keys.add()
-                item.id = tmp_item.id
+            #Simple copy NodeOSC_keys_tmp toward NodeOSC_keys
+            item = bpy.context.scene.NodeOSC_keys.clear()
+            for tmp_item in bpy.context.scene.NodeOSC_keys_tmp:
+                item = bpy.context.scene.NodeOSC_keys.add()
                 item.data_path = tmp_item.data_path
+                item.id = tmp_item.id
                 item.osc_address = tmp_item.osc_address
                 item.osc_type = tmp_item.osc_type
                 item.osc_index = tmp_item.osc_index
+                item.osc_direction = tmp_item.osc_direction
+                item.enabled = tmp_item.enabled
                 item.idx = tmp_item.idx
 
         else:
@@ -304,7 +311,7 @@ class PickOSCaddress(bpy.types.Operator):
     def execute(self, context):
         last_event = bpy.context.scene.nodeosc_envars.lastaddr
         if len(last_event) > 1 and last_event[0] == "/":
-            for item in bpy.context.scene.OSC_keys:
+            for item in bpy.context.scene.NodeOSC_keys:
                 if item.osc_address == self.i_addr :
                     item.osc_address = last_event
         return{'FINISHED'}

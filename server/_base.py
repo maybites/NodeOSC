@@ -159,7 +159,7 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                 
                 self.addMethod(envars.node_frameMessage, dataTuple)
                 
-                for item in bpy.context.scene.OSC_keys:
+                for item in bpy.context.scene.NodeOSC_keys:
                     if item.osc_direction == "INPUT" and item.enabled:
                         try:
                             #For ID custom properties (with brackets)
@@ -186,7 +186,7 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                 # lets go and find all nodes in all nodetrees that are relevant for us
                 nodes_createHandleCollection()
                 
-                for item in bpy.context.scene.OSC_nodes:
+                for item in bpy.context.scene.NodeOSC_nodes:
                     if item.osc_direction == "INPUT":
                         try:
                             if item.node_data_type == "SINGLE":

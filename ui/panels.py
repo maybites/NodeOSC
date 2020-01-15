@@ -83,7 +83,7 @@ class OSC_PT_Operations(bpy.types.Panel):
             layout.label(text="Message handlers: (restart server to apply changes)")
         index = 0
         col = layout.column()
-        for item in bpy.context.scene.OSC_keys:
+        for item in bpy.context.scene.NodeOSC_keys:
             col_box = col.column()
             box = col_box.box()
             colsub = box.column()
@@ -166,7 +166,7 @@ class OSC_PT_Nodes(bpy.types.Panel):
                 layout.label(text="Execute on message: " + envars.node_frameMessage)        
             layout.label(text="Node message handlers:")
             col = layout.column()
-            for item in bpy.context.scene.OSC_nodes:
+            for item in bpy.context.scene.NodeOSC_nodes:
                 col_box = col.column()
                 box = col_box.box()
                 colsub = box.column()

@@ -24,15 +24,15 @@ key_classes = (
 def register():
     for cls in key_classes:
         bpy.utils.register_class(cls)
-    bpy.types.Scene.OSC_keys = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
-    bpy.types.Scene.OSC_keys_tmp = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
-    bpy.types.Scene.OSC_nodes = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
+    bpy.types.Scene.NodeOSC_keys = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
+    bpy.types.Scene.NodeOSC_keys_tmp = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
+    bpy.types.Scene.NodeOSC_nodes = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
 
 
 def unregister():
-    del bpy.types.Scene.OSC_keys
-    del bpy.types.Scene.OSC_nodes
-    del bpy.types.Scene.OSC_keys_tmp
+    del bpy.types.Scene.NodeOSC_keys
+    del bpy.types.Scene.NodeOSC_nodes
+    del bpy.types.Scene.NodeOSC_keys_tmp
     for cls in reversed(key_classes):
         bpy.utils.unregister_class(cls)
 

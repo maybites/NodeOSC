@@ -1,57 +1,22 @@
 # NodeOSC
-OSC support for nodes.
-
-This OSC implementation is intended to replace the [AddOSC](https://github.com/maybites/blender.AddOSC) plugin.
+OSC support for nodes and general usage.
 
 ## Usage
+I think it is now fairly self explanatory. However, if you have questions please make an issue. This helps me to see where I should focus on the docs...
 
-It uses the following config file structure:
-
-    {
-        "/skeleton/Avatar2/bone/1/position":{  
-            "data_path":"bpy.data.objects['Cube']",
-            "id":"location",
-            "osc_type":"fff",
-            "osc_index":"(0, 1, 2)"
-        },
-        "/skeleton/Avatar2/bone/1/quat":{
-            "data_path":"bpy.data.objects['Cube']",
-            "id":"rotation_quaternion",
-            "osc_type":"ffff",
-            "osc_index":"(3, 0, 1, 2)"
-        }
-    }
-
-you MUST now specify the osc-indices to be used.
-
-for example:
-
-if you receive a message like
-
-/skeleton/Avatar2/bone/1/quat 0.1 0.2 0.3 1.
-
-and you know that this quaternion has a different order (qx, qy, qz, qw) than blender (qw, qx, qy, qz), you can now specify which osc-arguments should be used in which order:
-
-    "osc_index":"(3, 0, 1, 2)"
-
-will us thus send a list like
-
-    1. 0.1 0.2 0.3
-
-to the specified path and ID
-
-This fork is updated to work with blender 2.8
+see the [wiki](https://github.com/maybites/blender.NodeOSC/wiki) for more info (to come...)
 
 ## Credits
 
 written by maybites (2020)
-partly based on http://www.jpfep.net/pages/addosc/.
 
-NodeOSC relies on the pure python module python-osc (by Attwad):
-https://pypi.python.org/pypi/python-osc/
-https://github.com/attwad/python-osc
+inspired by and code used from http://www.jpfep.net/pages/addosc/.
 
-and the pyliblo wrapper for [liblo](http://liblo.sourceforge.net/) OSC library:
-http://das.nasophon.de/pyliblo/
+NodeOSC relies on 
+
+* the pure [python module](https://pypi.python.org/pypi/python-osc/) [python-osc](https://github.com/attwad/python-osc) (by Attwad).
+* the [pyliblo wrapper](http://das.nasophon.de/pyliblo/) for [liblo](http://liblo.sourceforge.net/) OSC library.
+
+
 
 the addon contains the compiled pyliblo wrapper for windows and OSX, but not for linux.

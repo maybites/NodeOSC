@@ -71,8 +71,8 @@ class OSC_OT_PythonOSCServer(OSC_OT_OSCServer):
         oscMessage = {}
         
         # gather all the ouput bound osc messages
-        make_osc_messages(bpy.context.scene.OSC_keys, oscMessage)
-        make_osc_messages(bpy.context.scene.OSC_nodes, oscMessage)
+        make_osc_messages(bpy.context.scene.NodeOSC_keys, oscMessage)
+        make_osc_messages(bpy.context.scene.NodeOSC_nodes, oscMessage)
         
         # and send them 
         for key, args in oscMessage.items():
@@ -148,8 +148,8 @@ class OSC_OT_PyLibloServer(OSC_OT_OSCServer):
         oscMessage = {}
         
         # gather all the ouput bound osc messages
-        make_osc_messages(bpy.context.scene.OSC_keys, oscMessage)
-        make_osc_messages(bpy.context.scene.OSC_nodes, oscMessage)
+        make_osc_messages(bpy.context.scene.NodeOSC_keys, oscMessage)
+        make_osc_messages(bpy.context.scene.NodeOSC_nodes, oscMessage)
         
         # and send them 
         for key, args in oscMessage.items():
