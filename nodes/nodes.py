@@ -24,8 +24,10 @@ try:
 except ModuleNotFoundError:
     load_sc_success = False
     
-# fill up the OSC_handles with all the current NodeOSC_keys and NodeOSC_nodes
-def nodes_createHandleCollection():
+# fill up the collections for further processing:
+#   OSC_nodes with all the OSC nodes we can find
+#   OSC_outputs with all the handles that need to be sent to the output
+def nodes_createCollections():
     bpy.context.scene.NodeOSC_nodes.clear()
     for node_group in bpy.data.node_groups:
         if node_group.bl_idname == 'an_AnimationNodeTree':
@@ -54,6 +56,31 @@ def nodes_createHandleCollection():
                     item.osc_direction = node.osc_direction
                     item.node_data_type = node.node_data_type
                     item.node_type = node.node_type
+    
+    bpy.context.scene.NodeOSC_outputs.clear()
+    for itemN in bpy.context.scene.NodeOSC_nodes:
+        if itemN.enabled and itemN.osc_direction != "INPUT":
+            item = bpy.context.scene.NodeOSC_outputs.add()
+            item.data_path = itemN.data_path
+            item.id = itemN.id
+            item.osc_address = itemN.osc_address
+            item.osc_type = itemN.osc_type
+            item.osc_index = itemN.osc_index
+            item.osc_direction = itemN.osc_direction
+            item.node_data_type = itemN.node_data_type
+            item.node_type = itemN.node_type
+    for itemN in bpy.context.scene.NodeOSC_keys:
+        if itemN.enabled and itemN.osc_direction != "INPUT":
+            item = bpy.context.scene.NodeOSC_outputs.add()
+            item.data_path = itemN.data_path
+            item.id = itemN.id
+            item.osc_address = itemN.osc_address
+            item.osc_type = itemN.osc_type
+            item.osc_index = itemN.osc_index
+            item.osc_direction = itemN.osc_direction
+            item.node_data_type = itemN.node_data_type
+            item.node_type = itemN.node_type
+       
 
 
 # checks if there is any active and supported node system

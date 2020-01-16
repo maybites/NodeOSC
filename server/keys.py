@@ -14,7 +14,7 @@ class NodeOSCMsgValues(bpy.types.PropertyGroup):
         idx: bpy.props.IntProperty(name="Index", min=0, default=0)
         enabled: bpy.props.BoolProperty(name="Enabled", default=True)
         ui_expanded: bpy.props.BoolProperty(name="Expanded", default=False)
-        node_data_type: bpy.props.EnumProperty(name = "Node data type", default = "TUPLE", items = nodeDataTypeItems)
+        node_data_type: bpy.props.EnumProperty(name = "Node data type", default = "LIST", items = nodeDataTypeItems)
         node_type: bpy.props.IntProperty(name = "Node type", default = 0)
 
 key_classes = (
@@ -24,12 +24,14 @@ key_classes = (
 def register():
     for cls in key_classes:
         bpy.utils.register_class(cls)
-    bpy.types.Scene.NodeOSC_keys = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
+    bpy.types.Scene.NodeOSC_keys = bpy.props.CollectionProperty(type=NodeOSCMsgValues, description='collection of custom osc handler')
     bpy.types.Scene.NodeOSC_keys_tmp = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
-    bpy.types.Scene.NodeOSC_nodes = bpy.props.CollectionProperty(type=NodeOSCMsgValues)
+    bpy.types.Scene.NodeOSC_nodes = bpy.props.CollectionProperty(type=NodeOSCMsgValues, description='collection of all osc handler that are created by nodes')
+    bpy.types.Scene.NodeOSC_outputs = bpy.props.CollectionProperty(type=NodeOSCMsgValues, description='collection of all osc handler that send messages to output')
 
 
 def unregister():
+    del bpy.types.Scene.NodeOSC_outputs
     del bpy.types.Scene.NodeOSC_keys
     del bpy.types.Scene.NodeOSC_nodes
     del bpy.types.Scene.NodeOSC_keys_tmp

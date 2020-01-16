@@ -46,7 +46,7 @@ def execute_queued_OSC_callbacks():
     #when all the messages are applied, execute the Animation node tree
     #  the SORCAR node tree needs to be executed from the server modal method..
     executeAnimationNodeTrees()
-    return 0
+    return 0 if bpy.context.scene.nodeosc_envars.input_rate == 0 else bpy.context.scene.nodeosc_envars.input_rate / 1000
 
 # called by the queue execution thread
 def OSC_callback_unkown(address, args):
@@ -127,9 +127,9 @@ def OSC_callback_nodeFLOAT(address, obj, attr, attrIdx, oscArgs, oscIndex):
 # called by the queue execution thread
 def OSC_callback_nodeLIST(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
-        val = oscArgs
+        val = list(oscArgs)
         if len(oscIndex) > 0:
-            val = tuple(oscArgs[i] for i in oscIndex)
+            val = list(oscArgs[i] for i in oscIndex)
         getattr(obj, attr)(val)
     except TypeError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:

@@ -8,12 +8,13 @@ from ....utils.utils import *
 
 dataByIdentifier = defaultdict(None)
 
-class OSCInputNode(bpy.types.Node, AnimationNode):
-    bl_idname = "an_OSCListNode"
-    bl_label = "OSCList"
+class OSCNumberNode(bpy.types.Node, AnimationNode):
+    bl_idname = "an_OSCNumberNode"
+    bl_label = "OSCNumber"
+    bl_width_default = 160
 
     osc_address: bpy.props.StringProperty(name="Osc address", 
-        default="/an/list", 
+        default="/an/number", 
         update = AnimationNode.refresh)
     osc_type: bpy.props.StringProperty(
         name="Type", 
@@ -25,7 +26,7 @@ class OSCInputNode(bpy.types.Node, AnimationNode):
     osc_direction: bpy.props.EnumProperty(
         name = "RX/TX", 
         default = "INPUT", 
-        items = dataDirectionItems, 
+        items = dataNodeDirectionItems, 
         update = AnimationNode.refresh)
     data_path: bpy.props.StringProperty(
         name="data path", 
@@ -35,34 +36,56 @@ class OSCInputNode(bpy.types.Node, AnimationNode):
         default="")
     node_data_type: bpy.props.EnumProperty(
         name="NodeDataType", 
-        default="TUPLE", 
+        default="SINGLE", 
         items = nodeDataTypeItems)
     node_type: bpy.props.IntProperty(
         name="NodeType", 
         default=1)
-               
-    def create(self):        
+
+    createList: BoolProperty(name = "Create List", default = False,
+        description = "Create a list of numbers",
+        update = AnimationNode.refresh)
+
+    def create(self):
         self.data_path = 'bpy.data.node_groups[\'' + self.nodeTree.name + '\'].nodes[\'' + self.name +'\']'
+        if self.createList:
+            self.node_data_type = "LIST"
+            self.setValue([0] * 1)
+        else:
+            self.node_data_type = "SINGLE"
+            self.setValue(0)
         
         if self.osc_direction == "OUTPUT":
             self.id = "value"
-            self.newInput("Generic", "Value", "value")
+            if self.createList:
+                self.newInput("Float List", "Numbers", "numbers")
+            else:
+                self.newInput("Float", "Number", "number")
+                
         if self.osc_direction == "INPUT":
             self.id = "setValue"
-            self.newOutput("Generic", "Value", "value")
+            if self.createList:
+                self.newOutput("Float List", "Numbers", "numbers")
+            else:
+                self.newOutput("Float", "Number", "number")                
 
-    #def delete(self):
-        
     def draw(self, layout):
+        layout.prop(self, "createList", text = "", icon = "LINENUMBERS_ON")
         layout.prop(self, "osc_address", text = "")
         layout.prop(self, "osc_index", text = "")
         layout.prop(self, "osc_direction", text = "")
 
     def getExecutionCode(self, required):
         if self.osc_direction == "OUTPUT":
-            return "self.setValue(value)"
+            if self.createList:
+                yield "self.setValue(numbers)"
+            else:
+                yield "self.setValue(number)"                
         if self.osc_direction == "INPUT":
-            return "value = self.getValue()"
+            if self.createList:
+                yield "numbers = self.getValue()"
+            else:
+                yield "number = self.getValue()"
 
     def setValue(self, value):
         dataByIdentifier[self.identifier] = value

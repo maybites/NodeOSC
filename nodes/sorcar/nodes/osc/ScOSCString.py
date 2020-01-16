@@ -15,7 +15,7 @@ class ScOSCString(Node, ScOSCNode):
     def init(self, context):
         super().init(context)       
         self.osc_address = "/sorcar/string"
-        self.node_data_type = "TUPLE"
+        self.node_data_type = "LIST"
         self.outputs.new("ScNodeSocketString", "Value")
     
     def draw_buttons(self, context, layout):

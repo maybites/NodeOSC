@@ -19,7 +19,7 @@ class ScOSCNode(ScNode):
     osc_direction: bpy.props.EnumProperty(
         name = "RX/TX", 
         default = "INPUT", 
-        items = dataDirectionItems)
+        items = dataNodeDirectionItems)
     data_path: bpy.props.StringProperty(
         name="data path", 
         default="")

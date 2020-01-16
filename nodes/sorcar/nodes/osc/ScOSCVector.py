@@ -25,7 +25,7 @@ class ScOSCVector(Node, ScOSCNode):
         self.inputs.new("ScNodeSocketNumber", "Z").init("in_z", True)
         
         self.osc_address = "/sorcar/vector"
-        self.node_data_type = "TUPLE"
+        self.node_data_type = "LIST"
         self.outputs.new("ScNodeSocketVector", "Value")
     
     def error_condition(self):

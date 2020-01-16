@@ -37,7 +37,8 @@ class OSC_PT_Settings(bpy.types.Panel):
             row2 = col2.row(align=True)
             row2.prop(envars, 'udp_out', text="Out")
             row2.prop(envars, 'port_out', text="Port")
-            layout.prop(envars, 'output_rate', text="Update rate(ms)")
+            layout.prop(envars, 'input_rate', text="input rate(ms)")
+            layout.prop(envars, 'output_rate', text="output rate(ms)")
             layout.prop(envars, 'autorun', text="Start at Launch")
         else:
             if addon_prefs.usePyLiblo == False:
@@ -50,6 +51,8 @@ class OSC_PT_Settings(bpy.types.Panel):
             col.label(text=" listening at " + envars.udp_in + " on port " + str(envars.port_in))
             col.label(text=" sending to " + envars.udp_out + " on port " + str(envars.port_out))
         
+            col.prop(envars, 'input_rate', text="input rate(ms)")
+
             col.prop(bpy.context.scene.nodeosc_envars, 'message_monitor', text="Monitoring and Error reporting")
 
             if bpy.context.scene.nodeosc_envars.message_monitor == True: 
@@ -95,8 +98,13 @@ class OSC_PT_Operations(bpy.types.Panel):
             row.prop(item, "enabled", text = "", 
                         icon='CHECKBOX_HLT' if item.enabled else 'CHECKBOX_DEHLT', 
                         emboss = False)
+            outicon = 'FILE_REFRESH'
+            if item.osc_direction == "OUTPUT":
+                outicon = 'EXPORT'
+            elif item.osc_direction == "INPUT":
+                outicon = 'IMPORT'
             row.label(text = "", 
-                        icon='EXPORT' if item.osc_direction == "OUTPUT" else 'IMPORT')
+                        icon=outicon)
             
             sub = row.row()
             sub.active = item.enabled

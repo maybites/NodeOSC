@@ -15,39 +15,38 @@ from ..nodes.nodes import *
 
 def make_osc_messages(myOscKeys, myOscMsg):
     for item in myOscKeys:
-        if item.osc_direction == "OUTPUT" and item.enabled:
-            #print( "sending  :{}".format(item) )
-            if item.id[0:2] == '["' and item.id[-2:] == '"]':
-                prop = eval(item.data_path+item.id)
-            else:
-                prop = eval(item.data_path+'.'+item.id)
+        #print( "sending  :{}".format(item) )
+        if item.id[0:2] == '["' and item.id[-2:] == '"]':
+            prop = eval(item.data_path+item.id)
+        else:
+            prop = eval(item.data_path+'.'+item.id)
+        
+        # now make the values to be sent a tuple (unless its a string or None)
+        if isinstance(prop, mathutils.Vector):
+            prop = tuple(prop);
+        elif isinstance(prop, mathutils.Quaternion):
+            prop = tuple(prop);
+        elif isinstance(prop, mathutils.Euler):
+            prop = tuple(prop);
+        elif isinstance(prop, mathutils.Matrix):
+            prop = tuple(prop);
+        elif isinstance(prop, (bool, int, float)):
+            prop = (prop,)
+        elif prop is None:
+            prop = 'None'
             
-            # now make the values to be sent a tuple (unless its a string or None)
-            if isinstance(prop, mathutils.Vector):
-                prop = tuple(prop);
-            elif isinstance(prop, mathutils.Quaternion):
-                prop = tuple(prop);
-            elif isinstance(prop, mathutils.Euler):
-                prop = tuple(prop);
-            elif isinstance(prop, mathutils.Matrix):
-                prop = tuple(prop);
-            elif isinstance(prop, (bool, int, float)):
-                prop = (prop,)
-            elif prop is None:
-                prop = 'None'
-                
-            if str(prop) != item.value:
-                item.value = str(prop)
+        if str(prop) != item.value:
+            item.value = str(prop)
 
-                # make sure the osc indices are a tuple
-                indices = make_tuple(item.osc_index)
-                if isinstance(indices, int): 
-                    indices = (indices,)
-                    
-                # sort the properties according to the osc_indices
-                if prop is not None and not isinstance(prop, str) and len(indices) > 0:
-                    prop = tuple(prop[i] for i in indices)
-                myOscMsg[item.osc_address] = prop
+            # make sure the osc indices are a tuple
+            indices = make_tuple(item.osc_index)
+            if isinstance(indices, int): 
+                indices = (indices,)
+                
+            # sort the properties according to the osc_indices
+            if prop is not None and not isinstance(prop, str) and len(indices) > 0:
+                prop = tuple(prop[i] for i in indices)
+            myOscMsg[item.osc_address] = prop
     return myOscMsg
 
 #######################################
@@ -156,11 +155,10 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                 # register a message for executing 
                 if envars.node_update == "MESSAGE" and hasAnimationNodes():
                     dataTuple = (-1, None, None, None, None, 0)
-                
-                self.addMethod(envars.node_frameMessage, dataTuple)
+                    self.addMethod(envars.node_frameMessage, dataTuple)
                 
                 for item in bpy.context.scene.NodeOSC_keys:
-                    if item.osc_direction == "INPUT" and item.enabled:
+                    if item.osc_direction != "OUTPUT" and item.enabled:
                         try:
                             #For ID custom properties (with brackets)
                             if item.id[0:2] == '["' and item.id[-2:] == '"]':
@@ -184,14 +182,14 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                             self.report({'WARNING'}, "Register custom handle: object '"+item.data_path+"' with id '"+item.id+"' : {0}".format(err))
                     
                 # lets go and find all nodes in all nodetrees that are relevant for us
-                nodes_createHandleCollection()
+                nodes_createCollections()
                 
                 for item in bpy.context.scene.NodeOSC_nodes:
-                    if item.osc_direction == "INPUT":
+                    if item.osc_direction != "OUTPUT":
                         try:
                             if item.node_data_type == "SINGLE":
                                 dataTuple = (5, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)
-                            elif item.node_data_type == "TUPLE":
+                            elif item.node_data_type == "LIST":
                                 dataTuple = (6, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)
 
                             self.addMethod(item.osc_address, dataTuple)
@@ -203,7 +201,7 @@ class OSC_OT_OSCServer(bpy.types.Operator):
 
                 # startup the receiving server
                 self.startupInputServer(context, envars)
-                
+                                
                 # register the execute queue method
                 bpy.app.timers.register(execute_queued_OSC_callbacks)
 
