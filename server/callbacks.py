@@ -37,15 +37,18 @@ def execute_queued_OSC_callbacks():
             args = items[1:]
             # execute them 
             func(*args)
+            
         queue_repeat_filter[address] = True
-    
-    if bpy.context.scene.nodeosc_envars.node_update != "MESSAGE" and hasOscMessages:
+        
+    if hasOscMessages:
+        if bpy.context.scene.nodeosc_envars.node_update != "MESSAGE":
             bpy.context.scene.nodeosc_AN_needsUpdate = True
             bpy.context.scene.nodeosc_SORCAR_needsUpdate = True
 
     #when all the messages are applied, execute the Animation node tree
     #  the SORCAR node tree needs to be executed from the server modal method..
     executeAnimationNodeTrees()
+    
     return 0 if bpy.context.scene.nodeosc_envars.input_rate == 0 else bpy.context.scene.nodeosc_envars.input_rate / 1000
 
 # called by the queue execution thread
