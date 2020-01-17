@@ -53,15 +53,15 @@ where in the above example
 * **+:** copies this handler
 * **x:** deletes this handler
 * **RT/X:** Direction of message. You can choose between  
-* INPUT: only listening to OSC messages with the specified address
- * OUTPUT: only sending OSC messages of the specified address.
- * BOTH: sending and listening.
+  * INPUT: only listening to OSC messages with the specified address
+  * OUTPUT: only sending OSC messages of the specified address.
+  * BOTH: sending and listening.
 * **address:** OSC address
 * **arg[idx]:** message argument indices define which arguments should be passed on.
- * `()` all arguments are passed on
- * `(0)` only arg0  is passed on
- * `(0, 1, 2)` arg0, arg1 and arg2 are passed on
- * `(3, 0, 1, 2)` reordering the arguments to `arg3 arg0 arg1 arg2`
+  * `()` all arguments are passed on
+  * `(0)` only arg0  is passed on
+  * `(0, 1, 2)` arg0, arg1 and arg2 are passed on
+  * `(3, 0, 1, 2)` reordering the arguments to `arg3 arg0 arg1 arg2`
 * **datapath:** the blender datapath to the property you want to change
 * **property:** the property that needs to be changed
 * **Create new message handler** does as it says.
@@ -74,8 +74,8 @@ where in the above example
 ![alt text](./help/assets/NodeMessage_Stop.png)
 
 * **execute:** indicates when the node trees should be updated:
- * _on each message:_ updates whenever a new message arrives
- * _on specific message:_ updates only once the specified message arrives
+  * _on each message:_ updates whenever a new message arrives
+  * _on specific message:_ updates only once the specified message arrives
 * **message:** specific message that triggers tree update
 * `VERY IMPORTANT: read the exclamation info`
 
@@ -94,19 +94,19 @@ This list is generated when the server is started. It shows all OSC handlers tha
 OSCList is a general use node and can handle all sort of messages.
 
 * **default:** default value needs to be inserted like a list:
- * `[0, 0]` or
- * `['undefined']` or
- * `[1, 'text', 'moretext']`
+  * `[0, 0]` or
+  * `['undefined']` or
+  * `[1, 'text', 'moretext']`
 * **make string:** transforms the incoming message into a string.
 * **address:** OSC address
 * **arg[idx]:** message argument indices define which arguments should be passed on.
- * `()` all arguments are passed on
- * `(0)` only arg0  is passed on
- * `(0, 1, 2)` arg0, arg1 and arg2 are passed on
- * `(3, 0, 1, 2)` reordering the arguments to `arg3 arg0 arg1 arg2`
+  * `()` all arguments are passed on
+  * `(0)` only arg0  is passed on
+  * `(0, 1, 2)` arg0, arg1 and arg2 are passed on
+  * `(3, 0, 1, 2)` reordering the arguments to `arg3 arg0 arg1 arg2`
 * **direction:** message direction
- * INPUT: only listening to OSC messages with the specified address
- * OUTPUT: only sending OSC messages of the specified address.
+  * INPUT: only listening to OSC messages with the specified address
+  * OUTPUT: only sending OSC messages of the specified address.
 
 ---
 
@@ -114,20 +114,20 @@ OSCList is a general use node and can handle all sort of messages.
 
  OSCNumber is a general use node for numbers and can pass on single values or lists.
 
- * **default:** default value needs to be inserted
+* **default:** default value needs to be inserted
   * either like a list:
     * `[0, 0]` or
     * `['undefined']` or
     * `[1, 'text', 'moretext']`
   * or as a float, depending on the next value:
- * **make list:** transforms the incoming message into a list.
- * **address:** OSC address
- * **arg[idx]:** message argument indices define which arguments should be passed on.
+* **make list:** transforms the incoming message into a list.
+* **address:** OSC address
+* **arg[idx]:** message argument indices define which arguments should be passed on.
   * `()` all arguments are passed on
   * `(0)` only arg0  is passed on
   * `(0, 1, 2)` arg0, arg1 and arg2 are passed on
   * `(3, 0, 1, 2)` reordering the arguments to `arg3 arg0 arg1 arg2`
- * **direction:** message direction
+* **direction:** message direction
   * INPUT: only listening to OSC messages with the specified address
   * OUTPUT: only sending OSC messages of the specified address.
 
@@ -143,8 +143,8 @@ OSCList is a general use node and can handle all sort of messages.
 * **default:** default value
 * **address:** OSC address
 * **arg[idx]:** message argument indices define which arguments should be passed on.
- * `()` all arguments are passed on, but only the first is used.
- * `(1)` only arg1 is passed on
+  * `()` all arguments are passed on, but only the first is used.
+  * `(1)` only arg1 is passed on
 
 ---
 
@@ -154,13 +154,13 @@ OSCVector creates Vectors from a list of arguments
 
 * **address:** OSC address
 * **arg[idx]:** message argument indices define which arguments should be passed on.
- * `()` all arguments are passed on
- * `(0)` only arg0  is passed on
- * `(0, 1, 2)` arg0, arg1 and arg2 are passed on
- * `(3, 0, 1, 2)` reordering the arguments to `arg3 arg0 arg1 arg2`
- * **X:** default value for x
- * **Y:** default value for Y
- * **Z:** default value for z
+  * `()` all arguments are passed on
+  * `(0)` only arg0  is passed on
+  * `(0, 1, 2)` arg0, arg1 and arg2 are passed on
+  * `(3, 0, 1, 2)` reordering the arguments to `arg3 arg0 arg1 arg2`
+* **X:** default value for x
+* **Y:** default value for Y
+* **Z:** default value for z
 
 ---
 
