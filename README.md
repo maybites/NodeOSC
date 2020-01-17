@@ -115,21 +115,21 @@ OSCList is a general use node and can handle all sort of messages.
  OSCNumber is a general use node for numbers and can pass on single values or lists.
 
 * **default:** default value needs to be inserted
-  * either like a list:
-    * `[0, 0]` or
-    * `['undefined']` or
-    * `[1, 'text', 'moretext']`
-  * or as a float, depending on the next value:
+   * either like a list:
+      * `[0, 0]` or
+      * `['undefined']` or
+      * `[1, 'text', 'moretext']`
+   * or as a float, depending on the next value:
 * **make list:** transforms the incoming message into a list.
 * **address:** OSC address
 * **arg[idx]:** message argument indices define which arguments should be passed on.
-  * `()` all arguments are passed on
-  * `(0)` only arg0  is passed on
-  * `(0, 1, 2)` arg0, arg1 and arg2 are passed on
-  * `(3, 0, 1, 2)` reordering the arguments to `arg3 arg0 arg1 arg2`
+   * `()` all arguments are passed on
+   * `(0)` only arg0  is passed on
+   * `(0, 1, 2)` arg0, arg1 and arg2 are passed on
+   * `(3, 0, 1, 2)` reordering the arguments to `arg3 arg0 arg1 arg2`
 * **direction:** message direction
-  * INPUT: only listening to OSC messages with the specified address
-  * OUTPUT: only sending OSC messages of the specified address.
+   * INPUT: only listening to OSC messages with the specified address
+   * OUTPUT: only sending OSC messages of the specified address.
 
 ---
 
