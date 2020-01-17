@@ -356,8 +356,8 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 134.0, 333.0, 181.0, 22.0 ],
-					"text" : "/animation/list position 2 64 5."
+					"patching_rect" : [ 134.0, 333.0, 167.0, 22.0 ],
+					"text" : "/animation/list position 0 64 5."
 				}
 
 			}
