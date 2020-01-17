@@ -87,7 +87,7 @@ This list is generated when the server is started. It shows all OSC handlers tha
 
 ---
 
-## Nodes
+## Animation Nodes
 
 ![alt text](./help/assets/AN_OSCList.png)
 
