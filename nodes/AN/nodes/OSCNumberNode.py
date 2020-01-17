@@ -1,4 +1,5 @@
 import bpy
+import ast
 from bpy.props import *
 from collections import defaultdict
 from animation_nodes.sockets.info import toIdName
@@ -45,15 +46,26 @@ class OSCNumberNode(bpy.types.Node, AnimationNode):
     createList: BoolProperty(name = "Create List", default = False,
         description = "Create a list of numbers",
         update = AnimationNode.refresh)
+    
+    default_single: bpy.props.FloatProperty(
+        name="defaultNumber", 
+        default=0,
+        update = AnimationNode.refresh)
+    
+    default_list: bpy.props.StringProperty(
+        name="defaultList", 
+        description = "make sure you follow this structure [ val1, val2, etc..]",
+        default='[0, 0]',
+        update = AnimationNode.refresh)
 
     def create(self):
         self.data_path = 'bpy.data.node_groups[\'' + self.nodeTree.name + '\'].nodes[\'' + self.name +'\']'
         if self.createList:
             self.node_data_type = "LIST"
-            self.setValue([0] * 1)
+            self.setValue(ast.literal_eval(self.default_list))
         else:
             self.node_data_type = "SINGLE"
-            self.setValue(0)
+            self.setValue(self.default_single)
         
         if self.osc_direction == "OUTPUT":
             self.id = "value"
@@ -70,6 +82,10 @@ class OSCNumberNode(bpy.types.Node, AnimationNode):
                 self.newOutput("Float", "Number", "number")                
 
     def draw(self, layout):
+        if self.createList:
+            layout.prop(self, "default_list", text = "")
+        else:
+            layout.prop(self, "default_single", text = "")
         layout.prop(self, "createList", text = "", icon = "LINENUMBERS_ON")
         layout.prop(self, "osc_address", text = "")
         layout.prop(self, "osc_index", text = "")

@@ -1,4 +1,5 @@
 import bpy
+import ast
 from bpy.props import *
 from collections import defaultdict
 from animation_nodes.sockets.info import toIdName
@@ -40,10 +41,18 @@ class OSCListNode(bpy.types.Node, AnimationNode):
     node_type: bpy.props.IntProperty(
         name="NodeType", 
         default=1)
+
+    default_list: bpy.props.StringProperty(
+        name="defaultList", 
+        default='[0, 0]',
+        description = "make sure you follow this structure [ val1, val2, etc..]",
+        update = AnimationNode.refresh)
                
     def create(self):        
         self.data_path = 'bpy.data.node_groups[\'' + self.nodeTree.name + '\'].nodes[\'' + self.name +'\']'
-        
+       
+        self.setValue(ast.literal_eval(self.default_list)) 
+       
         if self.osc_direction == "OUTPUT":
             self.id = "value"
             self.newInput("Generic", "Value", "value")
@@ -54,6 +63,7 @@ class OSCListNode(bpy.types.Node, AnimationNode):
     #def delete(self):
         
     def draw(self, layout):
+        layout.prop(self, "default_list", text = "")
         layout.prop(self, "osc_address", text = "")
         layout.prop(self, "osc_index", text = "")
         layout.prop(self, "osc_direction", text = "")

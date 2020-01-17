@@ -149,34 +149,42 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                 self.setupInputServer(context, envars)
                 
                 self.setupOutputServer(context, envars)
-
-                dataTuple = []
+                
+                #  all the osc messages handlers ready for registering to the server
+                oscHandlerDict = {} 
+                oscHandleTuple = []
                 
                 # register a message for executing 
                 if envars.node_update == "MESSAGE" and hasAnimationNodes():
-                    dataTuple = (-1, None, None, None, None, 0)
-                    self.addMethod(envars.node_frameMessage, dataTuple)
+                    oscHandleTuple = (-1, None, None, None, None, 0)
+                    self.addOscHandler(oscHandlerDict, envars.node_frameMessage, oscHandleTuple)
                 
                 for item in bpy.context.scene.NodeOSC_keys:
                     if item.osc_direction != "OUTPUT" and item.enabled:
+                        # make osc index into a tuple ..
+                        oscIndex = make_tuple(item.osc_index)
+                        #  ... and don't forget the corner case
+                        if isinstance(oscIndex, int): 
+                            oscIndex = (oscIndex,)
+                        
                         try:
                             #For ID custom properties (with brackets)
                             if item.id[0:2] == '["' and item.id[-2:] == '"]':
-                                dataTuple = (1, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)
+                                oscHandleTuple = (1, eval(item.data_path), item.id, item.idx, oscIndex, item.node_type)
                             #For normal properties
                             #with index in brackets -: i_num
                             elif item.id[-1] == ']':
                                 d_p = item.id[:-3]
                                 i_num = int(item.id[-2])
-                                dataTuple = (3, eval(item.data_path), d_p, i_num, make_tuple(item.osc_index), item.node_type)
+                                oscHandleTuple = (3, eval(item.data_path), d_p, i_num, oscIndex, item.node_type)
                             #without index in brackets
                             else:
                                 if isinstance(getattr(eval(item.data_path), item.id), (int, float, str)):
-                                    dataTuple = (2, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)
+                                    oscHandleTuple = (2, eval(item.data_path), item.id, item.idx, oscIndex, item.node_type)
                                 else:
-                                    dataTuple = (4, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)
-                                    
-                            self.addMethod(item.osc_address, dataTuple)
+                                    oscHandleTuple = (4, eval(item.data_path), item.id, item.idx, oscIndex, item.node_type)
+                            
+                            self.addOscHandler(oscHandlerDict, item.osc_address, oscHandleTuple)
 
                         except Exception as err:
                             self.report({'WARNING'}, "Register custom handle: object '"+item.data_path+"' with id '"+item.id+"' : {0}".format(err))
@@ -186,15 +194,25 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                 
                 for item in bpy.context.scene.NodeOSC_nodes:
                     if item.osc_direction != "OUTPUT":
+                        # make osc index into a tuple ..
+                        oscIndex = make_tuple(item.osc_index)
+                        #  ... and don't forget the corner case
+                        if isinstance(oscIndex, int): 
+                            oscIndex = (oscIndex,)
+                            
                         try:
                             if item.node_data_type == "SINGLE":
-                                dataTuple = (5, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)
+                                oscHandleTuple = (5, eval(item.data_path), item.id, item.idx, oscIndex, item.node_type)
                             elif item.node_data_type == "LIST":
-                                dataTuple = (6, eval(item.data_path), item.id, item.idx, make_tuple(item.osc_index), item.node_type)
+                                oscHandleTuple = (6, eval(item.data_path), item.id, item.idx, oscIndex, item.node_type)
 
-                            self.addMethod(item.osc_address, dataTuple)
+                            self.addOscHandler(oscHandlerDict, item.osc_address, oscHandleTuple)
                         except Exception as err:
                             self.report({'WARNING'}, "Register node handle: object '"+item.data_path+"' with id '"+item.id+"' : {0}".format(err))
+
+                # register all oscHandles on the server
+                for address, oscHandles in oscHandlerDict.items():
+                    self.addMethod(address, oscHandles)
 
                 # register the default method for unregistered addresses
                 self.addDefaultMethod()
@@ -232,3 +250,13 @@ class OSC_OT_OSCServer(bpy.types.Operator):
         
         self.shutDownInputServer(context, envars)
         return {'CANCELLED'}
+
+    # will take an address and a oscHandle data packet. 
+    # if the address has already been used, the package will be added to the packagelist
+    def addOscHandler(self, handleDict, address, oscHandlePackage):
+        oldpackage = handleDict.get(address)
+        if oldpackage == None:
+            oldpackage = [oscHandlePackage]
+        else:
+            oldpackage += [oscHandlePackage]
+        handleDict[address] = oldpackage

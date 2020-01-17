@@ -30,15 +30,15 @@ def execute_queued_OSC_callbacks():
     while not OSC_callback_queue.empty():
         hasOscMessages = True
         items = OSC_callback_queue.get()
-        address = items[1]
+        address_uniq = items[1]
         # if the address has not been here before:
-        if queue_repeat_filter.get(address, False) == False:
+        if queue_repeat_filter.get(address_uniq, False) == False:
             func = items[0]
-            args = items[1:]
+            args = items[2:]
             # execute them 
             func(*args)
             
-        queue_repeat_filter[address] = True
+        queue_repeat_filter[address_uniq] = True
         
     if hasOscMessages:
         if bpy.context.scene.nodeosc_envars.node_update != "MESSAGE":
@@ -71,12 +71,12 @@ def OSC_callback_custom(address, obj, attr, attrIdx, oscArgs, oscIndex):
             bpy.context.scene.nodeosc_envars.error =  "Improper attributes received: "+address + " " + str(oscArgs)
 
 # called by the queue execution thread
-def OSC_callback_Property(address, obj, attr, attrIdx, oscArgs, oscIndex):
+def OSC_callback_Property(address, data_path, prop, attrIdx, oscArgs, oscIndex):
     try:
         val = oscArgs[0]
         if len(oscIndex) > 0:
             val = oscArgs[oscIndex[0]]
-        setattr(obj,attr,val)
+        setattr(data_path,prop,val)
     except TypeError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
             bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
@@ -85,12 +85,12 @@ def OSC_callback_Property(address, obj, attr, attrIdx, oscArgs, oscIndex):
             bpy.context.scene.nodeosc_envars.error =  "Improper attributes received: "+address + " " + str(oscArgs)
 
 # called by the queue execution thread
-def OSC_callback_IndexedProperty(address, obj, attr, attrIdx, oscArgs, oscIndex):
+def OSC_callback_IndexedProperty(address, data_path, prop, attrIdx, oscArgs, oscIndex):
     try:
         if len(oscIndex) > 0:
-            getattr(obj,attr)[attrIdx] = oscArgs[oscIndex[0]]
+            getattr(data_path,prop)[attrIdx] = oscArgs[oscIndex[0]]
         else:
-            getattr(obj,attr)[attrIdx] = oscArgs[0]
+            getattr(data_path,prop)[attrIdx] = oscArgs[0]
     except TypeError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
             bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
@@ -99,12 +99,12 @@ def OSC_callback_IndexedProperty(address, obj, attr, attrIdx, oscArgs, oscIndex)
             bpy.context.scene.nodeosc_envars.error =  "Improper attributes received: "+address + " " + str(oscArgs)
 
 # called by the queue execution thread
-def OSC_callback_properties(address, obj, attr, attrIdx, oscArgs, oscIndex):
+def OSC_callback_properties(address, data_path, prop, attrIdx, oscArgs, oscIndex):
     try:
         if len(oscIndex) > 0:
-            getattr(obj, attr)[:] = (oscArgs[i] for i in oscIndex)
+            getattr(data_path, prop)[:] = (oscArgs[i] for i in oscIndex)
         else:
-            getattr(obj, attr)[:] = oscArgs
+            getattr(data_path, prop)[:] = oscArgs
             
     except TypeError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
@@ -114,12 +114,12 @@ def OSC_callback_properties(address, obj, attr, attrIdx, oscArgs, oscIndex):
             bpy.context.scene.nodeosc_envars.error =  "Improper attributes received: "+address + " " + str(oscArgs)
 
 # called by the queue execution thread
-def OSC_callback_nodeFLOAT(address, obj, attr, attrIdx, oscArgs, oscIndex):
+def OSC_callback_nodeFLOAT(address, data_path, prop, attrIdx, oscArgs, oscIndex):
     try:
         val = oscArgs[0]
         if len(oscIndex) > 0:
             val = oscArgs[oscIndex[0]]
-        getattr(obj, attr)(val)
+        getattr(data_path, prop)(val)
     except TypeError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
             bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
@@ -128,12 +128,12 @@ def OSC_callback_nodeFLOAT(address, obj, attr, attrIdx, oscArgs, oscIndex):
             bpy.context.scene.nodeosc_envars.error =  "Improper attributes received: "+address + " " + str(oscArgs)
 
 # called by the queue execution thread
-def OSC_callback_nodeLIST(address, obj, attr, attrIdx, oscArgs, oscIndex):
+def OSC_callback_nodeLIST(address, data_path, prop, attrIdx, oscArgs, oscIndex):
     try:
         val = list(oscArgs)
         if len(oscIndex) > 0:
             val = list(oscArgs[i] for i in oscIndex)
-        getattr(obj, attr)(val)
+        getattr(data_path, prop)(val)
     except TypeError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
             bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
@@ -151,62 +151,54 @@ def OSC_callback_pythonosc_undef(* args):
 def OSC_callback_pythonosc(* args):
     # the args structure:
     #    args[0] = osc address
-    #    args[1] = custom data pakage (tuplet with 5 values)
+    #    args[1][0] = custom data package list with (tuplet with 5 values)
     #    args[>1] = osc arguments
     address = args[0]
-    mytype = args[1][0][0]      # callback type 
-    obj = args[1][0][1]          # blender object name (i.e. bpy.data.objects['Cube'])
-    attr = args[1][0][2]        # blender object ID (i.e. location)
-    attrIdx = args[1][0][3]         # ID-index (not used)
-    oscIndex = args[1][0][4]    # osc argument index to use (should be a tuplet, like (1,2,3))
-    nodeType = args[1][0][5]    # node type 
-
-    # we have to make sure the oscIndex is a tuple. 
-    # there is a cornercase '(0)' where make_tuple doesn't return tuple (how stupid is that)
-    if isinstance(oscIndex, int): 
-        oscIndex = (oscIndex,)
-
+    data = args[1][0]
     oscArgs = args[2:]
-
-    fillCallbackQue(address, obj, attr, attrIdx, oscArgs, oscIndex, mytype)
+    
+    fillCallbackQue(address, oscArgs, data)
      
 # method called by the pyliblo library in case of a mapped message
-def OSC_callback_pyliblo(path, oscArgs, types, src, data):
+def OSC_callback_pyliblo(path, args, types, src, data):
     # the args structure:
     address = path
-    mytype = data[0]        # callback type 
-    obj = data[1]           # blender object name (i.e. bpy.data.objects['Cube'])
-    attr = data[2]          # blender object ID (i.e. location)
-    attrIdx = data[3]       # ID-index (not used)
-    oscIndex = data[4]      # osc argument index to use (should be a tuplet, like (1,2,3))
-    nodeType = data[5]      # node type 
+    oscArgs = args
+    
+    fillCallbackQue(address, oscArgs, data)
 
-    # we have to make sure the oscIndex is a tuple. 
-    # there is a cornercase '(0)' where make_tuple doesn't return tuple (how stupid is that)
-    if isinstance(oscIndex, int): 
-        oscIndex = (oscIndex,)
+
+def fillCallbackQue(address, oscArgs, dataList):
+    index = 0
+    for data in dataList:
+        mytype = data[0]        # callback type 
+        datapath = data[1]      # blender datapath (i.e. bpy.data.objects['Cube'])
+        prop = data[2]          # blender property ID (i.e. location)
+        attrIdx = data[3]       # ID-index (not used)
+        oscIndex = data[4]      # osc argument index to use (should be a tuplet, like (1,2,3))
+        nodeType = data[5]      # node type 
+
+        address_uniq = address + "_" + str(index)
         
-    fillCallbackQue(address, obj, attr, attrIdx, oscArgs, oscIndex, mytype)
+        if mytype == -1:
+            #special type reserved for message that triggers the execution of nodetrees
+            if nodeType == 1:
+                bpy.context.scene.nodeosc_AN_needsUpdate = True
+            elif nodeType == 2:
+                bpy.context.scene.nodeosc_SORCAR_needsUpdate = True
+        elif mytype == 0:
+            OSC_callback_queue.put((OSC_callback_unkown, address_uniq, address, oscArgs))
+        elif mytype == 1:
+            OSC_callback_queue.put((OSC_callback_custom, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
+        elif mytype == 2:
+            OSC_callback_queue.put((OSC_callback_Property, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
+        elif mytype == 3:
+            OSC_callback_queue.put((OSC_callback_IndexedProperty, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
+        elif mytype == 4:
+            OSC_callback_queue.put((OSC_callback_properties, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
+        elif mytype == 5:
+            OSC_callback_queue.put((OSC_callback_nodeFLOAT, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
+        elif mytype == 6:
+            OSC_callback_queue.put((OSC_callback_nodeLIST, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
 
-
-def fillCallbackQue(address, obj, attr, attrIdx, oscArgs, oscIndex, mytype):
-    if mytype == -1:
-        #special type reserved for message that triggers the execution of nodetrees
-        if nodeType == 1:
-            bpy.context.scene.nodeosc_AN_needsUpdate = True
-        elif nodeType == 2:
-            bpy.context.scene.nodeosc_SORCAR_needsUpdate = True
-    elif mytype == 0:
-        OSC_callback_queue.put((OSC_callback_unkown, address, oscArgs))
-    elif mytype == 1:
-        OSC_callback_queue.put((OSC_callback_custom, address, obj, attr, attrIdx, oscArgs, oscIndex))
-    elif mytype == 2:
-        OSC_callback_queue.put((OSC_callback_Property, address, obj, attr, attrIdx, oscArgs, oscIndex))
-    elif mytype == 3:
-        OSC_callback_queue.put((OSC_callback_IndexedProperty, address, obj, attr, attrIdx, oscArgs, oscIndex))
-    elif mytype == 4:
-        OSC_callback_queue.put((OSC_callback_properties, address, obj, attr, attrIdx, oscArgs, oscIndex))
-    elif mytype == 5:
-        OSC_callback_queue.put((OSC_callback_nodeFLOAT, address, obj, attr, attrIdx, oscArgs, oscIndex))
-    elif mytype == 6:
-        OSC_callback_queue.put((OSC_callback_nodeLIST, address, obj, attr, attrIdx, oscArgs, oscIndex))
+        index += 1
