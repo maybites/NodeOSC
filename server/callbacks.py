@@ -168,27 +168,10 @@ def OSC_callback_pythonosc(* args):
 
     oscArgs = args[2:]
 
-    if mytype == -1:
-        #special type reserved for message that triggers the execution of nodetrees
-        if nodeType == 1:
-            bpy.context.scene.nodeosc_AN_needsUpdate = True
-        elif nodeType == 2:
-            bpy.context.scene.nodeosc_SORCAR_needsUpdate = True
-    elif mytype == 1:
-        OSC_callback_queue.put((OSC_callback_custom, address, obj, attr, attrIdx, oscArgs, oscIndex))
-    elif mytype == 2:
-        OSC_callback_queue.put((OSC_callback_Property, address, obj, attr, attrIdx, oscArgs, oscIndex))
-    elif mytype == 3:
-        OSC_callback_queue.put((OSC_callback_IndexedProperty, address, obj, attr, attrIdx, oscArgs, oscIndex))
-    elif mytype == 4:
-        OSC_callback_queue.put((OSC_callback_properties, address, obj, attr, attrIdx, oscArgs, oscIndex))
-    elif mytype == 5:
-        OSC_callback_queue.put((OSC_callback_nodeFLOAT, address, obj, attr, attrIdx, oscArgs, oscIndex))
-    elif mytype == 6:
-        OSC_callback_queue.put((OSC_callback_nodeLIST, address, obj, attr, attrIdx, oscArgs, oscIndex))
- 
+    fillCallbackQue(address, obj, attr, attrIdx, oscArgs, oscIndex, mytype)
+     
 # method called by the pyliblo library in case of a mapped message
-def OSC_callback_pyliblo(path, args, types, src, data):
+def OSC_callback_pyliblo(path, oscArgs, types, src, data):
     # the args structure:
     address = path
     mytype = data[0]        # callback type 
@@ -202,21 +185,28 @@ def OSC_callback_pyliblo(path, args, types, src, data):
     # there is a cornercase '(0)' where make_tuple doesn't return tuple (how stupid is that)
     if isinstance(oscIndex, int): 
         oscIndex = (oscIndex,)
+        
+    fillCallbackQue(address, obj, attr, attrIdx, oscArgs, oscIndex, mytype)
 
+
+def fillCallbackQue(address, obj, attr, attrIdx, oscArgs, oscIndex, mytype):
     if mytype == -1:
         #special type reserved for message that triggers the execution of nodetrees
-        executeNodeTrees()
+        if nodeType == 1:
+            bpy.context.scene.nodeosc_AN_needsUpdate = True
+        elif nodeType == 2:
+            bpy.context.scene.nodeosc_SORCAR_needsUpdate = True
     elif mytype == 0:
-        OSC_callback_queue.put((OSC_callback_unkown, address, args, data))
+        OSC_callback_queue.put((OSC_callback_unkown, address, oscArgs))
     elif mytype == 1:
-        OSC_callback_queue.put((OSC_callback_custom, address, obj, attr, attrIdx, args, oscIndex))
+        OSC_callback_queue.put((OSC_callback_custom, address, obj, attr, attrIdx, oscArgs, oscIndex))
     elif mytype == 2:
-        OSC_callback_queue.put((OSC_callback_Property, address, obj, attr, attrIdx, args, oscIndex))
+        OSC_callback_queue.put((OSC_callback_Property, address, obj, attr, attrIdx, oscArgs, oscIndex))
     elif mytype == 3:
-        OSC_callback_queue.put((OSC_callback_IndexedProperty, address, obj, attr, attrIdx, args, oscIndex))
+        OSC_callback_queue.put((OSC_callback_IndexedProperty, address, obj, attr, attrIdx, oscArgs, oscIndex))
     elif mytype == 4:
-        OSC_callback_queue.put((OSC_callback_properties, address, obj, attr, attrIdx, args, oscIndex))
+        OSC_callback_queue.put((OSC_callback_properties, address, obj, attr, attrIdx, oscArgs, oscIndex))
     elif mytype == 5:
-        OSC_callback_queue.put((OSC_callback_nodeFLOAT, address, obj, attr, attrIdx, args, oscIndex))
+        OSC_callback_queue.put((OSC_callback_nodeFLOAT, address, obj, attr, attrIdx, oscArgs, oscIndex))
     elif mytype == 6:
-        OSC_callback_queue.put((OSC_callback_nodeLIST, address, obj, attr, attrIdx, args, oscIndex))
+        OSC_callback_queue.put((OSC_callback_nodeLIST, address, obj, attr, attrIdx, oscArgs, oscIndex))
