@@ -145,7 +145,7 @@ def OSC_callback_nodeLIST(address, data_path, prop, attrIdx, oscArgs, oscIndex):
 def OSC_callback_pythonosc_undef(* args):
     if bpy.context.scene.nodeosc_envars.message_monitor == True:
         address = args[0]
-        OSC_callback_queue.put((OSC_callback_unkown, address, args[1:]))
+        OSC_callback_queue.put((OSC_callback_unkown, address, address, args[1:]))
 
 # method called by the pythonosc library in case of a mapped message
 def OSC_callback_pythonosc(* args):
