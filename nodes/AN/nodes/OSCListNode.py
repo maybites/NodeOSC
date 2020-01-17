@@ -42,6 +42,10 @@ class OSCListNode(bpy.types.Node, AnimationNode):
         name="NodeType", 
         default=1)
 
+    createString: BoolProperty(name = "Make String", default = False,
+        description = "Transform list to string",
+        update = AnimationNode.refresh)
+
     default_list: bpy.props.StringProperty(
         name="defaultList", 
         default='[0, 0]',
@@ -64,6 +68,7 @@ class OSCListNode(bpy.types.Node, AnimationNode):
         
     def draw(self, layout):
         layout.prop(self, "default_list", text = "")
+        layout.prop(self, "createString", text = "", icon = "FILE_TEXT")
         layout.prop(self, "osc_address", text = "")
         layout.prop(self, "osc_index", text = "")
         layout.prop(self, "osc_direction", text = "")
@@ -75,10 +80,23 @@ class OSCListNode(bpy.types.Node, AnimationNode):
             return "value = self.getValue()"
 
     def setValue(self, value):
-        dataByIdentifier[self.identifier] = value
+        if self.createString:
+            if len(value) == 1:
+                dataByIdentifier[self.identifier] = str(value[0])
+            else:
+                dataByIdentifier[self.identifier] = str(value)
+        else:
+            dataByIdentifier[self.identifier] = value
+            
 
     def getValue(self):
-        return dataByIdentifier.get(self.identifier)
+        value = dataByIdentifier.get(self.identifier)
+        if value is not None and self.createString:
+            if len(value) == 1:
+                value = str(value[0])
+            else:
+                value = str(value)
+        return value
 
     @property
     def value(self):
