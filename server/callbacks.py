@@ -1,6 +1,6 @@
 import bpy
 import queue
-
+import time
 from ..nodes.nodes import *
 from ..utils import utils
 
@@ -22,6 +22,7 @@ queue_repeat_filter = {}
 
 # define the method the timer thread is calling when it is appropriate
 def execute_queued_OSC_callbacks():
+    start = time.perf_counter()
     queue_repeat_filter.clear()
     
     hasOscMessages = False
@@ -48,6 +49,10 @@ def execute_queued_OSC_callbacks():
     #when all the messages are applied, execute the Animation node tree
     #  the SORCAR node tree needs to be executed from the server modal method..
     executeAnimationNodeTrees()
+    
+    # calculate the execution time
+    end = time.perf_counter()
+    bpy.context.scene.nodeosc_envars.executionTimeInput = end - start
     
     return 0 if bpy.context.scene.nodeosc_envars.input_rate == 0 else bpy.context.scene.nodeosc_envars.input_rate / 1000
 

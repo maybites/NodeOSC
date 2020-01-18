@@ -2,6 +2,10 @@ import bpy
 import platform
 from pathlib import Path
 
+def prettyTime(seconds):
+    if seconds > 1.5: return "{:.2f} s".format(seconds)
+    else: return "{:.4f} ms".format(seconds * 1000)
+    
 #######################################
 #  MAIN GUI PANEL                     #
 #######################################
@@ -58,12 +62,15 @@ class OSC_PT_Settings(bpy.types.Panel):
             if bpy.context.scene.nodeosc_envars.message_monitor == True: 
                 box = col.box()
                 row5 = box.column(align=True)
+                row5.label(text = "input: " + prettyTime(envars.executionTimeInput), icon = "TIME")
+                row5.label(text = "output: " + prettyTime(envars.executionTimeOutput), icon = "TIME")
+                row6 = box.column(align=True)
                 if addon_prefs.usePyLiblo == False:
-                    row5.label(text="Last OSC ..")
-                    row5.prop(bpy.context.scene.nodeosc_envars, 'lastaddr', text="address")
-                    row5.prop(bpy.context.scene.nodeosc_envars, 'lastpayload', text="values")
+                    row6.label(text="Last OSC message:")
+                    row6.prop(envars, 'lastaddr', text="address")
+                    row6.prop(envars, 'lastpayload', text="values")
                 else:
-                    row5.label(text="pyLiblo server ignores all unknown osc messages")
+                    row6.label(text="pyLiblo server ignores all unknown osc messages")
                     
 
             

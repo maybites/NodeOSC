@@ -68,11 +68,12 @@ class OSC_OT_PythonOSCServer(OSC_OT_OSCServer):
         print("Python Server sended test message to " + envars.udp_out + " on port " + str(envars.port_out))
 
     def sendingOSC(self, context, event):
+
         oscMessage = {}
         
         # gather all the ouput bound osc messages
         make_osc_messages(bpy.context.scene.NodeOSC_outputs, oscMessage)
-        
+         
         # and send them 
         for key, args in oscMessage.items():
             msg = osc_message_builder.OscMessageBuilder(address=key)
@@ -83,7 +84,7 @@ class OSC_OT_PythonOSCServer(OSC_OT_OSCServer):
                 msg.add_arg(args)
             msg = msg.build()
             self.outputServer.send(msg)
-   
+  
     # add method 
     def addMethod(self, address, data):
         self.dispatcher.map(address, OSC_callback_pythonosc, data)

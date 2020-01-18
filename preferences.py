@@ -23,7 +23,9 @@ class NodeOSCEnvVarSettings(bpy.types.PropertyGroup):
     node_update: bpy.props.EnumProperty(name = "node update", default = "EACH", items = nodeUpdateItems)
     node_frameMessage: bpy.props.StringProperty(default="/frame/end",description="OSC message that triggers a node tree execution")
     error: bpy.props.StringProperty(default="",description="Last error message")
-
+    executionTimeInput: bpy.props.FloatProperty(name = "Input Execution Time")
+    executionTimeOutput: bpy.props.FloatProperty(name = "Input Execution Time")
+    
 class NodeOSCPreferences(AddonPreferences):
     # this must match the addon name, use '__package__'
     # when defining this in a submodule of a python package.

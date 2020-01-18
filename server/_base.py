@@ -22,7 +22,11 @@ def make_osc_messages(myOscKeys, myOscMsg):
             prop = eval(item.data_path+'.'+item.id)
         
         # now make the values to be sent a tuple (unless its a string or None)
-        if isinstance(prop, mathutils.Vector):
+        if isinstance(prop, (bool, int, float)):
+            prop = (prop,)
+        elif prop is None:
+            prop = 'None'
+        elif isinstance(prop, mathutils.Vector):
             prop = tuple(prop);
         elif isinstance(prop, mathutils.Quaternion):
             prop = tuple(prop);
@@ -30,10 +34,6 @@ def make_osc_messages(myOscKeys, myOscMsg):
             prop = tuple(prop);
         elif isinstance(prop, mathutils.Matrix):
             prop = tuple(prop);
-        elif isinstance(prop, (bool, int, float)):
-            prop = (prop,)
-        elif prop is None:
-            prop = 'None'
             
         if str(prop) != item.value:
             item.value = str(prop)
@@ -112,21 +112,21 @@ class OSC_OT_OSCServer(bpy.types.Operator):
         if event.type == 'TIMER':
             #hack to refresh the GUI
             self.count = self.count + envars.output_rate
-            if self.count >= 500:
-                self.count = 0
-                if envars.message_monitor == True:
-                    for window in bpy.context.window_manager.windows:
-                        screen = window.screen
-                        for area in screen.areas:
-                            if area.type == 'VIEW_3D':
-                                area.tag_redraw()
+            if envars.message_monitor == True:
+                if self.count >= 100:
+                    self.count = 0
+                    context.area.tag_redraw()
 
             # only available spot where updating the sorcar tree doesn't throw errors...
             executeSorcarNodeTrees(context)
 
             try:
+                start = time.perf_counter()
                 self.sendingOSC(context, event)
-                    
+                # calculate the execution time
+                end = time.perf_counter()
+                bpy.context.scene.nodeosc_envars.executionTimeOutput = end - start
+                
             except Exception as err:
                 self.report({'WARNING'}, "Output error: {0}".format(err))
                 return self.cancel(context)
