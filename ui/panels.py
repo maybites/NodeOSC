@@ -123,7 +123,7 @@ class OSC_PT_Operations(bpy.types.Panel):
             if item.ui_expanded:
                 colItm1 = colsub.column(align=True)
                 colItm1.prop(item, 'osc_direction',text='RX/TX')
-                if bpy.context.scene.nodeosc_envars.message_monitor == True:
+                if envars.isServerRunning == True and envars.message_monitor == True:
                     rowItmA = colItm1.row(align=True)
                     rowItmA.prop(item, 'osc_address',text='address')
                     rowItmA.operator("nodeosc.pick", text='', icon='EYEDROPPER').i_addr = item.osc_address
@@ -137,11 +137,7 @@ class OSC_PT_Operations(bpy.types.Panel):
                 colItm2 = colsub.column(align=True)
                 colItm2.prop(item,'data_path',text='datapath')
                 colItm2.prop(item,'id',text='property')
-                
-                if bpy.context.scene.nodeosc_envars.message_monitor == True:
-                    rowItm3 = colsub.row()
-                    rowItm3.prop(item, 'value',text='current value')
-                                
+                                                
             index = index + 1
         
         layout.operator("nodeosc.createitem", icon='PRESET_NEW', text='Create new message handler').copy = -1
