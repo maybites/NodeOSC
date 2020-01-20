@@ -9,6 +9,12 @@ Currently it has node support for
 
 ## Usage
 
+### Video Tutorial
+
+<a href="https://youtu.be/o9bzujeOyc8" target="_blank"><img src="http://img.youtube.com/vi/o9bzujeOyc8/0.jpg"
+alt="NodeOSC Part One" width="240" height="180" border="10" /></a>
+
+
 see the [wiki](https://github.com/maybites/blender.NodeOSC/wiki) for more info.
 
 I think it is fairly self explanatory (with some intricacies). However, if you have questions please make an issue. This helps me to see where I should focus on the docs...

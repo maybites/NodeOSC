@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 1108.0, 45.0, 330.0, 831.0 ],
+		"rect" : [ 1076.0, 79.0, 330.0, 831.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -39,6 +39,30 @@
 		"subpatcher_template" : "",
 		"boxes" : [ 			{
 				"box" : 				{
+					"id" : "obj-4",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 161.0, 417.0, 49.0, 22.0 ],
+					"text" : "POS_Y"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-2",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 149.0, 458.0, 100.0, 22.0 ],
+					"text" : "/cube/tracking $1"
+				}
+
+			}
+, 			{
+				"box" : 				{
 					"id" : "obj-96",
 					"maxclass" : "message",
 					"numinlets" : 2,
@@ -57,7 +81,7 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 69.5, 745.0, 50.0, 102.0 ],
+					"patching_rect" : [ 69.5, 745.0, 52.0, 102.0 ],
 					"text" : "/accxyz -0.176514 -0.235367 10.218536"
 				}
 
@@ -344,7 +368,6 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 142.0, 376.0, 153.0, 22.0 ],
-					"presentation_linecount" : 2,
 					"text" : "/animation/list scale 1 0 3 4"
 				}
 
@@ -418,7 +441,6 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 134.0, 56.0, 99.0, 22.0 ],
-					"presentation_linecount" : 2,
 					"text" : "/cube/number $1"
 				}
 
@@ -455,7 +477,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 27.0, 635.0, 241.0, 22.0 ],
-					"text" : "/viewport 0"
+					"text" : "/NodeOSC \"pyliblo server started up\""
 				}
 
 			}
@@ -548,6 +570,13 @@
  ],
 		"lines" : [ 			{
 				"patchline" : 				{
+					"destination" : [ "obj-49", 0 ],
+					"source" : [ "obj-2", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
 					"destination" : [ "obj-91", 0 ],
 					"source" : [ "obj-25", 0 ]
 				}
@@ -564,6 +593,13 @@
 				"patchline" : 				{
 					"destination" : [ "obj-91", 2 ],
 					"source" : [ "obj-27", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-2", 0 ],
+					"source" : [ "obj-4", 0 ]
 				}
 
 			}

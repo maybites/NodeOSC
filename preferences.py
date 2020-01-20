@@ -9,8 +9,8 @@ nodeUpdateItems = {
     ("MESSAGE", "on specific message", "Node Tree is executed on a specific message (ideal for high frequency messages)", "NONE", 1) }
 
 class NodeOSCEnvVarSettings(bpy.types.PropertyGroup):
-    udp_in: bpy.props.StringProperty(default="127.0.0.1", description='The IP of the interface of your Blender machine to listen on, set to 0.0.0.0 for all of them')
-    udp_out: bpy.props.StringProperty(default="127.0.0.1", description='The IP of the destination machine to send messages to')
+    udp_in: bpy.props.StringProperty(default="127.0.0.1", description='The IP of this machine (on which blender is running)')
+    udp_out: bpy.props.StringProperty(default="127.0.0.1", description='The IP of the machine to send messages to (can be the same if you want to send it to another application that runs on this machine)')
     port_in: bpy.props.IntProperty(default=9001, min=0, max=65535, description='The input network port (0-65535)')
     port_out: bpy.props.IntProperty(default=9002, min=0, max= 65535, description='The output network port (0-65535)')
     input_rate: bpy.props.IntProperty(default=0 ,description="The refresh rate of checking for input messages (millisecond)", min=0)
