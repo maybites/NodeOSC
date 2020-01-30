@@ -274,9 +274,10 @@ class NodeOSC_ImportKS(Operator):
                     if item_tmp.id == item.id and item_tmp.data_path == item.data_path:
                         item_tmp.osc_address = item.osc_address
                         item_tmp.idx = item.idx
-                if item_tmp.address == "":
+                if item_tmp.osc_address == "":
                     id_n += 1
-                    item_tmp.address = bpy.context.scene.nodeosc_defaultaddr + "/" + str(id_n)
+                    item_tmp.osc_address = bpy.context.scene.nodeosc_defaultaddr + "/" + str(id_n)
+                item_tmp.osc_index = "()"
 
             #Simple copy NodeOSC_keys_tmp toward NodeOSC_keys
             item = bpy.context.scene.NodeOSC_keys.clear()
