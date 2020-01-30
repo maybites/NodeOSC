@@ -4,7 +4,7 @@
 		"appversion" : 		{
 			"major" : 8,
 			"minor" : 1,
-			"revision" : 2,
+			"revision" : 1,
 			"architecture" : "x64",
 			"modernui" : 1
 		}
@@ -39,6 +39,17 @@
 		"subpatcher_template" : "",
 		"boxes" : [ 			{
 				"box" : 				{
+					"id" : "obj-1",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 0,
+					"patching_rect" : [ 42.0, 500.0, 32.0, 22.0 ],
+					"text" : "print"
+				}
+
+			}
+, 			{
+				"box" : 				{
 					"id" : "obj-12",
 					"maxclass" : "message",
 					"numinlets" : 2,
@@ -69,7 +80,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 139.0, 170.0, 171.0, 22.0 ],
-					"text" : "/cube/location 0. -0.65 0.7"
+					"text" : "/cube/location -7.4 0. 0."
 				}
 
 			}
@@ -112,12 +123,13 @@
 , 			{
 				"box" : 				{
 					"id" : "obj-62",
+					"linecount" : 2,
 					"maxclass" : "message",
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 23.0, 525.0, 241.0, 22.0 ],
-					"text" : "/cube/tracking POS_Y"
+					"patching_rect" : [ 23.0, 525.0, 241.0, 35.0 ],
+					"text" : "/cube/position -0.848847 0.863682 -0.961262"
 				}
 
 			}
@@ -190,8 +202,8 @@
 					"maxclass" : "newobj",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 23.0, 371.0, 171.0, 22.0 ],
-					"text" : "udpsend 192.168.43.126 9001"
+					"patching_rect" : [ 23.0, 371.0, 138.0, 22.0 ],
+					"text" : "udpsend 127.0.0.1 9001"
 				}
 
 			}
@@ -231,7 +243,16 @@
 			}
 , 			{
 				"patchline" : 				{
+					"destination" : [ "obj-1", 0 ],
+					"order" : 1,
+					"source" : [ "obj-48", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
 					"destination" : [ "obj-62", 1 ],
+					"order" : 0,
 					"source" : [ "obj-48", 0 ]
 				}
 

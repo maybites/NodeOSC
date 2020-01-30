@@ -107,18 +107,20 @@ def hasSorcarNodes():
 
 # executes only animation node systems
 def executeAnimationNodeTrees():
-    if bpy.context.scene.nodeosc_AN_needsUpdate:
-        propertyChanged()
-        bpy.context.scene.nodeosc_AN_needsUpdate = False
+    if load_an_success:
+        if bpy.context.scene.nodeosc_AN_needsUpdate:
+            propertyChanged()
+            bpy.context.scene.nodeosc_AN_needsUpdate = False
 
 # executes only sorcar node systems
 # this method needs to be called from a server Modal
 def executeSorcarNodeTrees(context):
-    if bpy.context.scene.nodeosc_SORCAR_needsUpdate:
-        for node_group in bpy.data.node_groups:
-            if node_group.bl_idname == 'ScNodeTree':
-                node_group.execute_node()
-        bpy.context.scene.nodeosc_SORCAR_needsUpdate = False
+    if load_sc_success:
+        if bpy.context.scene.nodeosc_SORCAR_needsUpdate:
+            for node_group in bpy.data.node_groups:
+                if node_group.bl_idname == 'ScNodeTree':
+                    node_group.execute_node()
+            bpy.context.scene.nodeosc_SORCAR_needsUpdate = False
 
 def import_sorcar_nodes(path):
     out = {}
