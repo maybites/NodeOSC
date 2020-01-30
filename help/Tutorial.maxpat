@@ -4,7 +4,7 @@
 		"appversion" : 		{
 			"major" : 8,
 			"minor" : 1,
-			"revision" : 1,
+			"revision" : 2,
 			"architecture" : "x64",
 			"modernui" : 1
 		}
@@ -115,21 +115,20 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 23.0, 119.0, 91.0, 22.0 ],
-					"text" : "/cube/visible $1"
+					"patching_rect" : [ 23.0, 119.0, 73.0, 22.0 ],
+					"text" : "/viewport $1"
 				}
 
 			}
 , 			{
 				"box" : 				{
 					"id" : "obj-62",
-					"linecount" : 2,
 					"maxclass" : "message",
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 23.0, 525.0, 241.0, 35.0 ],
-					"text" : "/cube/position -0.848847 0.863682 -0.961262"
+					"patching_rect" : [ 23.0, 525.0, 241.0, 22.0 ],
+					"text" : "/viewport 0"
 				}
 
 			}
