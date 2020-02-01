@@ -241,7 +241,7 @@ class NodeOSC_ImportKS(Operator):
 
             #what is the highest ID number ?
             for item in bpy.context.scene.NodeOSC_keys:
-                split = item.address.split('/')
+                split = item.osc_address.split('/')
                 try:
                     if split[1] == bpy.context.scene.nodeosc_defaultaddr[1:]:
                         if int(split[-1]) > id_n:
