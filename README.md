@@ -7,6 +7,11 @@ Currently it has node support for
 * [Animation Nodes](https://animation-nodes.com/)
 * [Sorcar](https://blender-addons.org/sorcar-addon/)
 
+
+## Download
+
+latest release from [here](https://github.com/maybites/blender.NodeOSC/releases/latest)
+
 ## Usage
 
 ### Video Tutorial
