@@ -17,9 +17,10 @@ try:
 except ModuleNotFoundError:
     load_an_success = False
 
+
 try:
-    from Sorcar.helper import print_log
-    from Sorcar.tree.ScNodeCategory import ScNodeCategory
+    from sorcar.helper import print_log
+    from sorcar.tree.ScNodeCategory import ScNodeCategory
     load_sc_success = True
 except ModuleNotFoundError:
     load_sc_success = False
@@ -136,7 +137,7 @@ if load_an_success:
     auto_load.init()
 
 if load_sc_success:
-    from Sorcar import all_classes
+    from sorcar import all_classes
     classes_nodes = []
 
 def register():

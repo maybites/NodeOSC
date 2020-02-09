@@ -1,6 +1,6 @@
 import bpy
 
-from Sorcar.nodes._base.node_base import ScNode
+from sorcar.nodes._base.node_base import ScNode
 from .....utils.utils import *
 
 def sorcarTreeUpdate(self, context):
