@@ -3,6 +3,7 @@ import os
 import addon_utils
 import importlib
 import nodeitems_utils
+import platform
 
 from nodeitems_utils import NodeItem
 from pathlib import Path
@@ -19,9 +20,15 @@ except ModuleNotFoundError:
 
 
 try:
-    from sorcar.helper import print_log
-    from sorcar.tree.ScNodeCategory import ScNodeCategory
-    load_sc_success = True
+    if platform.system() == "Windows":
+        from sorcar.helper import print_log
+        from sorcar.tree.ScNodeCategory import ScNodeCategory
+        load_sc_success = True
+    else:
+        from Sorcar.helper import print_log
+        from Sorcar.tree.ScNodeCategory import ScNodeCategory
+        load_sc_success = True
+        
 except ModuleNotFoundError:
     load_sc_success = False
     
@@ -137,7 +144,10 @@ if load_an_success:
     auto_load.init()
 
 if load_sc_success:
-    from sorcar import all_classes
+    if platform.system() == "Windows":
+        from sorcar import all_classes
+    else:
+        from Sorcar import all_classes
     classes_nodes = []
 
 def register():

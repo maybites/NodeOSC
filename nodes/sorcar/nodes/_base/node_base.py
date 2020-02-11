@@ -1,6 +1,12 @@
 import bpy
 
-from sorcar.nodes._base.node_base import ScNode
+import platform
+
+if platform.system() == "Windows":
+    from sorcar.nodes._base.node_base import ScNode
+else:
+    from Sorcar.nodes._base.node_base import ScNode
+    
 from .....utils.utils import *
 
 def sorcarTreeUpdate(self, context):
