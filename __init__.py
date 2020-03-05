@@ -31,7 +31,7 @@
 bl_info = {
     "name": "NodeOSC",
     "author": "maybites",
-    "version": (1, 0, 2),
+    "version": (1, 0, 3),
     "blender": (2, 80, 0),
     "location": "View3D > Tools > NodeOSC",
     "description": "Realtime control of Blender using OSC protocol",

@@ -39,5 +39,5 @@ the addon contains the compiled pyliblo wrapper for windows and OSX, but not for
 
 ## ChangeLog
 
-### V1.0.2
+### V1.0.3
 Added AnimationNodes datatype DoubleList to be able to send via OscNumber node.
