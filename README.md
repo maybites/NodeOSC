@@ -35,6 +35,9 @@ NodeOSC relies on
 * the pure [python module](https://pypi.python.org/pypi/python-osc/) [python-osc](https://github.com/attwad/python-osc) (by Attwad).
 * the [pyliblo wrapper](http://das.nasophon.de/pyliblo/) for [liblo](http://liblo.sourceforge.net/) OSC library.
 
-
-
 the addon contains the compiled pyliblo wrapper for windows and OSX, but not for linux.
+
+## ChangeLog
+
+### V1.0.2
+Added AnimationNodes datatype DoubleList to be able to send via OscNumber node.
