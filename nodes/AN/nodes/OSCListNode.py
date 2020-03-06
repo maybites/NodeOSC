@@ -4,6 +4,7 @@ from bpy.props import *
 from collections import defaultdict
 from animation_nodes.sockets.info import toIdName
 from animation_nodes.base_types import AnimationNode
+from animation_nodes.data_structures import DoubleList
 
 from ....utils.utils import *
 
@@ -100,7 +101,10 @@ class OSCListNode(bpy.types.Node, AnimationNode):
 
     @property
     def value(self):
-        return self.getValue()
+        if isinstance(self.getValue(), DoubleList):
+            return tuple(self.getValue())
+        else:
+            return self.getValue()
 
     @value.setter
     def value(self, value):

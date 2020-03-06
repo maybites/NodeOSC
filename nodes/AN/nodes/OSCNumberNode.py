@@ -111,7 +111,7 @@ class OSCNumberNode(bpy.types.Node, AnimationNode):
 
     @property
     def value(self):
-        return self.getValue()
+        return tuple(self.getValue())
 
     @value.setter
     def value(self, value):

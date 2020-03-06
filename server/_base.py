@@ -6,7 +6,6 @@ import socket
 import errno
 import mathutils
 import traceback
-from animation_nodes.data_structures import DoubleList
 from math import radians
 from bpy.props import *
 from ast import literal_eval as make_tuple
@@ -28,8 +27,6 @@ def make_osc_messages(myOscKeys, myOscMsg):
         elif prop is None:
             prop = 'None'
         elif isinstance(prop, (mathutils.Vector, mathutils.Quaternion, mathutils.Euler, mathutils.Matrix)):
-            prop = tuple(prop);
-        elif isinstance(prop, DoubleList):
             prop = tuple(prop);
             
         if str(prop) != item.value:
