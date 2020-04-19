@@ -239,10 +239,18 @@ class OSC_OT_OSCServer(bpy.types.Operator):
 
     def cancel(self, context):
         envars = bpy.context.scene.nodeosc_envars
-        context.window_manager.event_timer_remove(self._timer)
-        bpy.app.timers.unregister(execute_queued_OSC_callbacks)
-        
         self.shutDownInputServer(context, envars)
+        context.window_manager.event_timer_remove(self._timer)
+
+        # hack to check who is calling the cancel method. 
+        # see https://blender.stackexchange.com/questions/23126/is-there-a-way-to-execute-code-before-blender-is-closing
+        traceback_elements = traceback.format_stack()
+        # if the stack has 2 elements, it is because the server stop has been pushed.
+        #  otherwise it might be loading a new project which would cause an exception
+        #  and stop the proper shutdown of the server..
+        if traceback_elements.__len__ == 2:        
+            bpy.app.timers.unregister(execute_queued_OSC_callbacks)  
+                  
         return {'CANCELLED'}
 
     # will take an address and a oscHandle data packet. 
