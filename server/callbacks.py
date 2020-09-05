@@ -62,6 +62,14 @@ def OSC_callback_unkown(address, args):
     bpy.context.scene.nodeosc_envars.lastpayload = str(args)
 
 # called by the queue execution thread
+def OSC_callback_function(address, obj, attr, attrIdx, oscArgs, oscIndex):
+    try:
+        eval(obj)
+    except:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
+            bpy.context.scene.nodeosc_envars.error =  "functioncall failed: "+address + " " + obj
+
+# called by the queue execution thread
 def OSC_callback_custom(address, obj, attr, attrIdx, oscArgs, oscIndex):
     try:
         if len(oscIndex) > 0:
@@ -205,5 +213,7 @@ def fillCallbackQue(address, oscArgs, dataList):
             OSC_callback_queue.put((OSC_callback_nodeFLOAT, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
         elif mytype == 6:
             OSC_callback_queue.put((OSC_callback_nodeLIST, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
+        elif mytype == 7:
+            OSC_callback_queue.put((OSC_callback_function, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
 
         index += 1

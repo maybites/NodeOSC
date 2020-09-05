@@ -162,9 +162,13 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                             oscIndex = (oscIndex,)
                         
                         try:
+                            oscHandleTuple = None
                             #For ID custom properties (with brackets)
                             if item.id[0:2] == '["' and item.id[-2:] == '"]':
                                 oscHandleTuple = (1, eval(item.data_path), item.id, item.idx, oscIndex, item.node_type)
+                            elif item.data_path[-1] == ')':
+                                # its a function call
+                                oscHandleTuple = (7, item.data_path, item.id, item.idx, oscIndex, item.node_type)
                             #For normal properties
                             #with index in brackets -: i_num
                             elif item.id[-1] == ']':
@@ -178,8 +182,11 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                                 else:
                                     oscHandleTuple = (4, eval(item.data_path), item.id, item.idx, oscIndex, item.node_type)
                             
-                            self.addOscHandler(oscHandlerDict, item.osc_address, oscHandleTuple)
-
+                            if oscHandleTuple != None:
+                                self.addOscHandler(oscHandlerDict, item.osc_address, oscHandleTuple)
+                            else:
+                                self.report({'WARNING'}, "Unable to create listener for: object '"+item.data_path+"' with id '"+item.id+"' : {0}".format(err))
+                                
                         except Exception as err:
                             self.report({'WARNING'}, "Register custom handle: object '"+item.data_path+"' with id '"+item.id+"' : {0}".format(err))
                     
