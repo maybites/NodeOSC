@@ -39,7 +39,7 @@ the addon contains the compiled pyliblo wrapper for windows and OSX, but not for
 
 ## ChangeLog
 
-### V1.0.7
+### V1.0.8
 Allows to execute function calls with datapath. for example: bpy.ops.screen.animation_play(). values passed on with osc message are ignored.
 
 ### V1.0.6
