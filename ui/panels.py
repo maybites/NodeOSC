@@ -43,6 +43,7 @@ class OSC_PT_Settings(bpy.types.Panel):
             row2.prop(envars, 'port_out', text="Port")
             layout.prop(envars, 'input_rate', text="input rate(ms)")
             layout.prop(envars, 'output_rate', text="output rate(ms)")
+            layout.prop(envars, 'repeat_filter', text="Filter repetitions")
             layout.prop(envars, 'autorun', text="Start at Launch")
         else:
             if addon_prefs.usePyLiblo == False:
@@ -58,6 +59,7 @@ class OSC_PT_Settings(bpy.types.Panel):
             col.prop(envars, 'input_rate', text="input rate(ms)")
 
             col.prop(bpy.context.scene.nodeosc_envars, 'message_monitor', text="Monitoring and Error reporting")
+            col.prop(envars, 'repeat_filter', text="Filter repetitions")
 
             if bpy.context.scene.nodeosc_envars.message_monitor == True: 
                 box = col.box()

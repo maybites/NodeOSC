@@ -15,6 +15,7 @@ class NodeOSCEnvVarSettings(bpy.types.PropertyGroup):
     port_out: bpy.props.IntProperty(default=9002, min=0, max= 65535, description='The output network port (0-65535)')
     input_rate: bpy.props.IntProperty(default=0 ,description="The refresh rate of checking for input messages (millisecond)", min=0)
     output_rate: bpy.props.IntProperty(default=40 ,description="The refresh rate of sending output messages (millisecond)", min=1)
+    repeat_filter: bpy.props.BoolProperty(default=False ,description="When sending data, enable filtering repeating messages")
     isServerRunning: bpy.props.BoolProperty(default=False, description='Show if the engine is running or not')
     message_monitor: bpy.props.BoolProperty(description="Display the current value of your keys, the last message received and some infos in console")
     autorun: bpy.props.BoolProperty(description="Start the OSC engine automatically after loading a project. IMPORTANT: This only works if the project is saved while the server is NOT running!")

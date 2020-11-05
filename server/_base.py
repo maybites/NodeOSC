@@ -14,6 +14,7 @@ from .callbacks import *
 from ..nodes.nodes import *
 
 def make_osc_messages(myOscKeys, myOscMsg):
+    envars = bpy.context.scene.nodeosc_envars
     for item in myOscKeys:
         #print( "sending  :{}".format(item) )
         if item.id[0:2] == '["' and item.id[-2:] == '"]':
@@ -29,7 +30,7 @@ def make_osc_messages(myOscKeys, myOscMsg):
         elif isinstance(prop, (mathutils.Vector, mathutils.Quaternion, mathutils.Euler, mathutils.Matrix)):
             prop = tuple(prop);
             
-        if str(prop) != item.value:
+        if str(prop) != item.value or envars.repeat_filter == False:
             item.value = str(prop)
 
             # make sure the osc indices are a tuple
