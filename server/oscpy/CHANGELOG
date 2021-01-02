@@ -1,0 +1,61 @@
+v0.5.0
+======
+
+Allow accessing sender's ip/port from outside of answer()
+Fix get_sender() error on IOS/Android.
+Fix encoding issue in OSCThreadServer.unbind().
+
+v0.4.0
+======
+
+Unicode support, servers and clients can declare an encoding for strings.
+Fix timeout bug after 15mn without any activity.
+Allow answering to a specific port.
+Allow callbacks to get the addresses they were called with.
+Add default_handler option for a server, to get all messages that didn't match any known address.
+Allow using default socket implicitly in OSCThreadServer.stop()
+Add statistics collections (messages/bytes sent/received)
+Add default routes to probe the server about existing routes and usage statistics.
+Improve reliability of stopping server.
+Add support for Midi messages
+Add support for True/False/Nil/Infinitum messages
+Add support for Symbol messages (treated as strings)
+Test/Coverage of more python versions and OSs in CI
+Improve documentation (README, CHANGELOG, and CONTRIBUTING)
+
+v0.3.0
+======
+
+increase test coverage
+remove notice about WIP status
+add test/fix for refusing to send unicode strings
+use bytearray for blobs, since object catch wrong types
+fix client code example in readme
+allow binding methods with the @address_method decorator
+add test for @address decorator
+clarify that @address decorator won't work for methods
+add test and warnings about AF_UNIX not working on windows
+fix negative letter matching
+check exception is raised when no default socket
+add test and implementation for advanced_matching
+
+
+v0.2.0
+======
+
+ignore build and dist dirs
+fix inet/unix comparison in performance test
+cleanup & documentation & performance test
+first minor version
+
+
+v0.1.3, v0.1.2, v0.1.1
+======================
+fix setup.py classifiers
+
+
+v0.1.0 Initial release
+======================
+
+OSCThreadServer implementation and basic tests
+OSCClient implementation

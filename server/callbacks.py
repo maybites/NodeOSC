@@ -160,6 +160,18 @@ def OSC_callback_pythonosc_undef(* args):
         address = args[0]
         OSC_callback_queue.put((OSC_callback_unkown, address, address, args[1:]))
 
+# method called by the oscpy library in case of a mapped message
+def OSC_callback_oscpy(* args):
+    # the args structure:
+    #    args[0] = osc address
+    #    args[1][0] = custom data package list with (tuplet with 5 values)
+    #    args[>1] = osc arguments
+    address = args[0]
+    data = args[1][0]
+    oscArgs = args[2:]
+    
+    fillCallbackQue(address, oscArgs, data)
+
 # method called by the pythonosc library in case of a mapped message
 def OSC_callback_pythonosc(* args):
     # the args structure:

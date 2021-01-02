@@ -26,7 +26,7 @@ class OSC_PT_Settings(bpy.types.Panel):
         if envars.isServerRunning == False:
             row = col.row(align=True)
             if addon_prefs.usePyLiblo == False:
-                row.operator("nodeosc.pythonosc_operator", text='Start', icon='PLAY')
+                row.operator("nodeosc.oscpy_operator", text='Start', icon='PLAY')
             else:
                 row.operator("nodeosc.pyliblo_operator", text='Start', icon='PLAY')
             if platform.system() != "Linux":
@@ -47,7 +47,7 @@ class OSC_PT_Settings(bpy.types.Panel):
             layout.prop(envars, 'autorun', text="Start at Launch")
         else:
             if addon_prefs.usePyLiblo == False:
-                col.operator("nodeosc.pythonosc_operator", text='Stop', icon='PAUSE')
+                col.operator("nodeosc.oscpy_operator", text='Stop', icon='PAUSE')
                 col.label(text="pure python server is running...")
             else:
                 col.operator("nodeosc.pyliblo_operator", text='Stop', icon='PAUSE')

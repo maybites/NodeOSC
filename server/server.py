@@ -18,6 +18,8 @@ if directory not in sys.path:
     sys.path.append(directory)
     sys.path.append(os.path.join(directory,'pyliblo',platform.system()))
 
+from oscpy.client import OSCClient
+
 # try loading the node modules
 load_liblo_success = False
 
@@ -34,6 +36,7 @@ from pythonosc import osc_message
 from pythonosc import osc_packet
 from pythonosc import dispatcher
 from pythonosc import osc_server
+
 import threading
 import socketserver
 
@@ -42,6 +45,75 @@ from ._base import *
 from .callbacks import *
 from ..nodes.nodes import *
 
+#######################################
+#  Setup OSCPy Server                 #
+#######################################
+
+class OSC_OT_OSCPyServer(OSC_OT_OSCServer):
+    bl_idname = "nodeosc.oscpy_operator"
+    bl_label = "OSCMainThread"
+
+    _timer = None
+    count = 0
+
+    #####################################
+    # CUSTOMIZEABLE FUNCTIONS:
+
+    inputServer = "" #for the receiving socket
+    outputServer = "" #for the sending socket
+            
+    # setup the sending server
+    def setupInputServer(self, context, envars):
+        self.dispatcher = dispatcher.Dispatcher()   
+ 
+    # setup the receiving server
+    def setupOutputServer(self, context, envars):
+        #For sending
+        self.outputServer = OSCClient(envars.udp_out, envars.port_out)
+        self.outputServer.send_message(b'/NodeOSC', "Python server started up")     
+        print("OSCPy Server sended test message to " + envars.udp_out + " on port " + str(envars.port_out))
+
+    def sendingOSC(self, context, event):
+
+        oscMessage = {}
+        
+        # gather all the ouput bound osc messages
+        make_osc_messages(bpy.context.scene.NodeOSC_outputs, oscMessage)
+         
+        # and send them 
+        for key, args in oscMessage.items():
+            values = []
+            if isinstance(args, (tuple, list)):
+                for argum in args:
+                    values.append(argum)
+            else:
+                values.append(args)
+            self.outputServer.send_message(key, values)
+  
+    # add method 
+    def addMethod(self, address, data):
+        self.inputServer.bind(address, OSC_callback_oscpy, data)
+ 
+    # add default method 
+    def addDefaultMethod(self):
+        pass
+    
+    # start receiving 
+    def startupInputServer(self, context, envars):
+        print("Create OscPy Thread...")
+        # creating a blocking UDP Server
+        #   Each message will be handled sequentially on the same thread.
+        self.inputServer = OSCThreadServer()
+        sock = self.inputServer.listen(address=envars.udp_in, port=envars.port_in, default=True)
+        print("... server started on ", envars.port_in)
+
+    # stop receiving
+    def shutDownInputServer(self, context, envars):
+        self.inputServer.stop_all()             # Stop all sockets
+        self.inputServer.terminate_server()     # Request the handler thread to stop looping
+        print("OSCPy Server is shutdown")
+ 
+ 
 #######################################
 #  Setup PythonOSC Server             #
 #######################################
@@ -197,6 +269,7 @@ class OSC_OT_PyLibloServer(OSC_OT_OSCServer):
 
 
 panel_classes = (
+    OSC_OT_OSCPyServer,
     OSC_OT_PythonOSCServer,
     OSC_OT_PyLibloServer,
 )
