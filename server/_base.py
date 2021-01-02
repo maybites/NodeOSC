@@ -216,6 +216,9 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                 for address, oscHandles in oscHandlerDict.items():
                     self.addMethod(address, oscHandles)
 
+                # this provides the callback functions with the oscHandles
+                setOscHandlers(oscHandlerDict)
+                
                 # register the default method for unregistered addresses
                 self.addDefaultMethod()
 

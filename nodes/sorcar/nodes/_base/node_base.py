@@ -46,6 +46,8 @@ class ScOSCNode(ScNode):
     
     def draw_buttons(self, context, layout):
         super().draw_buttons(context, layout)
+        envars = bpy.context.scene.nodeosc_envars
+        layout.enabled = not envars.isServerRunning
 
     def error_condition(self):
         return (

@@ -33,7 +33,7 @@ class NodeOSCPreferences(AddonPreferences):
     bl_idname = __package__
 
     usePyLiblo: BoolProperty(
-            name="Use PyLiblo library. Currently only supported on OSX and Windows",
+            name="Use Python OSC library. This is an alternative library",
             default=False,
             )
 
@@ -42,8 +42,7 @@ class NodeOSCPreferences(AddonPreferences):
         view = prefs.view
 
         layout = self.layout
-        if platform.system() != "Linux":
-            layout.prop(self, "usePyLiblo")
+        layout.prop(self, "usePyLiblo")
             
         layout.label(text="Helpfull to get full data paths is to enable python tool tips:")
         layout.prop(view, "show_tooltips_python")

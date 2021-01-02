@@ -19,6 +19,7 @@ if directory not in sys.path:
     sys.path.append(os.path.join(directory,'pyliblo',platform.system()))
 
 from oscpy.client import OSCClient
+from oscpy.server import OSCThreadServer
 
 # try loading the node modules
 load_liblo_success = False
@@ -70,7 +71,7 @@ class OSC_OT_OSCPyServer(OSC_OT_OSCServer):
     def setupOutputServer(self, context, envars):
         #For sending
         self.outputServer = OSCClient(envars.udp_out, envars.port_out)
-        self.outputServer.send_message(b'/NodeOSC', "Python server started up")     
+        self.outputServer.send_message(b'/NodeOSC', [b'Python server started up'])     
         print("OSCPy Server sended test message to " + envars.udp_out + " on port " + str(envars.port_out))
 
     def sendingOSC(self, context, event):
@@ -88,22 +89,22 @@ class OSC_OT_OSCPyServer(OSC_OT_OSCServer):
                     values.append(argum)
             else:
                 values.append(args)
-            self.outputServer.send_message(key, values)
+            self.outputServer.send_message(bytes(key, encoding='utf-8'), values)
   
     # add method 
     def addMethod(self, address, data):
-        self.inputServer.bind(address, OSC_callback_oscpy, data)
+        pass #already set during creation of inputserver
  
     # add default method 
     def addDefaultMethod(self):
-        pass
+        pass #already set during creation of inputserver
     
     # start receiving 
     def startupInputServer(self, context, envars):
         print("Create OscPy Thread...")
         # creating a blocking UDP Server
         #   Each message will be handled sequentially on the same thread.
-        self.inputServer = OSCThreadServer()
+        self.inputServer = OSCThreadServer(encoding='utf8', default_handler=OSC_callback_oscpy)
         sock = self.inputServer.listen(address=envars.udp_in, port=envars.port_in, default=True)
         print("... server started on ", envars.port_in)
 

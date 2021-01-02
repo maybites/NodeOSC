@@ -13,7 +13,7 @@ dataByIdentifier = defaultdict(None)
 class OSCListNode(bpy.types.Node, AnimationNode):
     bl_idname = "an_OSCListNode"
     bl_label = "OSCList"
-
+    
     osc_address: bpy.props.StringProperty(name="Osc address", 
         default="/an/list", 
         update = AnimationNode.refresh)
@@ -68,6 +68,8 @@ class OSCListNode(bpy.types.Node, AnimationNode):
     #def delete(self):
         
     def draw(self, layout):
+        envars = bpy.context.scene.nodeosc_envars
+        layout.enabled = not envars.isServerRunning
         layout.prop(self, "default_list", text = "")
         layout.prop(self, "createString", text = "", icon = "FILE_TEXT")
         layout.prop(self, "osc_address", text = "")

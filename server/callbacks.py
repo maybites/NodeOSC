@@ -20,6 +20,14 @@ OSC_callback_queue = queue.LifoQueue()
 # will be applied. all older messages will be ignored.
 queue_repeat_filter = {}
 
+# contains all the OSC messages that are expected to be received
+OSC_Callback_Handlers = {}
+
+# called after startup of inputServer
+def setOscHandlers(_oscHandlers):
+    global OSC_Callback_Handlers
+    OSC_Callback_Handlers = _oscHandlers
+
 # define the method the timer thread is calling when it is appropriate
 def execute_queued_OSC_callbacks():
     start = time.perf_counter()
@@ -164,13 +172,15 @@ def OSC_callback_pythonosc_undef(* args):
 def OSC_callback_oscpy(* args):
     # the args structure:
     #    args[0] = osc address
-    #    args[1][0] = custom data package list with (tuplet with 5 values)
-    #    args[>1] = osc arguments
-    address = args[0]
-    data = args[1][0]
-    oscArgs = args[2:]
+    #    args[>0] = osc arguments
     
-    fillCallbackQue(address, oscArgs, data)
+    address = bytes.decode(args[0])
+    oscArgs = args[1:]
+    global OSC_Callback_Handlers
+    data = OSC_Callback_Handlers.get(address)
+    
+    if data != None:
+        fillCallbackQue(address, oscArgs, data)
 
 # method called by the pythonosc library in case of a mapped message
 def OSC_callback_pythonosc(* args):

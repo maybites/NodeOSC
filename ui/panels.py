@@ -28,9 +28,8 @@ class OSC_PT_Settings(bpy.types.Panel):
             if addon_prefs.usePyLiblo == False:
                 row.operator("nodeosc.oscpy_operator", text='Start', icon='PLAY')
             else:
-                row.operator("nodeosc.pyliblo_operator", text='Start', icon='PLAY')
-            if platform.system() != "Linux":
-                row.prop(addon_prefs, "usePyLiblo", text = '', icon='CHECKBOX_HLT' if addon_prefs.usePyLiblo else 'CHECKBOX_DEHLT')
+                row.operator("nodeosc.pythonosc_operator", text='Start', icon='PLAY')
+            row.prop(addon_prefs, "usePyLiblo", text = '', icon='CHECKBOX_HLT' if addon_prefs.usePyLiblo else 'CHECKBOX_DEHLT')
 
             
             col1 = layout.column(align=True)
@@ -48,10 +47,10 @@ class OSC_PT_Settings(bpy.types.Panel):
         else:
             if addon_prefs.usePyLiblo == False:
                 col.operator("nodeosc.oscpy_operator", text='Stop', icon='PAUSE')
-                col.label(text="pure python server is running...")
+                col.label(text="osc server is running...")
             else:
                 col.operator("nodeosc.pyliblo_operator", text='Stop', icon='PAUSE')
-                col.label(text="pyLiblo server is running...")               
+                col.label(text="python osc server is running...")               
                  
             col.label(text=" listening at " + envars.udp_in + " on port " + str(envars.port_in))
             col.label(text=" sending to " + envars.udp_out + " on port " + str(envars.port_out))
@@ -92,12 +91,13 @@ class OSC_PT_Operations(bpy.types.Panel):
         if envars.isServerRunning == False:
             layout.label(text="Message handlers:")
         else:
-            layout.label(text="Message handlers: (restart server to apply changes)")
+            layout.label(text="Message handlers: (stop server for changes)")
         index = 0
         col = layout.column()
         for item in bpy.context.scene.NodeOSC_keys:
             col_box = col.column()
             box = col_box.box()
+            box.enabled = not envars.isServerRunning
             colsub = box.column()
             row = colsub.row(align=True)
 
@@ -142,7 +142,8 @@ class OSC_PT_Operations(bpy.types.Panel):
                                                 
             index = index + 1
         
-        layout.operator("nodeosc.createitem", icon='PRESET_NEW', text='Create new message handler').copy = -1
+        if envars.isServerRunning == False:
+            layout.operator("nodeosc.createitem", icon='PRESET_NEW', text='Create new message handler').copy = -1
 
         layout.separator()
 

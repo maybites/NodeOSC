@@ -82,6 +82,8 @@ class OSCNumberNode(bpy.types.Node, AnimationNode):
                 self.newOutput("Float", "Number", "number")                
 
     def draw(self, layout):
+        envars = bpy.context.scene.nodeosc_envars
+        layout.enabled = not envars.isServerRunning
         if self.createList:
             layout.prop(self, "default_list", text = "")
         else:
