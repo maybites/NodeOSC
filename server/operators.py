@@ -1,6 +1,6 @@
 import bpy
 import json
-from bpy.types import Operator, AddonPreferences
+from bpy.types import Menu, Operator, AddonPreferences
 from bpy.props import StringProperty, IntProperty, BoolProperty
 
 def osc_export_config(scene):
@@ -111,6 +111,98 @@ class OSC_OT_ItemCreate(bpy.types.Operator):
         #    if item.idx == self.index:
         #        print(bpy.context.scene.NodeOSC_keys.find(item))
         return {'RUNNING_MODAL'}
+
+###########################################
+#  Create OSC Settings via Context Menu   #
+###########################################
+# credits: JPfeP : http://www.jpfep.net/pages/addons/addroutes/
+class WM_OT_button_context_addhandler(bpy.types.Operator):
+    """Create a new message handler"""
+    bl_idname = "nodeosc.button_context_createitem"
+    bl_label = "Create a node osc handler"
+
+    # @classmethod
+    # def poll(cls, context):
+    #      print (context.active_operator)
+    #      return context.active_object is not None
+
+    def execute(self, context):
+        value1 = getattr(context, "button_pointer", None)
+        if value1 is not None:
+            id = value1.id_data
+
+        value2 = getattr(context, "button_prop", None)
+        if value2 is not None:
+            prop = value2.identifier
+            keys = bpy.context.scene.NodeOSC_keys
+            my_item = keys.add()
+            my_item.id = "location"
+            my_item.data_path = "bpy.data.objects['Cube']"
+            my_item.osc_address = "/context/menu"
+            my_item.osc_index = "()"
+
+            # Workaround for materials using nodes
+            if id.name == 'Shader Nodetree':
+                # Ugly way to guess the good id
+                # For materials
+                try:
+                    id_type = 'materials'
+                    id = bpy.context.object.active_material
+                    path_from_id = value1.path_from_id(prop)
+                    #remove the property from the datapath
+                    data_path = 'node_tree.' + path_from_id[0:path_from_id.rindex('.')]
+
+                    # this to raise an error, if needed
+                    a = eval(repr(id)+'.'+data_path)
+
+                    #my_item.id_type = id_type
+                    #setattr(my_item.id, id_type, id)
+                    path = path_from_id.replace(' ','_').replace('.','/').replace("[\"",'/').replace("\"]",'').replace("[",'/').replace("]",'')
+                    my_item.osc_address = "/" + id_type + "/" + id.name + "/" + path
+                    my_item.data_path = repr(id) + "." + data_path
+                    my_item.id = prop
+                except:
+                    pass
+                # For worlds
+                try:
+                    id_type = 'worlds'
+                    id = bpy.context.scene.world
+                    path_from_id = value1.path_from_id(prop)
+                    #remove the property from the datapath
+                    data_path = 'node_tree.' + path_from_id[0:path_from_id.rindex('.')]
+
+                    # this to raise an error, if needed
+                    a = eval(repr(id) + '.' + data_path)
+
+                    #my_item.id_type = id_type
+                    #setattr(my_item.id, id_type, id)
+                    path = path_from_id.replace(' ','_').replace('.','/').replace("[\"",'/').replace("\"]",'').replace("[",'/').replace("]",'')
+                    my_item.osc_address = "/" + id_type + "/" + id.name + "/" + path
+                    my_item.data_path = repr(id) + "." + data_path
+                    my_item.id = prop
+                except:
+                    pass
+
+            else:
+                try:
+                    id_type = repr(id).split(".")[2].split('[')[0]
+                    path_from_id = value1.path_from_id(prop)
+                    data_path = ''
+                    if path_from_id.find('.') != -1:
+                        #remove the property from the datapath
+                        data_path = '.' + path_from_id[0:path_from_id.rindex('.')]
+                    
+                    #my_item.id_type = id_type
+                    #setattr(my_item.id, id_type, id)
+                    path = path_from_id.replace(' ','_').replace('.','/').replace("[\"",'/').replace("\"]",'').replace("[",'/').replace("]",'')
+                    my_item.osc_address = "/" + id_type + "/" + id.name + "/" + path
+                    my_item.data_path = repr(id) + data_path
+                    my_item.id = prop
+                except Exception as err:
+                    print (value1, value2, prop)
+                    self.report({'INFO'}, "Error: {0}".format(err))
+
+        return {'FINISHED'}  
 
 #######################################
 #  Delete OSC Settings                #
@@ -316,7 +408,18 @@ class PickOSCaddress(bpy.types.Operator):
                 if item.osc_address == self.i_addr :
                     item.osc_address = last_event
         return{'FINISHED'}
-  
+
+# This class has to be exactly named like that to insert an entry in the right click menu
+class WM_MT_button_context(Menu):
+    bl_label = "Unused.test"
+
+    def draw(self, context):
+        pass
+ 
+def menu_func(self, context):
+    layout = self.layout
+    layout.separator()
+    layout.operator(WM_OT_button_context_addhandler.bl_idname)
 
 op_classes = (
     PickOSCaddress,
@@ -326,14 +429,18 @@ op_classes = (
     OSC_OT_ItemDelete,
     OSC_OT_ItemCreate,
     OSC_OT_SorcarTreepdate,
+    WM_OT_button_context_addhandler,
+    WM_MT_button_context,
 )
 
 def register():
     for cls in op_classes:
         bpy.utils.register_class(cls)
+    bpy.types.WM_MT_button_context.append(menu_func)
 
 
 def unregister():
+    bpy.types.WM_MT_button_context.remove(menu_func)  # order is important
     for cls in reversed(op_classes):
         bpy.utils.unregister_class(cls)
 

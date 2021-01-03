@@ -182,7 +182,7 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                                     oscHandleTuple = (2, eval(item.data_path), item.id, item.idx, oscIndex, item.node_type)
                                 else:
                                     oscHandleTuple = (4, eval(item.data_path), item.id, item.idx, oscIndex, item.node_type)
-                            
+                                    
                             if oscHandleTuple != None:
                                 self.addOscHandler(oscHandlerDict, item.osc_address, oscHandleTuple)
                             else:
