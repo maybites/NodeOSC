@@ -118,6 +118,11 @@ class OSC_PT_Operations(bpy.types.Panel):
             sub = row.row()
             sub.active = item.enabled
             sub.label(text=item.osc_address)
+
+            submove = sub.row(align=True)
+            submove.operator("nodeosc.moveitem_up", icon='TRIA_UP', text='').index = index
+            submove.operator("nodeosc.moveitem_down", icon='TRIA_DOWN', text = '').index = index
+
             subsub = sub.row(align=True)
             subsub.operator("nodeosc.createitem", icon='ADD', text='').copy = index
             subsub.operator("nodeosc.deleteitem", icon='PANEL_CLOSE', text = "").index = index
@@ -217,8 +222,8 @@ class OSC_PT_Nodes(bpy.types.Panel):
 
 panel_classes = (
     OSC_PT_Settings,
-    OSC_PT_Nodes,
     OSC_PT_Operations,
+    OSC_PT_Nodes,
 )
 
 def register():

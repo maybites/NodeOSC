@@ -234,6 +234,47 @@ class OSC_OT_ItemDelete(bpy.types.Operator):
         #        print(bpy.context.scene.NodeOSC_keys.find(item))
         return {'RUNNING_MODAL'}
 
+
+#######################################
+#  Move OSC handler                   #
+#######################################
+
+class OSC_OT_ItemMoveUp(bpy.types.Operator):
+    """Move this message handle Up"""
+    bl_idname = "nodeosc.moveitem_up"
+    bl_label = "MoveUp"
+
+    index: bpy.props.IntProperty(default=0)
+
+    @classmethod
+    def poll(cls, context):
+        return context.object is not None
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        bpy.context.scene.NodeOSC_keys.move(self.index, self.index - 1)
+        return {'RUNNING_MODAL'}
+
+class OSC_OT_ItemMoveDown(bpy.types.Operator):
+    """Move this message handle Down"""
+    bl_idname = "nodeosc.moveitem_down"
+    bl_label = "MoveDown"
+
+    index: bpy.props.IntProperty(default=0)
+
+    @classmethod
+    def poll(cls, context):
+        return context.object is not None
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        bpy.context.scene.NodeOSC_keys.move(self.index, self.index + 1)
+        return {'RUNNING_MODAL'}
+
 #######################################
 #  Export OSC Settings                #
 #######################################
@@ -427,6 +468,8 @@ op_classes = (
     OSC_Import,
     NodeOSC_ImportKS,
     OSC_OT_ItemDelete,
+    OSC_OT_ItemMoveUp,
+    OSC_OT_ItemMoveDown,
     OSC_OT_ItemCreate,
     OSC_OT_SorcarTreepdate,
     WM_OT_button_context_addhandler,

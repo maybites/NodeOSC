@@ -31,7 +31,7 @@
 bl_info = {
     "name": "NodeOSC",
     "author": "maybites",
-    "version": (1, 0, 6),
+    "version": (1, 0, 9),
     "blender": (2, 80, 0),
     "location": "View3D > Tools > NodeOSC",
     "description": "Realtime control of Blender using OSC protocol",
@@ -51,9 +51,9 @@ def nodeosc_handler(scene):
             preferences = bpy.context.preferences
             addon_prefs = preferences.addons[__package__].preferences
             if addon_prefs.usePyLiblo == False:
-                bpy.ops.nodeosc.pythonosc_operator()
+                bpy.ops.nodeosc.oscpy_operator()
             else:
-                bpy.ops.nodeosc.pyliblo_operator()
+                bpy.ops.nodeosc.pythonosc_operator()
 
 
 from . import preferences

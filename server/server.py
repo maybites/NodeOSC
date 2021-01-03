@@ -16,19 +16,9 @@ script_file = os.path.realpath(__file__)
 directory = os.path.dirname(script_file)
 if directory not in sys.path:
     sys.path.append(directory)
-    sys.path.append(os.path.join(directory,'pyliblo',platform.system()))
 
 from oscpy.client import OSCClient
 from oscpy.server import OSCThreadServer
-
-# try loading the node modules
-load_liblo_success = False
-
-try:
-    import liblo
-    load_liblo_success = True
-except ImportError:
-    load_liblo_success = False  
 
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
@@ -192,87 +182,9 @@ class OSC_OT_PythonOSCServer(OSC_OT_OSCServer):
         print("Python Server is shutdown")
  
  
-
-#######################################
-#  Setup PyLiblo Server               #
-#######################################
-
-class OSC_OT_PyLibloServer(OSC_OT_OSCServer):
-    bl_idname = "nodeosc.pyliblo_operator"
-    bl_label = "OSCMainThread"
-
-    _timer = None
-    count = 0
-
-    #####################################
-    # CUSTOMIZEABLE FUNCTIONS:
-
-    st = "" #for the input and output server
-    address = None
-            
-    # setup the sending server
-    def setupInputServer(self, context, envars):
-        if load_liblo_success == True:
-            self.st = liblo.ServerThread(envars.port_in)
-            print("Created Server Thread on Port", self.st.port)
-        else:
-            raise Exception("Unable to create Server: Missing liblo library. Try installing liblo with homebrew: 'brew install liblo'")
- 
-    # setup the receiving server
-    def setupOutputServer(self, context, envars):
-        if load_liblo_success == True:
-            #For sending
-            self.address = liblo.Address(envars.udp_out, envars.port_out)
-            msg = liblo.Message("/NodeOSC")
-            msg.add("pyliblo server started up")
-            self.st.send(self.address, msg)
-            print("PyLiblo Server sended test message to " + envars.udp_out + " on port " + str(envars.port_out))
-
-    def sendingOSC(self, context, event):
-        if load_liblo_success == True:
-            oscMessage = {}
-        
-            # gather all the ouput bound osc messages
-            make_osc_messages(bpy.context.scene.NodeOSC_outputs, oscMessage)
-        
-            # and send them 
-            for key, args in oscMessage.items():
-                msg = liblo.Message(key)
-                if isinstance(args, (tuple, list)):
-                    for argum in args:
-                        msg.add(argum)
-                    else:
-                         msg.add(args)
-                self.st.send(self.address, msg)
-           
-    # add method 
-    def addMethod(self, address, data):
-        if load_liblo_success == True:
-            self.st.add_method(address, None, OSC_callback_pyliblo, data)
- 
-    # add default method 
-    def addDefaultMethod(self):
-        pass
-    
-    # start receiving 
-    def startupInputServer(self, context, envars):
-        if load_liblo_success == True:
-            print("PyLiblo Server starting up....")
-            self.st.start()
-            print("... server started", envars.port_in)
-
-    # stop receiving
-    def shutDownInputServer(self, context, envars):
-        if load_liblo_success == True:
-            self.st.stop()
-            self.st.free()
-            print("PyLiblo Server is shutdown.")
-
-
 panel_classes = (
     OSC_OT_OSCPyServer,
     OSC_OT_PythonOSCServer,
-    OSC_OT_PyLibloServer,
 )
 
 def register():
