@@ -143,7 +143,7 @@ class OSC_PT_Operations(bpy.types.Panel):
                 
                 colItm2 = colsub.column(align=True)
                 colItm2.prop(item,'data_path',text='datapath')
-                colItm2.prop(item,'id',text='property')
+                colItm2.prop(item,'props',text='property')
                                                 
             index = index + 1
         

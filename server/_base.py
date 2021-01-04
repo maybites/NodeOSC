@@ -17,10 +17,10 @@ def make_osc_messages(myOscKeys, myOscMsg):
     envars = bpy.context.scene.nodeosc_envars
     for item in myOscKeys:
         #print( "sending  :{}".format(item) )
-        if item.id[0:2] == '["' and item.id[-2:] == '"]':
-            prop = eval(item.data_path+item.id)
+        if item.props[0:2] == '["' and item.props[-2:] == '"]':
+            prop = eval(item.data_path+item.props)
         else:
-            prop = eval(item.data_path+'.'+item.id)
+            prop = eval(item.data_path+'.'+item.props)
         
         # now make the values to be sent a tuple (unless its a string or None)
         if isinstance(prop, (bool, int, float)):
@@ -165,31 +165,31 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                         try:
                             oscHandleTuple = None
                             #For ID custom properties (with brackets)
-                            if item.id[0:2] == '["' and item.id[-2:] == '"]':
-                                oscHandleTuple = (1, eval(item.data_path), item.id, item.idx, oscIndex, item.node_type)
+                            if item.props[0:2] == '["' and item.props[-2:] == '"]':
+                                oscHandleTuple = (1, eval(item.data_path), item.props, item.idx, oscIndex, item.node_type)
                             elif item.data_path[-1] == ')':
                                 # its a function call
-                                oscHandleTuple = (7, item.data_path, item.id, item.idx, oscIndex, item.node_type)
+                                oscHandleTuple = (7, item.data_path, item.props, item.idx, oscIndex, item.node_type)
                             #For normal properties
                             #with index in brackets -: i_num
-                            elif item.id[-1] == ']':
-                                d_p = item.id[:-3]
-                                i_num = int(item.id[-2])
+                            elif item.props[-1] == ']':
+                                d_p = item.props[:-3]
+                                i_num = int(item.props[-2])
                                 oscHandleTuple = (3, eval(item.data_path), d_p, i_num, oscIndex, item.node_type)
                             #without index in brackets
                             else:
-                                if isinstance(getattr(eval(item.data_path), item.id), (int, float, str)):
-                                    oscHandleTuple = (2, eval(item.data_path), item.id, item.idx, oscIndex, item.node_type)
+                                if isinstance(getattr(eval(item.data_path), item.props), (int, float, str)):
+                                    oscHandleTuple = (2, eval(item.data_path), item.props, item.idx, oscIndex, item.node_type)
                                 else:
-                                    oscHandleTuple = (4, eval(item.data_path), item.id, item.idx, oscIndex, item.node_type)
+                                    oscHandleTuple = (4, eval(item.data_path), item.props, item.idx, oscIndex, item.node_type)
                                     
                             if oscHandleTuple != None:
                                 self.addOscHandler(oscHandlerDict, item.osc_address, oscHandleTuple)
                             else:
-                                self.report({'WARNING'}, "Unable to create listener for: object '"+item.data_path+"' with id '"+item.id+"' : {0}".format(err))
+                                self.report({'WARNING'}, "Unable to create listener for: object '"+item.data_path+"' with id '"+item.props+"' : {0}".format(err))
                                 
                         except Exception as err:
-                            self.report({'WARNING'}, "Register custom handle: object '"+item.data_path+"' with id '"+item.id+"' : {0}".format(err))
+                            self.report({'WARNING'}, "Register custom handle: object '"+item.data_path+"' with id '"+item.props+"' : {0}".format(err))
                     
                 # lets go and find all nodes in all nodetrees that are relevant for us
                 nodes_createCollections()
@@ -204,13 +204,13 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                             
                         try:
                             if item.node_data_type == "SINGLE":
-                                oscHandleTuple = (5, eval(item.data_path), item.id, item.idx, oscIndex, item.node_type)
+                                oscHandleTuple = (5, eval(item.data_path), item.props, item.idx, oscIndex, item.node_type)
                             elif item.node_data_type == "LIST":
-                                oscHandleTuple = (6, eval(item.data_path), item.id, item.idx, oscIndex, item.node_type)
+                                oscHandleTuple = (6, eval(item.data_path), item.props, item.idx, oscIndex, item.node_type)
 
                             self.addOscHandler(oscHandlerDict, item.osc_address, oscHandleTuple)
                         except Exception as err:
-                            self.report({'WARNING'}, "Register node handle: object '"+item.data_path+"' with id '"+item.id+"' : {0}".format(err))
+                            self.report({'WARNING'}, "Register node handle: object '"+item.data_path+"' with id '"+item.props+"' : {0}".format(err))
 
                 # register all oscHandles on the server
                 for address, oscHandles in oscHandlerDict.items():

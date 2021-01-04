@@ -32,8 +32,8 @@ class OSCNumberNode(bpy.types.Node, AnimationNode):
     data_path: bpy.props.StringProperty(
         name="data path", 
         default="")
-    id: bpy.props.StringProperty(
-        name="id", 
+    props: bpy.props.StringProperty(
+        name="props", 
         default="")
     node_data_type: bpy.props.EnumProperty(
         name="NodeDataType", 
@@ -68,14 +68,14 @@ class OSCNumberNode(bpy.types.Node, AnimationNode):
             self.setValue(self.default_single)
         
         if self.osc_direction == "OUTPUT":
-            self.id = "value"
+            self.props = "value"
             if self.createList:
                 self.newInput("Float List", "Numbers", "numbers")
             else:
                 self.newInput("Float", "Number", "number")
                 
         if self.osc_direction == "INPUT":
-            self.id = "setValue"
+            self.props = "setValue"
             if self.createList:
                 self.newOutput("Float List", "Numbers", "numbers")
             else:

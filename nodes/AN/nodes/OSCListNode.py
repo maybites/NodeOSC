@@ -32,8 +32,8 @@ class OSCListNode(bpy.types.Node, AnimationNode):
     data_path: bpy.props.StringProperty(
         name="data path", 
         default="")
-    id: bpy.props.StringProperty(
-        name="id", 
+    props: bpy.props.StringProperty(
+        name="props", 
         default="")
     node_data_type: bpy.props.EnumProperty(
         name="NodeDataType", 
@@ -59,10 +59,10 @@ class OSCListNode(bpy.types.Node, AnimationNode):
         self.setValue(ast.literal_eval(self.default_list)) 
        
         if self.osc_direction == "OUTPUT":
-            self.id = "value"
+            self.props = "value"
             self.newInput("Generic", "Value", "value")
         if self.osc_direction == "INPUT":
-            self.id = "setValue"
+            self.props = "setValue"
             self.newOutput("Generic", "Value", "value")
 
     #def delete(self):

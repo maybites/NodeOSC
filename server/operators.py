@@ -8,7 +8,7 @@ def osc_export_config(scene):
     for osc_item in scene.NodeOSC_keys:
         config_table[osc_item.osc_address] = {
             "data_path" : osc_item.data_path,
-            "id" : osc_item.id,
+            "props" : osc_item.props,
             "osc_type" : osc_item.osc_type,
             "osc_index" : osc_item.osc_index,
             "osc_direction" : osc_item.osc_direction,
@@ -25,7 +25,7 @@ def osc_import_config(scene, config_file):
         item = scene.NodeOSC_keys.add()
         item.osc_address = address
         item.data_path = values["data_path"]
-        item.id = values["id"]
+        item.props = values["props"]
         item.osc_type = values["osc_type"]
         item.osc_index = values["osc_index"]
         item.osc_direction = values["osc_direction"]
@@ -33,7 +33,7 @@ def osc_import_config(scene, config_file):
 
 def parse_ks(item):
     dp = item.data_path
-    ID = repr(item.id)
+    ID = repr(item.props)
 
     #custom prop:
     if dp[-1] == ']':
@@ -94,12 +94,12 @@ class OSC_OT_ItemCreate(bpy.types.Operator):
         keys = bpy.context.scene.NodeOSC_keys
         new_item = keys.add()
         if self.copy == -1:
-            new_item.id = "location"
+            new_item.props = "location"
             new_item.data_path = "bpy.data.objects['Cube']"
             new_item.osc_address = "/cube/location"
             new_item.osc_index = "()"
         else:
-            new_item.id = keys[self.copy].id
+            new_item.props = keys[self.copy].props
             new_item.data_path = keys[self.copy].data_path
             new_item.osc_address = keys[self.copy].osc_address
             new_item.osc_index = keys[self.copy].osc_index
@@ -136,7 +136,7 @@ class WM_OT_button_context_addhandler(bpy.types.Operator):
             prop = value2.identifier
             keys = bpy.context.scene.NodeOSC_keys
             my_item = keys.add()
-            my_item.id = "location"
+            my_item.props = "location"
             my_item.data_path = "bpy.data.objects['Cube']"
             my_item.osc_address = "/context/menu"
             my_item.osc_index = "()"
@@ -160,7 +160,7 @@ class WM_OT_button_context_addhandler(bpy.types.Operator):
                     path = path_from_id.replace(' ','_').replace('.','/').replace("[\"",'/').replace("\"]",'').replace("[",'/').replace("]",'')
                     my_item.osc_address = "/" + id_type + "/" + id.name + "/" + path
                     my_item.data_path = repr(id) + "." + data_path
-                    my_item.id = prop
+                    my_item.props = prop
                 except:
                     pass
                 # For worlds
@@ -179,7 +179,7 @@ class WM_OT_button_context_addhandler(bpy.types.Operator):
                     path = path_from_id.replace(' ','_').replace('.','/').replace("[\"",'/').replace("\"]",'').replace("[",'/').replace("]",'')
                     my_item.osc_address = "/" + id_type + "/" + id.name + "/" + path
                     my_item.data_path = repr(id) + "." + data_path
-                    my_item.id = prop
+                    my_item.props = prop
                 except:
                     pass
 
@@ -197,7 +197,7 @@ class WM_OT_button_context_addhandler(bpy.types.Operator):
                     path = path_from_id.replace(' ','_').replace('.','/').replace("[\"",'/').replace("\"]",'').replace("[",'/').replace("]",'')
                     my_item.osc_address = "/" + id_type + "/" + id.name + "/" + path
                     my_item.data_path = repr(id) + data_path
-                    my_item.id = prop
+                    my_item.props = prop
                 except Exception as err:
                     print (value1, value2, prop)
                     self.report({'INFO'}, "Error: {0}".format(err))
@@ -388,15 +388,15 @@ class NodeOSC_ImportKS(Operator):
             index = 0
             for i,j in t_arr:
                 my_item = bpy.context.scene.NodeOSC_keys_tmp.add()
-                my_item.id = i
+                my_item.props = i
                 my_item.idx = index
                 my_item.data_path = j
                 #for custom prop
                 if i[0:2] == '["' and i[-2:] == '"]':
-                    t_eval = my_item.data_path + my_item.id
+                    t_eval = my_item.data_path + my_item.props
                 #for the others
                 else:
-                    t_eval = my_item.data_path + "." + my_item.id
+                    t_eval = my_item.data_path + "." + my_item.props
 
                 my_item.osc_type = repr(type(eval(t_eval)))[8:-2]
                 index = index + 1
@@ -404,7 +404,7 @@ class NodeOSC_ImportKS(Operator):
             #Copy addresses from NodeOSC_keys if there are some
             for item_tmp in bpy.context.scene.NodeOSC_keys_tmp:
                 for item in bpy.context.scene.NodeOSC_keys:
-                    if item_tmp.id == item.id and item_tmp.data_path == item.data_path:
+                    if item_tmp.props == item.props and item_tmp.data_path == item.data_path:
                         item_tmp.osc_address = item.osc_address
                         item_tmp.idx = item.idx
                 if item_tmp.osc_address == "":
@@ -417,7 +417,7 @@ class NodeOSC_ImportKS(Operator):
             for tmp_item in bpy.context.scene.NodeOSC_keys_tmp:
                 item = bpy.context.scene.NodeOSC_keys.add()
                 item.data_path = tmp_item.data_path
-                item.id = tmp_item.id
+                item.props = tmp_item.props
                 item.osc_address = tmp_item.osc_address
                 item.osc_type = tmp_item.osc_type
                 item.osc_index = tmp_item.osc_index

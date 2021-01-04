@@ -9,7 +9,7 @@ class NodeOSCMsgValues(bpy.types.PropertyGroup):
         osc_index: bpy.props.StringProperty(name="Argument indices. Indicate in which order the arriving arguments will be handled inside blender. Have to be in the format \'() or (0 [, 1, 2])\' with 0...n integers, separated by a comma, and inside two parantheses \'()\'. There should be no more indices than arriving arguments, otherwise the message will be ignored", default="())")
         osc_direction: bpy.props.EnumProperty(name = "RX/TX", default = "INPUT", items = dataDirectionItems)
         data_path: bpy.props.StringProperty(name="Datapath. Use Ctrl-Alt-Shift-C to copy the full datapath from your property you desire to controll to the clipboard, remove the property name (after the last dot) and set it inside Property", default="")
-        id: bpy.props.StringProperty(name="Property", default="")
+        props: bpy.props.StringProperty(name="Property", default="")
         value: bpy.props.StringProperty(name="value", default="Unknown")
         idx: bpy.props.IntProperty(name="Index", min=0, default=0)
         enabled: bpy.props.BoolProperty(name="Enabled", default=True)

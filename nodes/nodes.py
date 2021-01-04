@@ -44,7 +44,7 @@ def nodes_createCollections():
                     node.refresh()
                     item = bpy.context.scene.NodeOSC_nodes.add()
                     item.data_path = node.data_path
-                    item.id = node.id
+                    item.props = node.props
                     item.osc_address = node.osc_address
                     item.osc_type = node.osc_type
                     item.osc_index = node.osc_index
@@ -57,7 +57,7 @@ def nodes_createCollections():
                     node.post_execute()
                     item = bpy.context.scene.NodeOSC_nodes.add()
                     item.data_path = node.data_path
-                    item.id = node.id
+                    item.props = node.props
                     item.osc_address = node.osc_address
                     item.osc_type = node.osc_type
                     item.osc_index = node.osc_index
@@ -70,7 +70,7 @@ def nodes_createCollections():
         if itemN.enabled and itemN.osc_direction != "INPUT":
             item = bpy.context.scene.NodeOSC_outputs.add()
             item.data_path = itemN.data_path
-            item.id = itemN.id
+            item.props = itemN.props
             item.osc_address = itemN.osc_address
             item.osc_type = itemN.osc_type
             item.osc_index = itemN.osc_index
@@ -81,7 +81,7 @@ def nodes_createCollections():
         if itemN.enabled and itemN.osc_direction != "INPUT":
             item = bpy.context.scene.NodeOSC_outputs.add()
             item.data_path = itemN.data_path
-            item.id = itemN.id
+            item.props = itemN.props
             item.osc_address = itemN.osc_address
             item.osc_type = itemN.osc_type
             item.osc_index = itemN.osc_index
