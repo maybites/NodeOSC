@@ -57,9 +57,10 @@ def nodeosc_handler(scene):
 
 
 from . import preferences
-from .server import server, operators, keys
+from .server import server, operators
 from .ui import panels
 from .nodes import nodes
+from .utils import keys
 
 def register():
     preferences.register()

@@ -1,6 +1,6 @@
 import bpy
 
-from ..utils.utils import *
+from .utils import *
 
 class NodeOSCMsgValues(bpy.types.PropertyGroup):
         #key_path = bpy.props.StringProperty(name="Key", default="Unknown")
