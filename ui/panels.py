@@ -49,7 +49,7 @@ class OSC_PT_Settings(bpy.types.Panel):
                 col.operator("nodeosc.oscpy_operator", text='Stop', icon='PAUSE')
                 col.label(text="osc server is running...")
             else:
-                col.operator("nodeosc.pyliblo_operator", text='Stop', icon='PAUSE')
+                col.operator("nodeosc.pythonosc_operator", text='Stop', icon='PAUSE')
                 col.label(text="python osc server is running...")               
                  
             col.label(text=" listening at " + envars.udp_in + " on port " + str(envars.port_in))
@@ -70,8 +70,7 @@ class OSC_PT_Settings(bpy.types.Panel):
                     row6.label(text="Last OSC message:")
                     row6.prop(envars, 'lastaddr', text="address")
                     row6.prop(envars, 'lastpayload', text="values")
-                else:
-                    row6.label(text="pyLiblo server ignores all unknown osc messages")
+            
                     
 
             
@@ -97,53 +96,87 @@ class OSC_PT_Operations(bpy.types.Panel):
         for item in bpy.context.scene.NodeOSC_keys:
             col_box = col.column()
             box = col_box.box()
-            box.enabled = not envars.isServerRunning
+            #box.enabled = not envars.isServerRunning
             colsub = box.column()
             row = colsub.row(align=True)
 
             row.prop(item, "ui_expanded", text = "", 
                         icon='DISCLOSURE_TRI_DOWN' if item.ui_expanded else 'DISCLOSURE_TRI_RIGHT', 
                         emboss = False)
-            row.prop(item, "enabled", text = "", 
+
+            sub1 = row.row()
+            sub1.enabled = not envars.isServerRunning
+            sub1.prop(item, "enabled", text = "", 
                         icon='CHECKBOX_HLT' if item.enabled else 'CHECKBOX_DEHLT', 
                         emboss = False)
-            outicon = 'FILE_REFRESH'
-            if item.osc_direction == "OUTPUT":
-                outicon = 'EXPORT'
-            elif item.osc_direction == "INPUT":
-                outicon = 'IMPORT'
-            row.label(text = "", 
-                        icon=outicon)
-            
-            sub = row.row()
-            sub.active = item.enabled
-            sub.label(text=item.osc_address)
+            if item.osc_direction != 'INPUT' and item.dp_format_enable:
+                sub1.label(icon='ERROR')
+            sub1.prop(item, "osc_direction", text = "", emboss = False, icon_only = True)
+                        
+            sub2 = row.row()
+            sub2.active = item.enabled
+            sub2.label(text=item.osc_address)
 
-            submove = sub.row(align=True)
+            submove = sub2.row(align=True)
             submove.operator("nodeosc.moveitem_up", icon='TRIA_UP', text='').index = index
             submove.operator("nodeosc.moveitem_down", icon='TRIA_DOWN', text = '').index = index
 
-            subsub = sub.row(align=True)
-            subsub.operator("nodeosc.createitem", icon='ADD', text='').copy = index
-            subsub.operator("nodeosc.deleteitem", icon='PANEL_CLOSE', text = "").index = index
+            subsub = sub2.row(align=True)
+            if not envars.isServerRunning:
+                subsub.operator("nodeosc.createitem", icon='ADD', text='').copy = index
+                subsub.operator("nodeosc.deleteitem", icon='PANEL_CLOSE', text = "").index = index
+
+            if envars.isServerRunning and envars.message_monitor:
+                subsub.operator("nodeosc.pick", text='', icon='EYEDROPPER').i_addr = item.osc_address
             
             if item.ui_expanded:
-                colItm1 = colsub.column(align=True)
-                colItm1.prop(item, 'osc_direction',text='RX/TX')
-                if envars.isServerRunning == True and envars.message_monitor == True:
-                    rowItmA = colItm1.row(align=True)
-                    rowItmA.prop(item, 'osc_address',text='address')
-                    rowItmA.operator("nodeosc.pick", text='', icon='EYEDROPPER').i_addr = item.osc_address
-                else: 
-                    colItm1.prop(item, 'osc_address',text='address')
-                colItm1.prop(item, 'osc_index',text='arg [idx]')
-                #if item.osc_direction == "OUTPUT":
-                #    colItm1.prop(item, 'osc_type',text='arg types')
-                #rowItm1.label(text="("+item.osc_type+")")
+                dataColumn = colsub.column(align=True)
+                dataColumn.enabled = not envars.isServerRunning
+                dataSplit = dataColumn.split(factor = 0.2)
                 
-                colItm2 = colsub.column(align=True)
-                colItm2.prop(item,'data_path',text='datapath')
-                colItm2.prop(item,'props',text='property')
+                colLabel = dataSplit.column(align = True)
+                colData = dataSplit.column(align = True)
+                
+                colLabel.label(text='address')
+                colData.prop(item, 'osc_address',text='', icon_only = True)
+                              
+                colLabel.label(text='datapath')
+                datapath_row = colData.row(align = True)
+                datapath_row.prop(item, 'data_path',text='')
+                
+                if item.osc_direction == "INPUT":
+                    datapath_row.prop(item, 'dp_format_enable',text='', icon='MODIFIER' if item.dp_format_enable else 'MODIFIER_DATA', 
+                        emboss = False)
+                if item.osc_direction != 'INPUT' and item.dp_format_enable:
+                    datapath_row.label(icon='ERROR')
+                                
+                if item.dp_format_enable and item.osc_direction == "INPUT":
+                    colLabel.label(text='')
+                    colData.prop(item,'dp_format',text='format')   
+               
+                colLabel.label(text='args[idx]')
+                args_row = colData.row(align = True)
+                args_row.prop(item, 'osc_index',text='')
+                if item.dp_format_enable and item.osc_direction == "INPUT":
+                    args_row.prop(item, 'loop_enable',text='', icon='MODIFIER' if item.loop_enable else 'MODIFIER_DATA', 
+                        emboss = False)
+                    if item.loop_enable:
+                        colLabel.label(text='')
+                        colData.prop(item,'loop_range',text='range')    
+
+                #colLabel.label(text='evaluate')
+                #colData.prop(item, 'eval_select',text='')
+
+                #if item.eval_select == 'LOOP':
+                #    colLabel.label(text='')
+                #    colData.prop(item,'eval_range',text='range')                
+                #if item.eval_select != 'BASIC':
+                #    colLabel.label(text='')
+                #    colData.prop(item,'eval_format',text='format')                
+ 
+                #colItm2.prop(item,'data_path',text='datapath')
+                #colItm2.prop(item,'props',text='property')
+                #colItm2.prop(item,'osc_index',text='args[index]')
                                                 
             index = index + 1
         

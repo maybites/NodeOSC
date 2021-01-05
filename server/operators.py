@@ -136,7 +136,6 @@ class WM_OT_button_context_addhandler(bpy.types.Operator):
             prop = value2.identifier
             keys = bpy.context.scene.NodeOSC_keys
             my_item = keys.add()
-            my_item.props = "location"
             my_item.data_path = "bpy.data.objects['Cube']"
             my_item.osc_address = "/context/menu"
             my_item.osc_index = "()"
@@ -150,17 +149,16 @@ class WM_OT_button_context_addhandler(bpy.types.Operator):
                     id = bpy.context.object.active_material
                     path_from_id = value1.path_from_id(prop)
                     #remove the property from the datapath
-                    data_path = 'node_tree.' + path_from_id[0:path_from_id.rindex('.')]
+                    data_path = repr(id) + '.node_tree.' + path_from_id
 
                     # this to raise an error, if needed
-                    a = eval(repr(id)+'.'+data_path)
+                    a = eval(data_path)
 
                     #my_item.id_type = id_type
                     #setattr(my_item.id, id_type, id)
                     path = path_from_id.replace(' ','_').replace('.','/').replace("[\"",'/').replace("\"]",'').replace("[",'/').replace("]",'')
                     my_item.osc_address = "/" + id_type + "/" + id.name + "/" + path
-                    my_item.data_path = repr(id) + "." + data_path
-                    my_item.props = prop
+                    my_item.data_path = data_path
                 except:
                     pass
                 # For worlds
@@ -169,17 +167,16 @@ class WM_OT_button_context_addhandler(bpy.types.Operator):
                     id = bpy.context.scene.world
                     path_from_id = value1.path_from_id(prop)
                     #remove the property from the datapath
-                    data_path = 'node_tree.' + path_from_id[0:path_from_id.rindex('.')]
+                    data_path = repr(id) + '.node_tree.' + path_from_id
 
                     # this to raise an error, if needed
-                    a = eval(repr(id) + '.' + data_path)
+                    a = eval(data_path)
 
                     #my_item.id_type = id_type
                     #setattr(my_item.id, id_type, id)
                     path = path_from_id.replace(' ','_').replace('.','/').replace("[\"",'/').replace("\"]",'').replace("[",'/').replace("]",'')
                     my_item.osc_address = "/" + id_type + "/" + id.name + "/" + path
-                    my_item.data_path = repr(id) + "." + data_path
-                    my_item.props = prop
+                    my_item.data_path = data_path
                 except:
                     pass
 
@@ -187,17 +184,13 @@ class WM_OT_button_context_addhandler(bpy.types.Operator):
                 try:
                     id_type = repr(id).split(".")[2].split('[')[0]
                     path_from_id = value1.path_from_id(prop)
-                    data_path = ''
-                    if path_from_id.find('.') != -1:
-                        #remove the property from the datapath
-                        data_path = '.' + path_from_id[0:path_from_id.rindex('.')]
+                    datapath = repr(id) + '.' + path_from_id
                     
                     #my_item.id_type = id_type
                     #setattr(my_item.id, id_type, id)
                     path = path_from_id.replace(' ','_').replace('.','/').replace("[\"",'/').replace("\"]",'').replace("[",'/').replace("]",'')
                     my_item.osc_address = "/" + id_type + "/" + id.name + "/" + path
-                    my_item.data_path = repr(id) + data_path
-                    my_item.props = prop
+                    my_item.data_path = datapath
                 except Exception as err:
                     print (value1, value2, prop)
                     self.report({'INFO'}, "Error: {0}".format(err))
@@ -438,7 +431,7 @@ class PickOSCaddress(bpy.types.Operator):
     bl_idname = "nodeosc.pick"
     bl_label = "Pick the last event OSC address"
     bl_options = {'UNDO'}
-    bl_description ="Pick the address of the last OSC message received"
+    bl_description ="Pick the address of the last OSC message received. You need to restart the server in order to apply this change."
 
     i_addr: bpy.props.StringProperty()
 

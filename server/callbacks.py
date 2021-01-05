@@ -70,20 +70,20 @@ def OSC_callback_unkown(address, args):
     bpy.context.scene.nodeosc_envars.lastpayload = str(args)
 
 # called by the queue execution thread
-def OSC_callback_function(address, obj, attr, attrIdx, oscArgs, oscIndex):
+def OSC_callback_function(address, data_path, prop, attrIdx, oscArgs, oscIndex):
     try:
-        eval(obj)
+        eval(data_path)
     except:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
             bpy.context.scene.nodeosc_envars.error =  "functioncall failed: "+address + " " + obj
 
 # called by the queue execution thread
-def OSC_callback_custom(address, obj, attr, attrIdx, oscArgs, oscIndex):
+def OSC_callback_custom(address, data_path, prop, attrIdx, oscArgs, oscIndex):
     try:
         if len(oscIndex) > 0:
-            obj[attr] = oscArgs[oscIndex[0]]
+            data_path[prop] = oscArgs[oscIndex[0]]
         else:
-            obj[attr] = oscArgs[0]
+            data_path[prop] = oscArgs[0]
     except TypeError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
             bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
@@ -162,6 +162,26 @@ def OSC_callback_nodeLIST(address, data_path, prop, attrIdx, oscArgs, oscIndex):
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
             bpy.context.scene.nodeosc_envars.error =  "Improper attributes received: "+address + " " + str(oscArgs)
 
+# called by the queue execution thread
+def OSC_callback_format(address, data_path, prop, attrIdx, oscArgs, oscIndex, evalFormat, evalRange):
+    try:
+        # prepare the available variables
+        length = len(oscArgs)
+        args = oscArgs
+        # format the data_path
+        myFormat = eval(evalFormat)
+        fDataPath = data_path.format(*myFormat)
+        fProperty = prop.format(*myFormat)
+        fIndex = eval(oscIndex)
+        
+        
+    except TypeError as err:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
+            bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
+    except:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
+            bpy.context.scene.nodeosc_envars.error =  "Improper attributes received: "+address + " " + str(oscArgs)
+
 # method called by the pythonosc library in case of an unmapped message
 def OSC_callback_pythonosc_undef(* args):
     if bpy.context.scene.nodeosc_envars.message_monitor == True:
@@ -181,6 +201,10 @@ def OSC_callback_oscpy(* args):
     
     if data != None:
         fillCallbackQue(address, oscArgs, data)
+    else:
+        if bpy.context.scene.nodeosc_envars.message_monitor:
+            OSC_callback_queue.put((OSC_callback_unkown, address, address, oscArgs))
+        
 
 # method called by the pythonosc library in case of a mapped message
 def OSC_callback_pythonosc(* args):
@@ -237,5 +261,9 @@ def fillCallbackQue(address, oscArgs, dataList):
             OSC_callback_queue.put((OSC_callback_nodeLIST, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
         elif mytype == 7:
             OSC_callback_queue.put((OSC_callback_function, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
+        elif mytype == 11:
+            OSC_callback_queue.put((OSC_callback_format, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
+        elif mytype == 12:
+            OSC_callback_queue.put((OSC_callback_loop, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
 
         index += 1

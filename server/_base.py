@@ -16,32 +16,31 @@ from ..nodes.nodes import *
 def make_osc_messages(myOscKeys, myOscMsg):
     envars = bpy.context.scene.nodeosc_envars
     for item in myOscKeys:
-        #print( "sending  :{}".format(item) )
-        if item.props[0:2] == '["' and item.props[-2:] == '"]':
-            prop = eval(item.data_path+item.props)
-        else:
-            prop = eval(item.data_path+'.'+item.props)
-        
-        # now make the values to be sent a tuple (unless its a string or None)
-        if isinstance(prop, (bool, int, float)):
-            prop = (prop,)
-        elif prop is None:
-            prop = 'None'
-        elif isinstance(prop, (mathutils.Vector, mathutils.Quaternion, mathutils.Euler, mathutils.Matrix)):
-            prop = tuple(prop);
+        if item.dp_format_enable == False:
+            # we cannot deal with a datapath string that has format syntax
+            #print( "sending  :{}".format(item) )
+            prop = eval(item.data_path)
             
-        if str(prop) != item.value or envars.repeat_filter == False:
-            item.value = str(prop)
-
-            # make sure the osc indices are a tuple
-            indices = make_tuple(item.osc_index)
-            if isinstance(indices, int): 
-                indices = (indices,)
+            # now make the values to be sent a tuple (unless its a string or None)
+            if isinstance(prop, (bool, int, float)):
+                prop = (prop,)
+            elif prop is None:
+                prop = 'None'
+            elif isinstance(prop, (mathutils.Vector, mathutils.Quaternion, mathutils.Euler, mathutils.Matrix)):
+                prop = tuple(prop)
                 
-            # sort the properties according to the osc_indices
-            if prop is not None and not isinstance(prop, str) and len(indices) > 0:
-                prop = tuple(prop[i] for i in indices)
-            myOscMsg[item.osc_address] = prop
+            if str(prop) != item.value or envars.repeat_filter == False:
+                item.value = str(prop)
+
+                # make sure the osc indices are a tuple
+                indices = make_tuple(item.osc_index)
+                if isinstance(indices, int): 
+                    indices = (indices,)
+                    
+                # sort the properties according to the osc_indices
+                if prop is not None and not isinstance(prop, str) and len(indices) > 0:
+                    prop = tuple(prop[i] for i in indices)
+                myOscMsg[item.osc_address] = prop
     return myOscMsg
 
 #######################################
@@ -147,50 +146,71 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                 
                 #  all the osc messages handlers ready for registering to the server
                 oscHandlerDict = {} 
-                oscHandleTuple = []
+                oscHandleList = []
                 
                 # register a message for executing 
                 if envars.node_update == "MESSAGE" and hasAnimationNodes():
-                    oscHandleTuple = (-1, None, None, None, None, 0)
-                    self.addOscHandler(oscHandlerDict, envars.node_frameMessage, oscHandleTuple)
+                    oscHandleList = (-1, None, None, None, None, 0)
+                    self.addOscHandler(oscHandlerDict, envars.node_frameMessage, oscHandleList)
                 
                 for item in bpy.context.scene.NodeOSC_keys:
                     if item.osc_direction != "OUTPUT" and item.enabled:
-                        # make osc index into a tuple ..
-                        oscIndex = make_tuple(item.osc_index)
-                        #  ... and don't forget the corner case
-                        if isinstance(oscIndex, int): 
-                            oscIndex = (oscIndex,)
-                        
-                        try:
-                            oscHandleTuple = None
-                            #For ID custom properties (with brackets)
-                            if item.props[0:2] == '["' and item.props[-2:] == '"]':
-                                oscHandleTuple = (1, eval(item.data_path), item.props, item.idx, oscIndex, item.node_type)
-                            elif item.data_path[-1] == ')':
-                                # its a function call
-                                oscHandleTuple = (7, item.data_path, item.props, item.idx, oscIndex, item.node_type)
-                            #For normal properties
-                            #with index in brackets -: i_num
-                            elif item.props[-1] == ']':
-                                d_p = item.props[:-3]
-                                i_num = int(item.props[-2])
-                                oscHandleTuple = (3, eval(item.data_path), d_p, i_num, oscIndex, item.node_type)
-                            #without index in brackets
-                            else:
-                                if isinstance(getattr(eval(item.data_path), item.props), (int, float, str)):
-                                    oscHandleTuple = (2, eval(item.data_path), item.props, item.idx, oscIndex, item.node_type)
+                        if item.dp_format_enable == False:      
+                            # make osc index into a tuple ..
+                            oscIndex = make_tuple(item.osc_index)
+                            #  ... and don't forget the corner case
+                            if isinstance(oscIndex, int): 
+                                oscIndex = (oscIndex,)
+                            
+                            try:
+                                oscHandleList = None
+                                #For custom properties 
+                                #   like bpy.data.objects['Cube']['customProp']
+                                if item.data_path.find('][') != -1 and (item.data_path[-2:] == '"]' or item.data_path[-2:] == '\']'):
+                                    prop =  item.data_path[item.data_path.rindex('['):]
+                                    prop = prop[2:-2] # get rid of [' ']
+                                    datapath = item.data_path[0:item.data_path.rindex('[')]
+                                    oscHandleList = [1, eval(datapath), prop, item.idx, oscIndex, item.node_type]
+                                #For normal properties with index in brackets 
+                                #   like bpy.data.objects['Cube'].location[0]
+                                elif item.data_path[-1] == ']':
+                                    datapath = item.data_path[0:item.data_path.rindex('.')]
+                                    prop =  item.data_path[item.data_path.rindex('.') + 1:item.data_path.rindex('[')]
+                                    prop_index =  item.data_path[item.data_path.rindex('[') + 1:item.data_path.rindex(']')]
+                                    oscHandleList = [3, eval(datapath), prop, int(prop_index), oscIndex, item.node_type]
+                                elif item.data_path[-1] == ')':
+                                    # its a function call
+                                    oscHandleList = [7, item.data_path, '', item.idx, oscIndex, item.node_type]
+                                #without index in brackets
                                 else:
-                                    oscHandleTuple = (4, eval(item.data_path), item.props, item.idx, oscIndex, item.node_type)
+                                    datapath = item.data_path[0:item.data_path.rindex('.')]
+                                    prop =  item.data_path[item.data_path.rindex('.') + 1:]
+                                    if isinstance(getattr(eval(datapath), prop), (int, float, str)):
+                                        oscHandleList = [2, eval(datapath), prop, item.idx, oscIndex, item.node_type]
+                                    else:
+                                        oscHandleList = [4, eval(datapath), prop, item.idx, oscIndex, item.node_type]
+                                        
+                                if oscHandleList != None:
+                                    self.addOscHandler(oscHandlerDict, item.osc_address, oscHandleList)
+                                else:
+                                    self.report({'WARNING'}, "Unable to create listener for: object '"+item.data_path+"' with id '"+item.props+"' : {0}".format(err))
                                     
-                            if oscHandleTuple != None:
-                                self.addOscHandler(oscHandlerDict, item.osc_address, oscHandleTuple)
-                            else:
-                                self.report({'WARNING'}, "Unable to create listener for: object '"+item.data_path+"' with id '"+item.props+"' : {0}".format(err))
+                            except Exception as err:
+                                self.report({'WARNING'}, "Register custom handle: object '"+item.data_path+"' with id '"+item.props+"' : {0}".format(err))
+
+                        else:
+                            oscIndex = item.osc_index
+                            try:
+                                oscHandleList = None
                                 
-                        except Exception as err:
-                            self.report({'WARNING'}, "Register custom handle: object '"+item.data_path+"' with id '"+item.props+"' : {0}".format(err))
-                    
+                                if oscHandleList != None:
+                                    self.addOscHandler(oscHandlerDict, item.osc_address, oscHandleList)
+                                else:
+                                    self.report({'WARNING'}, "Unable to create listener for: object '"+item.data_path+"' with id '"+item.props+"' : {0}".format(err))
+                            except Exception as err:
+                                self.report({'WARNING'}, "Register custom handle: object '"+item.data_path+"' with id '"+item.props+"' : {0}".format(err))
+                            
+
                 # lets go and find all nodes in all nodetrees that are relevant for us
                 nodes_createCollections()
                 
@@ -204,11 +224,11 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                             
                         try:
                             if item.node_data_type == "SINGLE":
-                                oscHandleTuple = (5, eval(item.data_path), item.props, item.idx, oscIndex, item.node_type)
+                                oscHandleList = [5, eval(item.data_path), item.props, item.idx, oscIndex, item.node_type]
                             elif item.node_data_type == "LIST":
-                                oscHandleTuple = (6, eval(item.data_path), item.props, item.idx, oscIndex, item.node_type)
+                                oscHandleList = [6, eval(item.data_path), item.props, item.idx, oscIndex, item.node_type]
 
-                            self.addOscHandler(oscHandlerDict, item.osc_address, oscHandleTuple)
+                            self.addOscHandler(oscHandlerDict, item.osc_address, oscHandleList)
                         except Exception as err:
                             self.report({'WARNING'}, "Register node handle: object '"+item.data_path+"' with id '"+item.props+"' : {0}".format(err))
 
