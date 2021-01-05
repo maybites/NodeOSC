@@ -163,18 +163,56 @@ def OSC_callback_nodeLIST(address, data_path, prop, attrIdx, oscArgs, oscIndex):
             bpy.context.scene.nodeosc_envars.error =  "Improper attributes received: "+address + " " + str(oscArgs)
 
 # called by the queue execution thread
-def OSC_callback_format(address, data_path, prop, attrIdx, oscArgs, oscIndex, evalFormat, evalRange):
+def OSC_callback_format(address, data_path, prop_ignore, attrIdx, oscArgs, oscIndex, sFormat, sRange):
+    # prepare the available variables
+    length = len(oscArgs)
+    args = oscArgs
+    if sRange == '':
+        call_format(address, data_path, prop_ignore, attrIdx, oscArgs, oscIndex, sFormat, 0)
+    else:
+        for index in range (*eval(sRange)):
+            call_format(address, data_path, prop_ignore, attrIdx, oscArgs, oscIndex, sFormat, index)
+
+# called by the queue execution thread
+def call_format(address, data_path, prop_ignore, attrIdx, oscArgs, oscIndex, sFormat, index):
     try:
-        # prepare the available variables
+        # format the data_path
         length = len(oscArgs)
         args = oscArgs
-        # format the data_path
-        myFormat = eval(evalFormat)
-        fDataPath = data_path.format(*myFormat)
-        fProperty = prop.format(*myFormat)
-        fIndex = eval(oscIndex)
-        
-        
+        myFormat = eval(sFormat)
+        if type(myFormat) is tuple:     
+            f_data_path = data_path.format(*myFormat)
+        else:
+            f_data_path = data_path.format(myFormat)
+                
+        f_OscIndex = eval(oscIndex)
+        #  ... and don't forget the corner case
+        if isinstance(f_OscIndex, int): 
+            f_OscIndex = (f_OscIndex,)
+        # now we have to analyse the data_path to figure out how we have to apply the values
+        if f_data_path.find('][') != -1 and (f_data_path[-2:] == '"]' or f_data_path[-2:] == '\']'):
+            #For custom properties 
+            #   like bpy.data.objects['Cube']['customProp']
+            prop = f_data_path[f_data_path.rindex('['):]
+            prop = prop[2:-2] # get rid of [' ']
+            datapath = f_data_path[0:f_data_path.rindex('[')]
+            OSC_callback_custom(address, eval(datapath), prop, attrIdx, oscArgs, f_OscIndex)
+        elif f_data_path[-1] == ']':
+            #For normal properties with index in brackets 
+            #   like bpy.data.objects['Cube'].location[0]
+            datapath = f_data_path[0:f_data_path.rindex('.')]
+            prop =  f_data_path[f_data_path.rindex('.') + 1:f_data_path.rindex('[')]
+            prop_index =  f_data_path[f_data_path.rindex('[') + 1:f_data_path.rindex(']')]
+            OSC_callback_IndexedProperty(address, eval(datapath), prop, int(prop_index), oscArgs, f_OscIndex)
+        elif f_data_path[-1] == ')':
+            # its a function call
+            OSC_callback_function(address, eval(f_data_path), prop, attrIdx, oscArgs, f_OscIndex)
+        else:
+            #without index in brackets
+            datapath = f_data_path[0:f_data_path.rindex('.')]
+            prop =  f_data_path[f_data_path.rindex('.') + 1:]
+            OSC_callback_properties(address, eval(datapath), prop, attrIdx, oscArgs, f_OscIndex)
+ 
     except TypeError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
             bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
@@ -232,10 +270,12 @@ def fillCallbackQue(address, oscArgs, dataList):
     for data in dataList:
         mytype = data[0]        # callback type 
         datapath = data[1]      # blender datapath (i.e. bpy.data.objects['Cube'])
-        prop = data[2]          # blender property ID (i.e. location)
-        attrIdx = data[3]       # ID-index (not used)
+        prop = data[2]          # blender property (i.e. location)
+        attrIdx = data[3]       # blender property index (i.e. location[index])
         oscIndex = data[4]      # osc argument index to use (should be a tuplet, like (1,2,3))
         nodeType = data[5]      # node type 
+        myFormat = data[6]      # datapath format string
+        myRange = data[7]       # loop range string
 
         address_uniq = address + "_" + str(index)
         
@@ -261,9 +301,7 @@ def fillCallbackQue(address, oscArgs, dataList):
             OSC_callback_queue.put((OSC_callback_nodeLIST, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
         elif mytype == 7:
             OSC_callback_queue.put((OSC_callback_function, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
-        elif mytype == 11:
-            OSC_callback_queue.put((OSC_callback_format, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
-        elif mytype == 12:
-            OSC_callback_queue.put((OSC_callback_loop, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
+        elif mytype == 10:
+            OSC_callback_queue.put((OSC_callback_format, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex, myFormat, myRange))
 
         index += 1

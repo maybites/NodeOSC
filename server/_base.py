@@ -164,31 +164,33 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                             
                             try:
                                 oscHandleList = None
-                                #For custom properties 
-                                #   like bpy.data.objects['Cube']['customProp']
                                 if item.data_path.find('][') != -1 and (item.data_path[-2:] == '"]' or item.data_path[-2:] == '\']'):
+                                    #For custom properties 
+                                    #   like bpy.data.objects['Cube']['customProp']
                                     prop =  item.data_path[item.data_path.rindex('['):]
                                     prop = prop[2:-2] # get rid of [' ']
                                     datapath = item.data_path[0:item.data_path.rindex('[')]
-                                    oscHandleList = [1, eval(datapath), prop, item.idx, oscIndex, item.node_type]
-                                #For normal properties with index in brackets 
-                                #   like bpy.data.objects['Cube'].location[0]
+                                    oscHandleList = [1, eval(datapath), prop, item.idx, oscIndex, item.node_type, '', '']
                                 elif item.data_path[-1] == ']':
+                                    #For normal properties with index in brackets 
+                                    #   like bpy.data.objects['Cube'].location[0]
                                     datapath = item.data_path[0:item.data_path.rindex('.')]
                                     prop =  item.data_path[item.data_path.rindex('.') + 1:item.data_path.rindex('[')]
                                     prop_index =  item.data_path[item.data_path.rindex('[') + 1:item.data_path.rindex(']')]
-                                    oscHandleList = [3, eval(datapath), prop, int(prop_index), oscIndex, item.node_type]
+                                    oscHandleList = [3, eval(datapath), prop, int(prop_index), oscIndex, item.node_type, '', '']
                                 elif item.data_path[-1] == ')':
                                     # its a function call
-                                    oscHandleList = [7, item.data_path, '', item.idx, oscIndex, item.node_type]
-                                #without index in brackets
+                                    oscHandleList = [7, item.data_path, '', item.idx, oscIndex, item.node_type, '', '']
                                 else:
+                                    #without index in brackets
                                     datapath = item.data_path[0:item.data_path.rindex('.')]
                                     prop =  item.data_path[item.data_path.rindex('.') + 1:]
                                     if isinstance(getattr(eval(datapath), prop), (int, float, str)):
-                                        oscHandleList = [2, eval(datapath), prop, item.idx, oscIndex, item.node_type]
+                                        # property is single value
+                                        oscHandleList = [2, eval(datapath), prop, item.idx, oscIndex, item.node_type, '', '']
                                     else:
-                                        oscHandleList = [4, eval(datapath), prop, item.idx, oscIndex, item.node_type]
+                                        # property is array
+                                        oscHandleList = [4, eval(datapath), prop, item.idx, oscIndex, item.node_type, '', '']
                                         
                                 if oscHandleList != None:
                                     self.addOscHandler(oscHandlerDict, item.osc_address, oscHandleList)
@@ -202,6 +204,11 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                             oscIndex = item.osc_index
                             try:
                                 oscHandleList = None
+                                
+                                if item.loop_enable:
+                                    oscHandleList = [10, item.data_path, '', 0, item.osc_index, item.node_type, item.dp_format, item.loop_range]
+                                else:
+                                    oscHandleList = [10, item.data_path, '', 0, item.osc_index, item.node_type, item.dp_format, '']
                                 
                                 if oscHandleList != None:
                                     self.addOscHandler(oscHandlerDict, item.osc_address, oscHandleList)
@@ -224,9 +231,9 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                             
                         try:
                             if item.node_data_type == "SINGLE":
-                                oscHandleList = [5, eval(item.data_path), item.props, item.idx, oscIndex, item.node_type]
+                                oscHandleList = [5, eval(item.data_path), item.props, item.idx, oscIndex, item.node_type, '', '']
                             elif item.node_data_type == "LIST":
-                                oscHandleList = [6, eval(item.data_path), item.props, item.idx, oscIndex, item.node_type]
+                                oscHandleList = [6, eval(item.data_path), item.props, item.idx, oscIndex, item.node_type, '', '']
 
                             self.addOscHandler(oscHandlerDict, item.osc_address, oscHandleList)
                         except Exception as err:
