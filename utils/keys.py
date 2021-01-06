@@ -8,6 +8,7 @@ class NodeOSCMsgValues(bpy.types.PropertyGroup):
         osc_type: bpy.props.StringProperty(name="Type", default="f")
         osc_index: bpy.props.StringProperty(name="Argument indices.", description = "Indicate in which order the arriving arguments will be applied. Have to be in the format \'() or (0 [, 1, 2])\' with 0...n integers, separated by a comma, and inside two parantheses \'()\'. There should be no more indices than arriving arguments, otherwise the message will be ignored", default="())")
         osc_direction: bpy.props.EnumProperty(name = "RX/TX", default = "INPUT", items = dataDirectionItems)
+        filter_repetition: bpy.props.BoolProperty(name = "Filter", default = False, description = "When sending data, enable filtering repeating messages")
         dp_format_enable: bpy.props.BoolProperty(name = "Format", default = False, description = "enable realtime evaluation of datapath with python string-format functionality")
         dp_format: bpy.props.StringProperty(name="Format", default="args", description = "enter the format values separated by commas. available keywords: 'args' for all arguments, 'length' for args length, 'index' if loop is enabled" )
         loop_enable: bpy.props.BoolProperty(name = "Loop", default = False, description = "enable looping through the arguments")
@@ -17,7 +18,7 @@ class NodeOSCMsgValues(bpy.types.PropertyGroup):
         value: bpy.props.StringProperty(name="value", default="Unknown")
         idx: bpy.props.IntProperty(name="Index", min=0, default=0)
         enabled: bpy.props.BoolProperty(name="Enabled", default=True)
-        ui_expanded: bpy.props.BoolProperty(name="Expanded", default=False)
+        ui_expanded: bpy.props.BoolProperty(name="Expanded", default=True)
         node_data_type: bpy.props.EnumProperty(name = "Node data type", default = "LIST", items = nodeDataTypeItems)
         node_type: bpy.props.IntProperty(name = "Node type", default = 0)
 

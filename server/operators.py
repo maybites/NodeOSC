@@ -8,10 +8,14 @@ def osc_export_config(scene):
     for osc_item in scene.NodeOSC_keys:
         config_table[osc_item.osc_address] = {
             "data_path" : osc_item.data_path,
-            "props" : osc_item.props,
             "osc_type" : osc_item.osc_type,
             "osc_index" : osc_item.osc_index,
             "osc_direction" : osc_item.osc_direction,
+            "filter_repetition" : osc_item.filter_repetition,
+            "dp_format_enable" : osc_item.dp_format_enable,
+            "dp_format" : osc_item.dp_format,
+            "loop_enable" : osc_item.loop_enable,
+            "loop_range" : osc_item.loop_range,
             "enabled" : osc_item.enabled,
         }
 
@@ -25,10 +29,14 @@ def osc_import_config(scene, config_file):
         item = scene.NodeOSC_keys.add()
         item.osc_address = address
         item.data_path = values["data_path"]
-        item.props = values["props"]
         item.osc_type = values["osc_type"]
         item.osc_index = values["osc_index"]
         item.osc_direction = values["osc_direction"]
+        item.filter_repetition = values["filter_repetition"]
+        item.dp_format_enable = values["dp_format_enable"]
+        item.dp_format = values["dp_format"]
+        item.loop_enable = values["loop_enable"]
+        item.loop_range = values["loop_range"]
         item.enabled = values["enabled"]
 
 def parse_ks(item):
@@ -93,19 +101,25 @@ class OSC_OT_ItemCreate(bpy.types.Operator):
     def invoke(self, context, event):
         keys = bpy.context.scene.NodeOSC_keys
         new_item = keys.add()
+        # we assume the new key is added at the end of the collection, so we get the index by:
+        index = len(bpy.context.scene.NodeOSC_keys.keys()) -1 
         if self.copy == -1:
-            new_item.props = "location"
-            new_item.data_path = "bpy.data.objects['Cube']"
-            new_item.osc_address = "/cube/location"
+            new_item.data_path = "bpy.data.objects['Cube'].location"
+            new_item.osc_address = "/objects/Cube/location"
             new_item.osc_index = "()"
         else:
-            new_item.props = keys[self.copy].props
             new_item.data_path = keys[self.copy].data_path
             new_item.osc_address = keys[self.copy].osc_address
             new_item.osc_index = keys[self.copy].osc_index
             new_item.osc_direction = keys[self.copy].osc_direction
+            new_item.filter_repetition = keys[self.copy].filter_repetition
+            new_item.dp_format_enable = keys[self.copy].dp_format_enable
+            new_item.dp_format = keys[self.copy].dp_format
+            new_item.loop_enable = keys[self.copy].loop_enable
+            new_item.loop_range = keys[self.copy].loop_range
 
-        #bpy.context.scene.NodeOSC_keys.remove(self.index)
+        # and now we move the new key to the index just below the original
+        bpy.context.scene.NodeOSC_keys.move(index, self.copy + 1)
 
         #for item in bpy.context.scene.NodeOSC_keys:
         #    if item.idx == self.index:
@@ -136,8 +150,8 @@ class WM_OT_button_context_addhandler(bpy.types.Operator):
             prop = value2.identifier
             keys = bpy.context.scene.NodeOSC_keys
             my_item = keys.add()
-            my_item.data_path = "bpy.data.objects['Cube']"
-            my_item.osc_address = "/context/menu"
+            my_item.data_path = "bpy.data.objects['Cube'].location"
+            my_item.osc_address = "/objects/Cube/location"
             my_item.osc_index = "()"
 
             # Workaround for materials using nodes
@@ -381,23 +395,16 @@ class NodeOSC_ImportKS(Operator):
             index = 0
             for i,j in t_arr:
                 my_item = bpy.context.scene.NodeOSC_keys_tmp.add()
-                my_item.props = i
                 my_item.idx = index
                 my_item.data_path = j
-                #for custom prop
-                if i[0:2] == '["' and i[-2:] == '"]':
-                    t_eval = my_item.data_path + my_item.props
-                #for the others
-                else:
-                    t_eval = my_item.data_path + "." + my_item.props
 
-                my_item.osc_type = repr(type(eval(t_eval)))[8:-2]
+                my_item.osc_type = repr(type(eval(my_item.data_path)))[8:-2]
                 index = index + 1
 
             #Copy addresses from NodeOSC_keys if there are some
             for item_tmp in bpy.context.scene.NodeOSC_keys_tmp:
                 for item in bpy.context.scene.NodeOSC_keys:
-                    if item_tmp.props == item.props and item_tmp.data_path == item.data_path:
+                    if item_tmp.data_path == item.data_path:
                         item_tmp.osc_address = item.osc_address
                         item_tmp.idx = item.idx
                 if item_tmp.osc_address == "":
@@ -410,11 +417,15 @@ class NodeOSC_ImportKS(Operator):
             for tmp_item in bpy.context.scene.NodeOSC_keys_tmp:
                 item = bpy.context.scene.NodeOSC_keys.add()
                 item.data_path = tmp_item.data_path
-                item.props = tmp_item.props
                 item.osc_address = tmp_item.osc_address
                 item.osc_type = tmp_item.osc_type
                 item.osc_index = tmp_item.osc_index
                 item.osc_direction = tmp_item.osc_direction
+                item.filter_repetition = tmp_item.filter_repetition
+                item.dp_format_enable = tmp_item.dp_format_enable
+                item.dp_format = tmp_item.dp_format
+                item.loop_enable = tmp_item.loop_enable
+                item.loop_range = tmp_item.loop_range
                 item.enabled = tmp_item.enabled
                 item.idx = tmp_item.idx
 

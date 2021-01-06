@@ -186,6 +186,11 @@ def call_format(address, data_path, prop_ignore, attrIdx, oscArgs, oscIndex, sFo
             f_data_path = data_path.format(myFormat)
                 
         f_OscIndex = eval(oscIndex)
+
+        if bpy.context.scene.nodeosc_envars.debug_monitor == True:
+            msg = "Recived: "+address + " " + str(oscArgs)  + " -> applied to evaluated data-path: '" + f_data_path + "' with format: '" + str(myFormat) + "' and args[idx]: '" + str(f_OscIndex) + "' "
+            bpy.context.scene.nodeosc_envars.error += '\n' + msg
+
         #  ... and don't forget the corner case
         if isinstance(f_OscIndex, int): 
             f_OscIndex = (f_OscIndex,)

@@ -22,54 +22,63 @@ class OSC_PT_Settings(bpy.types.Panel):
  
         envars = bpy.context.scene.nodeosc_envars
         layout = self.layout
-        col = layout.column(align=True)
+        column = layout.column(align=True)
+        col_box = column.column()
+        col = col_box.box()
         if envars.isServerRunning == False:
             row = col.row(align=True)
+            row.prop(envars, 'isUIExpanded', text = "", 
+                        icon='DISCLOSURE_TRI_DOWN' if envars.isUIExpanded else 'DISCLOSURE_TRI_RIGHT', 
+                        emboss = False)
             if addon_prefs.usePyLiblo == False:
                 row.operator("nodeosc.oscpy_operator", text='Start', icon='PLAY')
             else:
                 row.operator("nodeosc.pythonosc_operator", text='Start', icon='PLAY')
             row.prop(addon_prefs, "usePyLiblo", text = '', icon='CHECKBOX_HLT' if addon_prefs.usePyLiblo else 'CHECKBOX_DEHLT')
 
-            
-            col1 = layout.column(align=True)
-            row1 = col1.row(align=True)
-            row1.prop(envars, 'udp_in', text="In")
-            row1.prop(envars, 'port_in', text="Port")
-            col2 = layout.column(align=True)
-            row2 = col2.row(align=True)
-            row2.prop(envars, 'udp_out', text="Out")
-            row2.prop(envars, 'port_out', text="Port")
-            layout.prop(envars, 'input_rate', text="input rate(ms)")
-            layout.prop(envars, 'output_rate', text="output rate(ms)")
-            layout.prop(envars, 'repeat_filter', text="Filter repetitions")
-            layout.prop(envars, 'autorun', text="Start at Launch")
+            if envars.isUIExpanded:
+                col1 = col.column(align=True)
+                row1 = col1.row(align=True)
+                row1.prop(envars, 'udp_in', text="In")
+                row1.prop(envars, 'port_in', text="Port")
+                col2 = col.column(align=True)
+                row2 = col2.row(align=True)
+                row2.prop(envars, 'udp_out', text="Out")
+                row2.prop(envars, 'port_out', text="Port")
+                col.prop(envars, 'input_rate', text="input rate(ms)")
+                col.prop(envars, 'output_rate', text="output rate(ms)")
+                col.prop(envars, 'repeat_filter', text="Filter repetitions. Overrides indivdual handler settings.")
+                col.prop(envars, 'autorun', text="Start at Launch")
         else:
+            row = col.row(align=True)
+            row.prop(envars, 'isUIExpanded', text = "", 
+                        icon='DISCLOSURE_TRI_DOWN' if envars.isUIExpanded else 'DISCLOSURE_TRI_RIGHT', 
+                        emboss = False)
             if addon_prefs.usePyLiblo == False:
-                col.operator("nodeosc.oscpy_operator", text='Stop', icon='PAUSE')
-                col.label(text="osc server is running...")
+                row.operator("nodeosc.oscpy_operator", text='osc server is running...', icon='PAUSE')
             else:
-                col.operator("nodeosc.pythonosc_operator", text='Stop', icon='PAUSE')
-                col.label(text="python osc server is running...")               
+                row.operator("nodeosc.pythonosc_operator", text='python osc server is running..', icon='PAUSE')
                  
-            col.label(text=" listening at " + envars.udp_in + " on port " + str(envars.port_in))
-            col.label(text=" sending to " + envars.udp_out + " on port " + str(envars.port_out))
-        
-            col.prop(envars, 'input_rate', text="input rate(ms)")
+            if envars.isUIExpanded:
+                col.label(text=" listening at " + envars.udp_in + " on port " + str(envars.port_in))
+                col.label(text=" sending to " + envars.udp_out + " on port " + str(envars.port_out))
+            
+                col.prop(envars, 'input_rate', text="input rate(ms)")
 
-            col.prop(bpy.context.scene.nodeosc_envars, 'message_monitor', text="Monitoring and Error reporting")
-            col.prop(envars, 'repeat_filter', text="Filter repetitions")
+                col.prop(bpy.context.scene.nodeosc_envars, 'message_monitor', text="Monitoring and Error reporting")
+                col.prop(envars, 'repeat_filter', text="Filter repetitions. Overrides indivdual handler settings.")
+                col.prop(envars, 'debug_monitor')
 
-            if bpy.context.scene.nodeosc_envars.message_monitor == True: 
-                box = col.box()
-                row5 = box.column(align=True)
-                row5.label(text = "input: " + prettyTime(envars.executionTimeInput), icon = "TIME")
-                row5.label(text = "output: " + prettyTime(envars.executionTimeOutput), icon = "TIME")
-                row6 = box.column(align=True)
-                if addon_prefs.usePyLiblo == False:
-                    row6.label(text="Last OSC message:")
-                    row6.prop(envars, 'lastaddr', text="address")
-                    row6.prop(envars, 'lastpayload', text="values")
+                if bpy.context.scene.nodeosc_envars.message_monitor == True: 
+                    box = col.box()
+                    row5 = box.column(align=True)
+                    row5.label(text = "input: " + prettyTime(envars.executionTimeInput), icon = "TIME")
+                    row5.label(text = "output: " + prettyTime(envars.executionTimeOutput), icon = "TIME")
+                    row6 = box.column(align=True)
+                    if addon_prefs.usePyLiblo == False:
+                        row6.label(text="Last OSC message:")
+                        row6.prop(envars, 'lastaddr', text="address")
+                        row6.prop(envars, 'lastpayload', text="values")
             
                     
 
@@ -138,7 +147,11 @@ class OSC_PT_Operations(bpy.types.Panel):
                 colData = dataSplit.column(align = True)
                 
                 colLabel.label(text='address')
-                colData.prop(item, 'osc_address',text='', icon_only = True)
+                address_row = colData.row(align = True)
+                address_row.prop(item, 'osc_address',text='', icon_only = True)
+                if item.osc_direction != "INPUT":
+                    address_row.prop(item, 'filter_repetition',text='', icon='CHECKBOX_HLT' if item.filter_repetition else 'CHECKBOX_DEHLT', 
+                        emboss = False)
                               
                 colLabel.label(text='datapath')
                 datapath_row = colData.row(align = True)
@@ -163,21 +176,7 @@ class OSC_PT_Operations(bpy.types.Panel):
                     if item.loop_enable:
                         colLabel.label(text='')
                         colData.prop(item,'loop_range',text='range')    
-
-                #colLabel.label(text='evaluate')
-                #colData.prop(item, 'eval_select',text='')
-
-                #if item.eval_select == 'LOOP':
-                #    colLabel.label(text='')
-                #    colData.prop(item,'eval_range',text='range')                
-                #if item.eval_select != 'BASIC':
-                #    colLabel.label(text='')
-                #    colData.prop(item,'eval_format',text='format')                
- 
-                #colItm2.prop(item,'data_path',text='datapath')
-                #colItm2.prop(item,'props',text='property')
-                #colItm2.prop(item,'osc_index',text='args[index]')
-                                                
+                                              
             index = index + 1
         
         if envars.isServerRunning == False:
@@ -185,14 +184,10 @@ class OSC_PT_Operations(bpy.types.Panel):
 
         layout.separator()
 
-        row = layout.row(align=False)
-        row.prop(bpy.context.scene, 'nodeosc_defaultaddr', text="Default Address")
-
-        layout.separator()
-        layout.operator("nodeosc.importks", text='Import Keying Set')
         row = layout.row(align=True)
         row.operator("nodeosc.export", text='Export OSC Config')
         row.operator("nodeosc.import", text='Import OSC Config')
+        layout.operator("nodeosc.importks", text='Import Keying Set')
 
 #######################################
 #  NODES RX PANEL                    #

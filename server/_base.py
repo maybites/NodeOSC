@@ -15,7 +15,7 @@ from ..nodes.nodes import *
 
 def make_osc_messages(myOscKeys, myOscMsg):
     envars = bpy.context.scene.nodeosc_envars
-    for item in myOscKeys:
+    for item in myOscKeys:        
         if item.dp_format_enable == False:
             # we cannot deal with a datapath string that has format syntax
             #print( "sending  :{}".format(item) )
@@ -28,9 +28,11 @@ def make_osc_messages(myOscKeys, myOscMsg):
                 prop = 'None'
             elif isinstance(prop, (mathutils.Vector, mathutils.Quaternion, mathutils.Euler, mathutils.Matrix)):
                 prop = tuple(prop)
-                
-            if str(prop) != item.value or envars.repeat_filter == False:
-                item.value = str(prop)
+            
+            stringProp = str(prop)
+            
+            if not (item.filter_repetition and envars.repeat_filter) or stringProp != item.value:
+                item.value = stringProp
 
                 # make sure the osc indices are a tuple
                 indices = make_tuple(item.osc_index)

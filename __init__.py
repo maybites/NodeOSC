@@ -31,12 +31,13 @@
 bl_info = {
     "name": "NodeOSC",
     "author": "maybites",
-    "version": (1, 0, 9),
+    "version": (2, 0, 0),
     "blender": (2, 80, 0),
     "location": "View3D > Tools > NodeOSC",
-    "description": "Realtime control of Blender using OSC protocol",
-    "doc_url": "",
-    "tracker_url": "",
+    "description": "Realtime control of Blender using OSC data protocol",
+    "wiki_url": "https://github.com/maybites/blender.NodeOSC/wiki",
+    "tracker_url": "https://github.com/maybites/blender.NodeOSC/issues",
+    "support": "COMMUNITY",
     "category": "System"}
 
 import bpy
