@@ -31,7 +31,7 @@ def make_osc_messages(myOscKeys, myOscMsg):
             
             stringProp = str(prop)
             
-            if not (item.filter_repetition and envars.repeat_filter) or stringProp != item.value:
+            if not (item.filter_repetition and envars.repeat_filter) and stringProp != item.value:
                 item.value = stringProp
 
                 # make sure the osc indices are a tuple
@@ -152,7 +152,7 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                 
                 # register a message for executing 
                 if envars.node_update == "MESSAGE" and hasAnimationNodes():
-                    oscHandleList = (-1, None, None, None, None, 0)
+                    oscHandleList = (-1, None, None, None, None, 0, '', '')
                     self.addOscHandler(oscHandlerDict, envars.node_frameMessage, oscHandleList)
                 
                 for item in bpy.context.scene.NodeOSC_keys:

@@ -76,8 +76,12 @@ class OSC_OT_OSCPyServer(OSC_OT_OSCServer):
             values = []
             if isinstance(args, (tuple, list)):
                 for argum in args:
+                    if type(argum) == str:
+                        argum = bytes(argum, encoding='utf-8')
                     values.append(argum)
             else:
+                if type(args) == str:
+                    args = bytes(args, encoding='utf-8')
                 values.append(args)
             self.outputServer.send_message(bytes(key, encoding='utf-8'), values)
   
