@@ -19,7 +19,8 @@ please visit the [wiki](https://github.com/maybites/blender.NodeOSC/wiki) for mo
 
 ### Video Tutorial
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/w_Nye09FyRQ" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<a href="https://youtu.be/w_Nye09FyRQ" target="_blank"><img src="http://img.youtube.com/vi/w_Nye09FyRQ/0.jpg"
+alt="NodeOSC Part One" width="240" height="180" border="10" /></a>
 
 ## Credits
 
