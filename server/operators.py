@@ -126,90 +126,6 @@ class OSC_OT_ItemCreate(bpy.types.Operator):
         #        print(bpy.context.scene.NodeOSC_keys.find(item))
         return {'RUNNING_MODAL'}
 
-###########################################
-#  Create OSC Settings via Context Menu   #
-###########################################
-# credits: JPfeP : http://www.jpfep.net/pages/addons/addroutes/
-class WM_OT_button_context_addhandler(bpy.types.Operator):
-    """Create a new message handler"""
-    bl_idname = "nodeosc.button_context_createitem"
-    bl_label = "Create a node osc handler"
-
-    # @classmethod
-    # def poll(cls, context):
-    #      print (context.active_operator)
-    #      return context.active_object is not None
-
-    def execute(self, context):
-        value1 = getattr(context, "button_pointer", None)
-        if value1 is not None:
-            id = value1.id_data
-
-        value2 = getattr(context, "button_prop", None)
-        if value2 is not None:
-            prop = value2.identifier
-            keys = bpy.context.scene.NodeOSC_keys
-            my_item = keys.add()
-            my_item.data_path = "bpy.data.objects['Cube'].location"
-            my_item.osc_address = "/objects/Cube/location"
-            my_item.osc_index = "()"
-
-            # Workaround for materials using nodes
-            if id.name == 'Shader Nodetree':
-                # Ugly way to guess the good id
-                # For materials
-                try:
-                    id_type = 'materials'
-                    id = bpy.context.object.active_material
-                    path_from_id = value1.path_from_id(prop)
-                    #remove the property from the datapath
-                    data_path = repr(id) + '.node_tree.' + path_from_id
-
-                    # this to raise an error, if needed
-                    a = eval(data_path)
-
-                    #my_item.id_type = id_type
-                    #setattr(my_item.id, id_type, id)
-                    path = path_from_id.replace(' ','_').replace('.','/').replace("[\"",'/').replace("\"]",'').replace("[",'/').replace("]",'')
-                    my_item.osc_address = "/" + id_type + "/" + id.name + "/" + path
-                    my_item.data_path = data_path
-                except:
-                    pass
-                # For worlds
-                try:
-                    id_type = 'worlds'
-                    id = bpy.context.scene.world
-                    path_from_id = value1.path_from_id(prop)
-                    #remove the property from the datapath
-                    data_path = repr(id) + '.node_tree.' + path_from_id
-
-                    # this to raise an error, if needed
-                    a = eval(data_path)
-
-                    #my_item.id_type = id_type
-                    #setattr(my_item.id, id_type, id)
-                    path = path_from_id.replace(' ','_').replace('.','/').replace("[\"",'/').replace("\"]",'').replace("[",'/').replace("]",'')
-                    my_item.osc_address = "/" + id_type + "/" + id.name + "/" + path
-                    my_item.data_path = data_path
-                except:
-                    pass
-
-            else:
-                try:
-                    id_type = repr(id).split(".")[2].split('[')[0]
-                    path_from_id = value1.path_from_id(prop)
-                    datapath = repr(id) + '.' + path_from_id
-                    
-                    #my_item.id_type = id_type
-                    #setattr(my_item.id, id_type, id)
-                    path = path_from_id.replace(' ','_').replace('.','/').replace("[\"",'/').replace("\"]",'').replace("[",'/').replace("]",'')
-                    my_item.osc_address = "/" + id_type + "/" + id.name + "/" + path
-                    my_item.data_path = datapath
-                except Exception as err:
-                    print (value1, value2, prop)
-                    self.report({'INFO'}, "Error: {0}".format(err))
-
-        return {'FINISHED'}  
 
 #######################################
 #  Delete OSC Settings                #
@@ -454,13 +370,109 @@ class PickOSCaddress(bpy.types.Operator):
                     item.osc_address = last_event
         return{'FINISHED'}
 
+ 
+###########################################
+#  Create OSC Settings via Context Menu   #
+###########################################
 # This class has to be exactly named like that to insert an entry in the right click menu
 class WM_MT_button_context(Menu):
-    bl_label = "Unused.test"
+    bl_label = "Add a custom button"
 
     def draw(self, context):
         pass
- 
+
+# credits: JPfeP : http://www.jpfep.net/pages/addons/addroutes/
+class WM_OT_button_context_addhandler(bpy.types.Operator):
+    """Create a new message handler"""
+    bl_idname = "nodeosc.button_context_createitem"
+    bl_label = "Create a node osc handler"
+
+    # @classmethod
+    # def poll(cls, context):
+    #      print (context.active_operator)
+    #      return context.active_object is not None
+
+    def execute(self, context):
+        if hasattr(context, 'button_operator'):
+            op = context.button_operator
+            #dump(op, 'button_operator')     
+
+        value1 = getattr(context, "button_pointer", None)
+        if value1 is not None:
+            id = value1.id_data
+
+        value2 = getattr(context, "button_prop", None)
+        if value2 is not None:
+            prop = value2.identifier
+            keys = bpy.context.scene.NodeOSC_keys
+            my_item = keys.add()
+            my_item.data_path = "bpy.data.objects['Cube'].location"
+            my_item.osc_address = "/objects/Cube/location"
+            my_item.osc_index = "()"
+
+            # Workaround for materials using nodes
+            if id.name == 'Shader Nodetree':
+                # Ugly way to guess the good id
+                # For materials
+                try:
+                    id_type = 'materials'
+                    id = bpy.context.object.active_material
+                    path_from_id = value1.path_from_id(prop)
+                    #remove the property from the datapath
+                    data_path = repr(id) + '.node_tree.' + path_from_id
+
+                    # this to raise an error, if needed
+                    a = eval(data_path)
+
+                    #my_item.id_type = id_type
+                    #setattr(my_item.id, id_type, id)
+                    path = path_from_id.replace(' ','_').replace('.','/').replace("[\"",'/').replace("\"]",'').replace("[",'/').replace("]",'')
+                    my_item.osc_address = "/" + id_type + "/" + id.name + "/" + path
+                    my_item.data_path = data_path
+                except:
+                    pass
+                # For worlds
+                try:
+                    id_type = 'worlds'
+                    id = bpy.context.scene.world
+                    path_from_id = value1.path_from_id(prop)
+                    #remove the property from the datapath
+                    data_path = repr(id) + '.node_tree.' + path_from_id
+
+                    # this to raise an error, if needed
+                    a = eval(data_path)
+
+                    #my_item.id_type = id_type
+                    #setattr(my_item.id, id_type, id)
+                    path = path_from_id.replace(' ','_').replace('.','/').replace("[\"",'/').replace("\"]",'').replace("[",'/').replace("]",'')
+                    my_item.osc_address = "/" + id_type + "/" + id.name + "/" + path
+                    my_item.data_path = data_path
+                except:
+                    pass
+
+            else:
+                try:
+                    id_type = repr(id).split(".")[2].split('[')[0]
+                    path_from_id = value1.path_from_id(prop)
+                    datapath = repr(id) + '.' + path_from_id
+                    
+                    #my_item.id_type = id_type
+                    #setattr(my_item.id, id_type, id)
+                    path = path_from_id.replace(' ','_').replace('.','/').replace("[\"",'/').replace("\"]",'').replace("[",'/').replace("]",'')
+                    my_item.osc_address = "/" + id_type + "/" + id.name + "/" + path
+                    my_item.data_path = datapath
+                except Exception as err:
+                    print (value1, value2, prop)
+                    self.report({'INFO'}, "Error: {0}".format(err))
+
+        return {'FINISHED'}  
+
+def dump(obj, text):
+    print('-'*40, text, '-'*40)
+    for attr in dir(obj):
+        if hasattr( obj, attr ):
+            print( "obj.%s = %s" % (attr, getattr(obj, attr)))
+
 def menu_func(self, context):
     layout = self.layout
     layout.separator()

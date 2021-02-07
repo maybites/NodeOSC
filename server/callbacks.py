@@ -75,7 +75,7 @@ def OSC_callback_function(address, data_path, prop, attrIdx, oscArgs, oscIndex):
         eval(data_path)
     except:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "functioncall failed: "+address + " " + obj
+            bpy.context.scene.nodeosc_envars.error =  "functioncall failed: "+address + " " + data_path
 
 # called by the queue execution thread
 def OSC_callback_custom(address, data_path, prop, attrIdx, oscArgs, oscIndex):
@@ -211,7 +211,8 @@ def call_format(address, data_path, prop_ignore, attrIdx, oscArgs, oscIndex, sFo
             OSC_callback_IndexedProperty(address, eval(datapath), prop, int(prop_index), oscArgs, f_OscIndex)
         elif f_data_path[-1] == ')':
             # its a function call
-            OSC_callback_function(address, eval(f_data_path), prop, attrIdx, oscArgs, f_OscIndex)
+            prop = ''
+            OSC_callback_function(address, f_data_path, prop, attrIdx, oscArgs, f_OscIndex)
         else:
             #without index in brackets
             datapath = f_data_path[0:f_data_path.rindex('.')]
@@ -221,9 +222,12 @@ def call_format(address, data_path, prop_ignore, attrIdx, oscArgs, oscIndex, sFo
     except TypeError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
             bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
-    except:
+    except SyntaxError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "Improper attributes received: "+address + " " + str(oscArgs)
+            bpy.context.scene.nodeosc_envars.error =  "Evaluation error: " + str(err) +  " with >" + str(err.text) + "<"
+    except Exception as err:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
+            bpy.context.scene.nodeosc_envars.error =  "Unknown error: " + str(err)
 
 # method called by the pythonosc library in case of an unmapped message
 def OSC_callback_pythonosc_undef(* args):
