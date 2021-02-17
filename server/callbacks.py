@@ -75,7 +75,15 @@ def OSC_callback_function(address, data_path, prop, attrIdx, oscArgs, oscIndex):
         eval(data_path)
     except:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "functioncall failed: "+address + " " + data_path
+            bpy.context.scene.nodeosc_envars.error =  "function call failed: "+address + " " + data_path
+
+# called by the queue execution thread
+def OSC_callback_statement(address, data_path, prop, attrIdx, oscArgs, oscIndex):
+    try:
+        exec(data_path)
+    except:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
+            bpy.context.scene.nodeosc_envars.error =  "statement call failed: "+address + " " + data_path
 
 # called by the queue execution thread
 def OSC_callback_custom(address, data_path, prop, attrIdx, oscArgs, oscIndex):
@@ -209,10 +217,14 @@ def call_format(address, data_path, prop_ignore, attrIdx, oscArgs, oscIndex, sFo
             prop =  f_data_path[f_data_path.rindex('.') + 1:f_data_path.rindex('[')]
             prop_index =  f_data_path[f_data_path.rindex('[') + 1:f_data_path.rindex(']')]
             OSC_callback_IndexedProperty(address, eval(datapath), prop, int(prop_index), oscArgs, f_OscIndex)
-        elif f_data_path[-1] == ')':
-            # its a function call
+        elif f_data_path[-1] == ')' :
+            # its a function call 
             prop = ''
             OSC_callback_function(address, f_data_path, prop, attrIdx, oscArgs, f_OscIndex)
+        elif f_data_path.find('=') != -1:
+            # its a statement call 
+            prop = ''
+            OSC_callback_statement(address, f_data_path, prop, attrIdx, oscArgs, f_OscIndex)
         else:
             #without index in brackets
             datapath = f_data_path[0:f_data_path.rindex('.')]
