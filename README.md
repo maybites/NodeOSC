@@ -1,4 +1,4 @@
-# NodeOSC 2.0
+# NodeOSC 2.0.2
 OSC support for nodes and general usage.
 
 Please be aware: Version 2 is breaking NodeOsc settings from version 1. Pleas look at the wiki for more infos
@@ -35,6 +35,9 @@ NodeOSC relies on
 
 
 ## ChangeLog
+
+### V2.0.2
+Added ability to execute datapaths as statements
 
 ### V2.0.0
 Added dynamic evaluation format functionality combined with loops. Inspired by functionality introduced in http://www.jpfep.net/pages/addroutes/. Code cleanup and improved user interface.
