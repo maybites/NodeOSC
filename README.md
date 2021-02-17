@@ -1,7 +1,7 @@
 # NodeOSC 2.0.2
 OSC support for nodes and general usage.
 
-Please be aware: Version 2 is breaking NodeOsc settings from version 1. Pleas look at the wiki for more infos
+Please be aware: Version 2 is breaking NodeOsc settings from version 1. Please look at the wiki for more infos
 
 This add-on does not require any other add-on to work.
 
@@ -46,13 +46,13 @@ Added dynamic evaluation format functionality combined with loops. Inspired by f
 Added the neat operator I found in http://www.jpfep.net/pages/addroutes/ to create new osc handlers from the context menu while hovering over a user element.
 
 ### V1.0.8
-Allows to execute function calls with datapath. for example: bpy.ops.screen.animation_play(). values passed on with osc message are ignored.
+Allows to execute function calls with datapath. For example: bpy.ops.screen.animation_play(). values passed on with osc message are ignored.
 
 ### V1.0.6
 Fixed (hopefully) the reference of the dynamic link library for liblo.
 
 ### V1.0.5
-It plays now nice if liblo library is not installed
+It plays now nice if liblo library is not installed.
 
 ### V1.0.4
 Moved the transformation of AnimationNodes datatype DoubleList into the node.
