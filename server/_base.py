@@ -195,7 +195,7 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                                         oscHandleList = [4, eval(datapath), prop, item.idx, oscIndex, item.node_type, '', '']
                                         
                                 if oscHandleList != None:
-                                    self.addOscHandler(oscHandlerDict, item.osc_address, oscHandleList)
+                                    self.addOscHandler(oscHandlerDict, item.osc_address.strip(), oscHandleList)
                                 else:
                                     self.report({'WARNING'}, "Unable to create listener for: object '"+item.data_path+"' with id '"+item.props+"' : {0}".format(err))
                                     
@@ -213,7 +213,7 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                                     oscHandleList = [10, item.data_path, '', 0, item.osc_index, item.node_type, item.dp_format, '']
                                 
                                 if oscHandleList != None:
-                                    self.addOscHandler(oscHandlerDict, item.osc_address, oscHandleList)
+                                    self.addOscHandler(oscHandlerDict, item.osc_address.strip(), oscHandleList)
                                 else:
                                     self.report({'WARNING'}, "Unable to create listener for: object '"+item.data_path+"' with id '"+item.props+"' : {0}".format(err))
                             except Exception as err:
@@ -237,7 +237,7 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                             elif item.node_data_type == "LIST":
                                 oscHandleList = [6, eval(item.data_path), item.props, item.idx, oscIndex, item.node_type, '', '']
 
-                            self.addOscHandler(oscHandlerDict, item.osc_address, oscHandleList)
+                            self.addOscHandler(oscHandlerDict, item.osc_address.strip(), oscHandleList)
                         except Exception as err:
                             self.report({'WARNING'}, "Register node handle: object '"+item.data_path+"' with id '"+item.props+"' : {0}".format(err))
 
