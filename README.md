@@ -1,7 +1,5 @@
-# NodeOSC 2.1.0
+# NodeOSC 2.2.0
 OSC support for nodes and general usage.
-
-Please be aware: Version 2 is breaking NodeOsc settings from version 1. Please look at the wiki for more infos
 
 This add-on does not require any other add-on to work.
 
@@ -35,6 +33,10 @@ NodeOSC relies on
 
 
 ## ChangeLog
+
+### V2.2.0
+added argument filtering
+updated testbeds with examples for filter
 
 ### V2.1.0
 better error reporting
