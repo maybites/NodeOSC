@@ -301,7 +301,7 @@ def OSC_callback_pyliblo(path, args, types, src, data):
     fillCallbackQue(address, oscArgs, data)
 
 
-def fillCallbackQue(address, oscArgs, dataList):
+def fillCallbackQue(address, args, dataList):
     index = 0
     for data in dataList:
         mytype = data[0]        # callback type 
@@ -312,32 +312,34 @@ def fillCallbackQue(address, oscArgs, dataList):
         nodeType = data[5]      # node type 
         myFormat = data[6]      # datapath format string
         myRange = data[7]       # loop range string
+        myFilter = data[8]      # filter condition
 
         address_uniq = address + "_" + str(index)
         
-        if mytype == -1:
-            #special type reserved for message that triggers the execution of nodetrees
-            if nodeType == 1:
-                bpy.context.scene.nodeosc_AN_needsUpdate = True
-            elif nodeType == 2:
-                bpy.context.scene.nodeosc_SORCAR_needsUpdate = True
-        elif mytype == 0:
-            OSC_callback_queue.put((OSC_callback_unkown, address_uniq, address, oscArgs))
-        elif mytype == 1:
-            OSC_callback_queue.put((OSC_callback_custom, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
-        elif mytype == 2:
-            OSC_callback_queue.put((OSC_callback_Property, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
-        elif mytype == 3:
-            OSC_callback_queue.put((OSC_callback_IndexedProperty, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
-        elif mytype == 4:
-            OSC_callback_queue.put((OSC_callback_properties, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
-        elif mytype == 5:
-            OSC_callback_queue.put((OSC_callback_nodeFLOAT, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
-        elif mytype == 6:
-            OSC_callback_queue.put((OSC_callback_nodeLIST, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
-        elif mytype == 7:
-            OSC_callback_queue.put((OSC_callback_function, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex))
-        elif mytype == 10:
-            OSC_callback_queue.put((OSC_callback_format, address_uniq, address, datapath, prop, attrIdx, oscArgs, oscIndex, myFormat, myRange))
+        if (myFilter == True or eval(myFilter)):        
+            if mytype == -1:
+                #special type reserved for message that triggers the execution of nodetrees
+                if nodeType == 1:
+                    bpy.context.scene.nodeosc_AN_needsUpdate = True
+                elif nodeType == 2:
+                    bpy.context.scene.nodeosc_SORCAR_needsUpdate = True
+            elif mytype == 0:
+                OSC_callback_queue.put((OSC_callback_unkown, address_uniq, address, args))
+            elif mytype == 1:
+                OSC_callback_queue.put((OSC_callback_custom, address_uniq, address, datapath, prop, attrIdx, args, oscIndex))
+            elif mytype == 2:
+                OSC_callback_queue.put((OSC_callback_Property, address_uniq, address, datapath, prop, attrIdx, args, oscIndex))
+            elif mytype == 3:
+                OSC_callback_queue.put((OSC_callback_IndexedProperty, address_uniq, address, datapath, prop, attrIdx, args, oscIndex))
+            elif mytype == 4:
+                OSC_callback_queue.put((OSC_callback_properties, address_uniq, address, datapath, prop, attrIdx, args, oscIndex))
+            elif mytype == 5:
+                OSC_callback_queue.put((OSC_callback_nodeFLOAT, address_uniq, address, datapath, prop, attrIdx, args, oscIndex))
+            elif mytype == 6:
+                OSC_callback_queue.put((OSC_callback_nodeLIST, address_uniq, address, datapath, prop, attrIdx, args, oscIndex))
+            elif mytype == 7:
+                OSC_callback_queue.put((OSC_callback_function, address_uniq, address, datapath, prop, attrIdx, args, oscIndex))
+            elif mytype == 10:
+                OSC_callback_queue.put((OSC_callback_format, address_uniq, address, datapath, prop, attrIdx, args, oscIndex, myFormat, myRange))
 
-        index += 1
+            index += 1

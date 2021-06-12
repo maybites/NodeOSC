@@ -152,7 +152,14 @@ class OSC_PT_Operations(bpy.types.Panel):
                 if item.osc_direction != "INPUT":
                     address_row.prop(item, 'filter_repetition',text='', icon='CHECKBOX_HLT' if item.filter_repetition else 'CHECKBOX_DEHLT', 
                         emboss = False)
-                              
+                if item.osc_direction != "OUTPUT":
+                    address_row.prop(item, 'filter_enable',text='', icon='MODIFIER' if item.filter_enable else 'MODIFIER_DATA', 
+                        emboss = False)
+ 
+                if item.filter_enable and item.osc_direction != "OUTPUT":
+                    colLabel.label(text='')
+                    colData.prop(item,'filter_eval',text='filter')   
+                             
                 colLabel.label(text='datapath')
                 datapath_row = colData.row(align = True)
                 datapath_row.prop(item, 'data_path',text='')
