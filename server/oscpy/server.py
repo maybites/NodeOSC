@@ -382,7 +382,9 @@ class OSCThreadServer(object):
                     data, sender = sender_socket.recvfrom(65535)
                 except ConnectionResetError:
                     continue
-
+                except OSError:
+                    continue
+                
                 for address, tags, values, offset in read_packet(
                     data, drop_late=drop_late, encoding=self.encoding,
                     encoding_errors=self.encoding_errors

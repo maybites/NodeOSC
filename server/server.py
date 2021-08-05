@@ -104,9 +104,14 @@ class OSC_OT_OSCPyServer(OSC_OT_OSCServer):
 
     # stop receiving
     def shutDownInputServer(self, context, envars):
+        print("OSCPy Server is shutting down...")
+        self.inputServer.stop()                 # Stop default socket
+        print("  stopping all sockets...")
         self.inputServer.stop_all()             # Stop all sockets
+        print("  terminating server...")
         self.inputServer.terminate_server()     # Request the handler thread to stop looping
-        print("OSCPy Server is shutdown")
+        self.inputServer.join_server()          # Wait for the handler thread to finish pending tasks and exit
+        print("... OSCPy Server is shutdown")
  
  
 #######################################
