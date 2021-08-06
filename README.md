@@ -1,4 +1,4 @@
-# NodeOSC 2.2.0
+# NodeOSC 2.3.0
 OSC support for nodes and general usage.
 
 This add-on does not require any other add-on to work.
@@ -33,6 +33,10 @@ NodeOSC relies on
 
 
 ## ChangeLog
+
+### V2.3.0
+fixed server crash on windows
+added incomming address filter
 
 ### V2.2.0
 added argument filtering
