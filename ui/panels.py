@@ -47,7 +47,8 @@ class OSC_PT_Settings(bpy.types.Panel):
                 row2.prop(envars, 'port_out', text="Port")
                 col.prop(envars, 'input_rate', text="input rate(ms)")
                 col.prop(envars, 'output_rate', text="output rate(ms)")
-                col.prop(envars, 'repeat_filter', text="Filter repetitions. Overrides indivdual handler settings.")
+                col.prop(envars, 'repeat_address_filter_IN', text="Filter incomming")
+                col.prop(envars, 'repeat_argument_filter_OUT', text="Filter outgoing")
                 col.prop(envars, 'autorun', text="Start at Launch")
         else:
             row = col.row(align=True)
@@ -66,7 +67,8 @@ class OSC_PT_Settings(bpy.types.Panel):
                 col.prop(envars, 'input_rate', text="input rate(ms)")
 
                 col.prop(bpy.context.scene.nodeosc_envars, 'message_monitor', text="Monitoring and Error reporting")
-                col.prop(envars, 'repeat_filter', text="Filter repetitions. Overrides indivdual handler settings.")
+                col.prop(envars, 'repeat_address_filter_IN', text="Filter incomming")
+                col.prop(envars, 'repeat_argument_filter_OUT', text="Filter outgoing")
                 col.prop(envars, 'debug_monitor')
 
                 if bpy.context.scene.nodeosc_envars.message_monitor == True: 

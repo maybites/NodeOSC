@@ -30,6 +30,8 @@ def setOscHandlers(_oscHandlers):
 
 # define the method the timer thread is calling when it is appropriate
 def execute_queued_OSC_callbacks():
+    envars = bpy.context.scene.nodeosc_envars
+
     start = time.perf_counter()
     queue_repeat_filter.clear()
     
@@ -41,13 +43,14 @@ def execute_queued_OSC_callbacks():
         items = OSC_callback_queue.get()
         address_uniq = items[1]
         # if the address has not been here before:
-        if queue_repeat_filter.get(address_uniq, False) == False:
+        if not envars.repeat_address_filter_IN or (envars.repeat_address_filter_IN and queue_repeat_filter.get(address_uniq, False) == False):
             func = items[0]
             args = items[2:]
             # execute them 
             func(*args)
-            
-        queue_repeat_filter[address_uniq] = True
+        
+        if envars.repeat_address_filter_IN:
+            queue_repeat_filter[address_uniq] = True
         
     if hasOscMessages:
         if bpy.context.scene.nodeosc_envars.node_update != "MESSAGE":

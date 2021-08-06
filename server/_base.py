@@ -31,7 +31,7 @@ def make_osc_messages(myOscKeys, myOscMsg):
             
             stringProp = str(prop)
             
-            if not (item.filter_repetition and envars.repeat_filter) and stringProp != item.value:
+            if not (item.filter_repetition and envars.repeat_argument_filter_OUT) and stringProp != item.value:
                 item.value = stringProp
 
                 # make sure the osc indices are a tuple
