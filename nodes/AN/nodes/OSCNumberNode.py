@@ -4,6 +4,7 @@ from bpy.props import *
 from collections import defaultdict
 from animation_nodes.sockets.info import toIdName
 from animation_nodes.base_types import AnimationNode
+from animation_nodes.data_structures import DoubleList
 
 from ....utils.utils import *
 
@@ -109,7 +110,11 @@ class OSCNumberNode(bpy.types.Node, AnimationNode):
         dataByIdentifier[self.identifier] = value
 
     def getValue(self):
-        return dataByIdentifier.get(self.identifier)
+        value = dataByIdentifier.get(self.identifier)
+        if isinstance(value, DoubleList):
+            return tuple(value)
+        else:
+            return value
 
     @property
     def value(self):

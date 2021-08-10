@@ -94,6 +94,8 @@ class OSCListNode(bpy.types.Node, AnimationNode):
 
     def getValue(self):
         value = dataByIdentifier.get(self.identifier)
+        if isinstance(value, DoubleList):
+            value = tuple(value)
         if value is not None and self.createString:
             if len(value) == 1:
                 value = str(value[0])
@@ -101,12 +103,10 @@ class OSCListNode(bpy.types.Node, AnimationNode):
                 value = str(value)
         return value
 
+
     @property
     def value(self):
-        if isinstance(self.getValue(), DoubleList):
-            return tuple(self.getValue())
-        else:
-            return self.getValue()
+        return self.getValue()
 
     @value.setter
     def value(self, value):

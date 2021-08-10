@@ -19,7 +19,11 @@ def make_osc_messages(myOscKeys, myOscMsg):
         if item.dp_format_enable == False:
             # we cannot deal with a datapath string that has format syntax
             #print( "sending  :{}".format(item) )
-            prop = eval(item.data_path)
+            prop = None
+            if item.node_type == 1:
+                prop = eval(item.data_path + ".getValue()")
+            else:
+                prop = eval(item.data_path)
             
             # now make the values to be sent a tuple (unless its a string or None)
             if isinstance(prop, (bool, int, float)):
