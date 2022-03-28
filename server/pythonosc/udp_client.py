@@ -1,6 +1,6 @@
 """Client to send OSC datagrams to an OSC server via UDP."""
 
-from collections import Iterable
+from collections.abc import Iterable
 import socket
 
 from .osc_message_builder import OscMessageBuilder
