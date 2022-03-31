@@ -1,4 +1,4 @@
-# NodeOSC 2.3.1
+# NodeOSC 2.3.2
 OSC support for nodes and general usage.
 
 This add-on does not require any other add-on to work.
@@ -33,6 +33,9 @@ NodeOSC relies on
 
 
 ## ChangeLog
+
+### V2.3.2
+fixed deprecated API-error
 
 ### V2.3.1
 fixed output from animation nodes
