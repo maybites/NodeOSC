@@ -176,15 +176,16 @@ class OSC_PT_Operations(bpy.types.Panel):
                     colLabel.label(text='')
                     colData.prop(item,'dp_format',text='format')   
                
-                colLabel.label(text='args[idx]')
-                args_row = colData.row(align = True)
-                args_row.prop(item, 'osc_index',text='')
-                if item.dp_format_enable and item.osc_direction == "INPUT":
-                    args_row.prop(item, 'loop_enable',text='', icon='MODIFIER' if item.loop_enable else 'MODIFIER_DATA', 
-                        emboss = False)
-                    if item.loop_enable:
-                        colLabel.label(text='')
-                        colData.prop(item,'loop_range',text='range')    
+                if item.data_path.find('script(') == -1:
+                    colLabel.label(text='args[idx]')
+                    args_row = colData.row(align = True)
+                    args_row.prop(item, 'osc_index',text='')
+                    if item.dp_format_enable and item.osc_direction == "INPUT":
+                        args_row.prop(item, 'loop_enable',text='', icon='MODIFIER' if item.loop_enable else 'MODIFIER_DATA', 
+                            emboss = False)
+                        if item.loop_enable:
+                            colLabel.label(text='')
+                            colData.prop(item,'loop_range',text='range')    
                                               
             index = index + 1
         

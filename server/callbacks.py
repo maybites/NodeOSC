@@ -202,10 +202,17 @@ def OSC_callback_format(address, data_path, prop_ignore, attrIdx, oscArgs, oscIn
 # called by the queue execution thread
 def call_format(address, data_path, prop_ignore, attrIdx, oscArgs, oscIndex, sFormat, index):
     try:
+
         # format the data_path
         length = len(oscArgs)
         args = oscArgs
+        addr = address
+        if(sFormat.find('addr') != -1):
+            # if there is the 'addr' keyword inside the format, we generate it from the address 
+            addr = [convertString(arrayElement) for arrayElement in address[1:].split('/')]
+
         myFormat = eval(sFormat)
+        
         if type(myFormat) is tuple:     
             f_data_path = data_path.format(*myFormat)
         else:
@@ -249,6 +256,39 @@ def call_format(address, data_path, prop_ignore, attrIdx, oscArgs, oscIndex, sFo
             prop =  f_data_path[f_data_path.rindex('.') + 1:]
             OSC_callback_properties(address, eval(datapath), prop, attrIdx, oscArgs, f_OscIndex)
  
+    except TypeError as err:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
+            bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
+    except SyntaxError as err:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
+            bpy.context.scene.nodeosc_envars.error =  "Evaluation error: " + str(err) +  " with >" + str(err.text) + "<"
+    except Exception as err:
+        if bpy.context.scene.nodeosc_envars.message_monitor == True:
+            bpy.context.scene.nodeosc_envars.error =  "Unknown error: " + str(err)
+
+# called by the queue execution thread
+def OSC_callback_script(address, data_path, function, attrIdx, oscArgs, oscIndex, sFormat, index):
+    try:
+
+        # format the data_path
+        length = len(oscArgs)
+        args = oscArgs
+        addr = address
+        if(sFormat.find('addr') != -1):
+            # if there is the 'addr' keyword inside the format, we generate it from the address 
+            addr = [convertString(arrayElement) for arrayElement in address[1:].split('/')]
+
+        myFormat = eval(sFormat)
+        
+        if(sFormat.find(',') != -1): #if there are multiple variables to be passed on
+            function(*myFormat)
+        else:
+            function(myFormat)
+
+        if bpy.context.scene.nodeosc_envars.debug_monitor == True:
+            msg = "Recived: "+address + " " + str(oscArgs)  + " -> calling " + data_path + "(" + str(myFormat) + ") "
+            bpy.context.scene.nodeosc_envars.error += '\n' + msg
+
     except TypeError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
             bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
@@ -319,7 +359,14 @@ def fillCallbackQue(address, args, dataList):
 
         address_uniq = address + "_" + str(index)
         
-        if (myFilter == True or eval(myFilter)):        
+        if (myFilter != True):
+            addr = address
+            if(myFilter.find('addr') != -1):
+                # if there is the 'addr' keyword inside the filter, we generate it from the address 
+                addr = [convertString(arrayElement) for arrayElement in address[1:].split('/')]
+            myFilter = eval(myFilter)
+        
+        if (myFilter == True):        
             if mytype == -1:
                 #special type reserved for message that triggers the execution of nodetrees
                 if nodeType == 1:
@@ -344,5 +391,18 @@ def fillCallbackQue(address, args, dataList):
                 OSC_callback_queue.put((OSC_callback_function, address_uniq, address, datapath, prop, attrIdx, args, oscIndex))
             elif mytype == 10:
                 OSC_callback_queue.put((OSC_callback_format, address_uniq, address, datapath, prop, attrIdx, args, oscIndex, myFormat, myRange))
+            elif mytype == 11:
+                OSC_callback_queue.put((OSC_callback_script, address_uniq, address, datapath, prop, attrIdx, args, oscIndex, myFormat, myRange))
 
             index += 1
+            
+def convertString(str):
+    try:
+        return int(str)
+    except ValueError:
+        pass
+    try:
+        return float(str)
+    except ValueError:
+        pass
+    return str

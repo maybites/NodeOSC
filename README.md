@@ -1,4 +1,4 @@
-# NodeOSC 2.3.2
+# NodeOSC 2.4.0
 OSC support for nodes and general usage.
 
 This add-on does not require any other add-on to work.
@@ -33,6 +33,10 @@ NodeOSC relies on
 
 
 ## ChangeLog
+
+### V2.4.0
+added script() calling functionality
+added more variables for 'format' and 'filter'
 
 ### V2.3.2
 fixed deprecated API-error

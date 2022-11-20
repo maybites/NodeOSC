@@ -36,7 +36,7 @@ class NodeOSCPreferences(AddonPreferences):
     bl_idname = __package__
 
     usePyLiblo: BoolProperty(
-            name="Use Python OSC library. This is an alternative library",
+            name="Use Python OSC library. This is an alternative library that also accepts asterisk '*' inside the address",
             default=False,
             )
 

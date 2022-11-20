@@ -115,7 +115,9 @@ class OSC_OT_OSCServer(bpy.types.Operator):
             if envars.message_monitor == True:
                 if self.count >= 100:
                     self.count = 0
-                    context.area.tag_redraw()
+                    for area in context.screen.areas: 
+                        if area.type == 'VIEW_3D':
+                            area.tag_redraw()
 
             # only available spot where updating the sorcar tree doesn't throw errors...
             executeSorcarNodeTrees(context)
@@ -184,7 +186,9 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                             
                             try:
                                 oscHandleList = None
-                                if item.data_path.find('][') != -1 and (item.data_path[-2:] == '"]' or item.data_path[-2:] == '\']'):
+                                if item.data_path.find('script(') == 0:
+                                    raise Exception("using script() with format disabled is not allowed!")
+                                elif item.data_path.find('][') != -1 and (item.data_path[-2:] == '"]' or item.data_path[-2:] == '\']'):
                                     #For custom properties 
                                     #   like bpy.data.objects['Cube']['customProp']
                                     prop =  item.data_path[item.data_path.rindex('['):]
@@ -224,11 +228,20 @@ class OSC_OT_OSCServer(bpy.types.Operator):
                             oscIndex = item.osc_index
                             try:
                                 oscHandleList = None
-                                
-                                if item.loop_enable:
-                                    oscHandleList = [10, item.data_path, '', 0, item.osc_index, item.node_type, item.dp_format, item.loop_range, filter_eval]
+
+                                if item.data_path.find('script(') == 0:
+                                    if item.data_path.find(').'):
+                                        scriptName = item.data_path[7:item.data_path.find(').')]
+                                        functionName = item.data_path[item.data_path.find(').')+2:]
+                                        asModule = bpy.data.texts[scriptName].as_module()
+                                        asFunction = getattr(asModule, functionName)
+                                        oscHandleList = [11, scriptName + "." + functionName, asFunction, 0, item.osc_index, item.node_type, item.dp_format, '', filter_eval]
+                                        
                                 else:
-                                    oscHandleList = [10, item.data_path, '', 0, item.osc_index, item.node_type, item.dp_format, '', filter_eval]
+                                    if item.loop_enable:
+                                        oscHandleList = [10, item.data_path, '', 0, item.osc_index, item.node_type, item.dp_format, item.loop_range, filter_eval]
+                                    else:
+                                        oscHandleList = [10, item.data_path, '', 0, item.osc_index, item.node_type, item.dp_format, '', filter_eval]
                                 
                                 if oscHandleList != None:
                                     self.addOscHandler(oscHandlerDict, item.osc_address.strip(), oscHandleList)
