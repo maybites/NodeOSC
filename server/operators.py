@@ -4,9 +4,10 @@ from bpy.types import Menu, Operator, AddonPreferences
 from bpy.props import StringProperty, IntProperty, BoolProperty
 
 def osc_export_config(scene):
-    config_table = {}
+    config_table = []
     for osc_item in scene.NodeOSC_keys:
-        config_table[osc_item.osc_address] = {
+        config_table.append({
+            "address": osc_item.osc_address,
             "data_path" : osc_item.data_path,
             "osc_type" : osc_item.osc_type,
             "osc_index" : osc_item.osc_index,
@@ -17,17 +18,17 @@ def osc_export_config(scene):
             "loop_enable" : osc_item.loop_enable,
             "loop_range" : osc_item.loop_range,
             "enabled" : osc_item.enabled,
-        }
+        })
 
     return json.dumps(config_table)
 
 def osc_import_config(scene, config_file):
     config_table = json.load(config_file)
-    for address, values in config_table.items():
-        print(address)
+    for values in config_table:
+        print(values["address"])
         print(values)
         item = scene.NodeOSC_keys.add()
-        item.osc_address = address
+        item.osc_address = values["address"]
         item.data_path = values["data_path"]
         item.osc_type = values["osc_type"]
         item.osc_index = values["osc_index"]
