@@ -104,10 +104,12 @@ class OSC_OT_OSCServer(bpy.types.Operator):
         envars = bpy.context.scene.nodeosc_envars
         if envars.isServerRunning == False:
             return self.cancel(context)
-        if envars.message_monitor and envars.error != "":
-            self.report({'WARNING'}, envars.error)
-            print(envars.error)
-            envars.error = ""
+        if envars.message_monitor:
+            if len(envars.error) > 0:
+                for myError in envars.error:
+                    self.report({myError.type}, myError.name + myError.value)
+                    print(myError.name + myError.value)
+                envars.error.clear()
 
         if event.type == 'TIMER':
             #hack to refresh the GUI

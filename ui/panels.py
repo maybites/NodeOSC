@@ -56,7 +56,7 @@ class OSC_PT_Settings(bpy.types.Panel):
                         icon='DISCLOSURE_TRI_DOWN' if envars.isUIExpanded else 'DISCLOSURE_TRI_RIGHT', 
                         emboss = False)
             if addon_prefs.usePyLiblo == False:
-                row.operator("nodeosc.oscpy_operator", text='osc server is running...', icon='PAUSE')
+                row.operator("nodeosc.oscpy_operator", text='osc py server is running...', icon='PAUSE')
             else:
                 row.operator("nodeosc.pythonosc_operator", text='python osc server is running..', icon='PAUSE')
                  
@@ -77,11 +77,13 @@ class OSC_PT_Settings(bpy.types.Panel):
                     row5.label(text = "input: " + prettyTime(envars.executionTimeInput), icon = "TIME")
                     row5.label(text = "output: " + prettyTime(envars.executionTimeOutput), icon = "TIME")
                     row6 = box.column(align=True)
+                    if addon_prefs.usePyLiblo == True:
+                        row6.label(text="the other osc library can printout unmapped osc messages..", icon="ERROR")
                     if addon_prefs.usePyLiblo == False:
                         row6.label(text="Last OSC message:")
                         row6.prop(envars, 'lastaddr', text="address")
                         row6.prop(envars, 'lastpayload', text="values")
-            
+                        row6.prop(envars, 'enable_incomming_message_printout', text="printout unmapped messages")
                     
 
             

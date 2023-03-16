@@ -71,6 +71,12 @@ def execute_queued_OSC_callbacks():
 def OSC_callback_unkown(address, args):
     bpy.context.scene.nodeosc_envars.lastaddr = address
     bpy.context.scene.nodeosc_envars.lastpayload = str(args)
+    if bpy.context.scene.nodeosc_envars.message_monitor == True:
+        if bpy.context.scene.nodeosc_envars.enable_incomming_message_printout == True:
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.type = "INFO"
+            addedError.name = ""
+            addedError.value = " > address: "+address + " | data: " + str(args)
 
 # called by the queue execution thread
 def OSC_callback_function(address, data_path, prop, attrIdx, oscArgs, oscIndex):
@@ -78,7 +84,9 @@ def OSC_callback_function(address, data_path, prop, attrIdx, oscArgs, oscIndex):
         eval(data_path)
     except Exception as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  str(err) + " > address: "+address + " | function: " + data_path
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = str(err)
+            addedError.value = " > address: "+address + " | function: " + data_path
 
 # called by the queue execution thread
 def OSC_callback_statement(address, data_path, prop, attrIdx, oscArgs, oscIndex):
@@ -86,7 +94,9 @@ def OSC_callback_statement(address, data_path, prop, attrIdx, oscArgs, oscIndex)
         exec(data_path)
     except Exception as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  str(err) + " > address: "+address + " | statement: " + data_path
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = str(err)
+            addedError.value = " > address: "+address + " | statement: " + data_path
 
 # called by the queue execution thread
 def OSC_callback_custom(address, data_path, prop, attrIdx, oscArgs, oscIndex):
@@ -97,13 +107,19 @@ def OSC_callback_custom(address, data_path, prop, attrIdx, oscArgs, oscIndex):
             data_path[prop] = oscArgs[0]
     except TypeError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name =  "Message attribute invalid"
+            addedError.value = " > address: "+address + " " + str(oscArgs) + " " + str(err)      
     except IndexError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "provided args[idx] out of range > address: " + address + " | args: " + str(oscArgs)  + " | args[idx]: " + str(oscIndex)
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = "provided args[idx] out of range"
+            addedError.value = " > address: " + address + " | args: " + str(oscArgs)  + " | args[idx]: " + str(oscIndex)
     except Exception as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  str(err) + " > address: "+address + " | args: " + str(oscArgs) 
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = str(err)
+            addedError.value =  str(err) + " > address: "+address + " | args: " + str(oscArgs) 
 
 # called by the queue execution thread
 def OSC_callback_Property(address, data_path, prop, attrIdx, oscArgs, oscIndex):
@@ -114,13 +130,19 @@ def OSC_callback_Property(address, data_path, prop, attrIdx, oscArgs, oscIndex):
         setattr(data_path,prop,val)
     except TypeError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = "Message attribute invalid"
+            addedError.value = " > address: "+address + " " + str(oscArgs) + " " + str(err)      
     except IndexError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "provided args[idx] out of range > address: " + address + " | args: " + str(oscArgs)  + " | args[idx]: " + str(oscIndex)
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = "provided args[idx] out of range"
+            addedError.value = " > address: " + address + " | args: " + str(oscArgs)  + " | args[idx]: " + str(oscIndex)
     except Exception as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  str(err) + " > address: "+address + " | args: " + str(oscArgs) 
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = str(err)
+            addedError.value = " > address: "+address + " | args: " + str(oscArgs) 
 
 # called by the queue execution thread
 def OSC_callback_IndexedProperty(address, data_path, prop, attrIdx, oscArgs, oscIndex):
@@ -131,13 +153,19 @@ def OSC_callback_IndexedProperty(address, data_path, prop, attrIdx, oscArgs, osc
             getattr(data_path,prop)[attrIdx] = oscArgs[0]
     except TypeError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = "Message attribute invalid"
+            addedError.value = " > address: "+address + " " + str(oscArgs) + " " + str(err)      
     except IndexError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "provided args[idx] out of range > address: " + address + " | args: " + str(oscArgs)  + " | args[idx]: " + str(oscIndex)
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = "provided args[idx] out of range"
+            addedError.value = " > address: " + address + " | args: " + str(oscArgs)  + " | args[idx]: " + str(oscIndex)
     except Exception as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  str(err) + " > address: "+address + " | args: " + str(oscArgs) 
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = str(err)
+            addedError.value = " > address: "+address + " | args: " + str(oscArgs) 
 
 # called by the queue execution thread
 def OSC_callback_properties(address, data_path, prop, attrIdx, oscArgs, oscIndex):
@@ -149,13 +177,19 @@ def OSC_callback_properties(address, data_path, prop, attrIdx, oscArgs, oscIndex
             
     except TypeError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  str(err) + "> address: "+address + " | args: " + str(oscArgs)     
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = str(err)
+            addedError.value = + "> address: "+address + " | args: " + str(oscArgs)     
     except IndexError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "provided args[idx] out of range > address: " + address + " | args: " + str(oscArgs)  + " | args[idx]: " + str(oscIndex)
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = "provided args[idx] out of range"
+            addedError.value =  " > address: " + address + " | args: " + str(oscArgs)  + " | args[idx]: " + str(oscIndex)
     except Exception as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  str(err) + " > address: "+address + " | args: " + str(oscArgs) 
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = str(err)
+            addedError.value = " > address: "+address + " | args: " + str(oscArgs) 
 
 # called by the queue execution thread
 def OSC_callback_nodeFLOAT(address, data_path, prop, attrIdx, oscArgs, oscIndex):
@@ -166,13 +200,19 @@ def OSC_callback_nodeFLOAT(address, data_path, prop, attrIdx, oscArgs, oscIndex)
         getattr(data_path, prop)(val)
     except TypeError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = "Message attribute invalid"
+            addedError.value = " > address: "+address + " " + str(oscArgs) + " " + str(err)      
     except IndexError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "provided args[idx] out of range > address: " + address + " | args: " + str(oscArgs)  + " | args[idx]: " + str(oscIndex)
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = "provided args[idx] out of range"
+            addedError.value = " > address: " + address + " | args: " + str(oscArgs)  + " | args[idx]: " + str(oscIndex)
     except Exception as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  str(err) + "> address: "+address + " | args: " + str(oscArgs) 
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = str(err)
+            addedError.value = " > address: "+address + " | args: " + str(oscArgs) 
 
 # called by the queue execution thread
 def OSC_callback_nodeLIST(address, data_path, prop, attrIdx, oscArgs, oscIndex):
@@ -183,10 +223,14 @@ def OSC_callback_nodeLIST(address, data_path, prop, attrIdx, oscArgs, oscIndex):
         getattr(data_path, prop)(val)
     except TypeError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = "Message attribute invalid"
+            addedError.value = " > address: "+address + " " + str(oscArgs) + " " + str(err)      
     except:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "Improper attributes received: "+address + " " + str(oscArgs)
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = "Improper attributes received"
+            addedError.value = " > address: "+address + " " + str(oscArgs)
 
 # called by the queue execution thread
 def OSC_callback_format(address, data_path, prop_ignore, attrIdx, oscArgs, oscIndex, sFormat, sRange):
@@ -222,7 +266,10 @@ def call_format(address, data_path, prop_ignore, attrIdx, oscArgs, oscIndex, sFo
 
         if bpy.context.scene.nodeosc_envars.debug_monitor == True:
             msg = "Recived: "+address + " " + str(oscArgs)  + " -> applied to evaluated data-path: '" + f_data_path + "' with format: '" + str(myFormat) + "' and args[idx]: '" + str(f_OscIndex) + "' "
-            bpy.context.scene.nodeosc_envars.error += '\n' + msg
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.type = "INFO"
+            addedError.name = "Recived: "
+            addedError.value =  msg
 
         #  ... and don't forget the corner case
         if isinstance(f_OscIndex, int): 
@@ -258,13 +305,19 @@ def call_format(address, data_path, prop_ignore, attrIdx, oscArgs, oscIndex, sFo
  
     except TypeError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = "Message attribute invalid"
+            addedError.value = " > address: "+address + " " + str(oscArgs) + " " + str(err)      
     except SyntaxError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "Evaluation error: " + str(err) +  " with >" + str(err.text) + "<"
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = "Evaluation error"
+            addedError.value = " with >" + str(err.text) + "<"
     except Exception as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "Unknown error: " + str(err)
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = "Unknown error"
+            addedError.value = str(err)
 
 # called by the queue execution thread
 def OSC_callback_script(address, data_path, function, attrIdx, oscArgs, oscIndex, sFormat, index):
@@ -288,16 +341,26 @@ def OSC_callback_script(address, data_path, function, attrIdx, oscArgs, oscIndex
         if bpy.context.scene.nodeosc_envars.debug_monitor == True:
             msg = "Recived: "+address + " " + str(oscArgs)  + " -> calling " + data_path + "(" + str(myFormat) + ") "
             bpy.context.scene.nodeosc_envars.error += '\n' + msg
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.type = "INFO"
+            addedError.name =  "Recived"
+            addedError.value = msg
 
     except TypeError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "Message attribute invalid: "+address + " " + str(oscArgs) + " " + str(err)      
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = "Message attribute invalid"
+            addedError.value =" > address: "+address + " " + str(oscArgs) + " " + str(err)      
     except SyntaxError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "Evaluation error: " + str(err) +  " with >" + str(err.text) + "<"
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = "Evaluation error"
+            addedError.value = str(err) +  " with >" + str(err.text) + "<"
     except Exception as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
-            bpy.context.scene.nodeosc_envars.error =  "Unknown error: " + str(err)
+            addedError = bpy.context.scene.nodeosc_envars.error.add()
+            addedError.name = "Unknown error"
+            addedError.value = str(err)
 
 # method called by the pythonosc library in case of an unmapped message
 def OSC_callback_pythonosc_undef(* args):
