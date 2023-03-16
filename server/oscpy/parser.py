@@ -154,6 +154,8 @@ PARSERS = {
     b'F': parse_false,
     b'N': parse_nil,
     b'I': parse_infinitum,
+    # b'h' = long, but we use int
+    b'h': parse_int,
     # TODO
     # b'h': parse_long,
     # b't': parse_timetage,
