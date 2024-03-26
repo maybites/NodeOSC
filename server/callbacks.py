@@ -301,7 +301,12 @@ def call_format(address, data_path, prop_ignore, attrIdx, oscArgs, oscIndex, sFo
             #without index in brackets
             datapath = f_data_path[0:f_data_path.rindex('.')]
             prop =  f_data_path[f_data_path.rindex('.') + 1:]
-            OSC_callback_properties(address, eval(datapath), prop, attrIdx, oscArgs, f_OscIndex)
+            if isinstance(getattr(eval(datapath), prop), (int, float, str)):
+                # property is single value
+                OSC_callback_Property(address, eval(datapath), prop, attrIdx, oscArgs, f_OscIndex)
+            else:
+                # property is array
+                OSC_callback_properties(address, eval(datapath), prop, attrIdx, oscArgs, f_OscIndex)
  
     except TypeError as err:
         if bpy.context.scene.nodeosc_envars.message_monitor == True:
